@@ -8,11 +8,13 @@ and facts in one transaction so a failed build never leaves a half-written wareh
 
 from __future__ import annotations
 
+import json
 import logging
 import re
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
+from pathlib import Path
 
 import pandas as pd
 from alembic import command
@@ -202,8 +204,29 @@ def build_warehouse(
         facts.review(resolution.review, player_ids, now)
         report.written, report.skipped = dict(facts.stats.written), dict(facts.stats.skipped)
     engine.dispose()
+    write_last_build(settings, report, now)
     logger.info("build complete", extra={"sources": report.sources})
     return report
+
+
+def last_build_path(settings: Settings) -> Path:
+    """Where the latest build summary is stored (read by ``scout doctor``)."""
+    return settings.data_dir / "warehouse" / "last_build.json"
+
+
+def write_last_build(settings: Settings, report: BuildReport, when: datetime) -> None:
+    """Persist a small JSON summary of the build for ``scout doctor``."""
+    path = last_build_path(settings)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "built_at": when.isoformat(),
+        "sources": report.sources,
+        "validation_ok": report.validation.ok,
+        "validation_summary": report.validation.summary(),
+        "coverage": report.coverage,
+        "review_count": report.review_count,
+    }
+    path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
 
 def _source_ids[K: (int, str)](

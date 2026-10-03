@@ -119,6 +119,30 @@ def build(
 
 
 @app.command()
+def doctor() -> None:
+    """Report freshness, coverage, validation status and FPL schema health."""
+    from scout.db.doctor import run_doctor
+
+    report = run_doctor(get_settings(), get_config())
+    typer.echo(f"FPL schema: {report.fpl_schema}")
+    if report.last_build:
+        typer.echo(
+            f"Last build: {report.last_build.get('built_at')} "
+            f"({report.last_build.get('validation_summary')})"
+        )
+    for f in report.freshness:
+        flag = "STALE" if f.stale else "fresh"
+        typer.echo(f"  {f.source:<24} {f.last_fetched:%Y-%m-%d %H:%M} UTC  {flag}")
+    for source, share in sorted(report.coverage.items()):
+        typer.echo(f"  {source} coverage: {share:.1%} of FPL minutes")
+    typer.echo(f"Unresolved records for review: {report.review_count}")
+    for warning in report.warnings:
+        typer.echo(f"WARNING: {warning}")
+    if not report.warehouse_exists:
+        raise typer.Exit(code=1)
+
+
+@app.command()
 def api(
     host: str = typer.Option("127.0.0.1", help="Bind address (local only)."),
     port: int = typer.Option(8000, help="Port."),

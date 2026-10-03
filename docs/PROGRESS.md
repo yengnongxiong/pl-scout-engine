@@ -39,7 +39,7 @@ Current milestone: M2 (M0 web items blocked on npm)
 - [x] M2-05b fact loaders: fact_player_match (FPL + Understat rows), fact_team_match (Understat + FotMob possession), fact_market_value (live/snapshot/override precedence kept as rows), fact_player_status, source_snapshot rows, entity_map_review; idempotent delete-and-insert per source
 - [ ] M2-05c previous-season FPL defensive data from vaastav: map season fixture ids to matches via (season, home, away)
 - [x] M2-06 `scout build` raw → validated → warehouse with `--allow-invalid` (logged); fixture end-to-end integration test; a validation failure stops the build
-- [ ] M2-07 `scout doctor`: freshness, coverage, validation status, missing FPL fields
+- [x] M2-07 `scout doctor`: freshness, coverage, validation status, missing FPL fields
 
 ## Done
 - M0-01, M0-02, M0-03 (2026-10-03); Python halves of M0-05/M0-06.

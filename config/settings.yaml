@@ -80,6 +80,15 @@ entity_resolution:
   # Coverage target: share of minutes mapped across sources (PRD §15).
   target_minutes_coverage: 0.98
 
+doctor:
+  # A source is flagged stale when its newest snapshot is older than this (hours).
+  default_stale_after_hours: 72
+  stale_after_hours:
+    fpl: 24
+    understat: 48
+    fotmob: 72
+    transfermarkt: 168
+
 validation:
   # Upper bound for minutes in one match (90 + generous stoppage time).
   max_match_minutes: 130

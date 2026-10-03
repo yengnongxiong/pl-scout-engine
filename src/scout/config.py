@@ -114,6 +114,20 @@ class EntityResolutionConfig(_Strict):
     target_minutes_coverage: float = Field(ge=0.0, le=1.0)
 
 
+class DoctorConfig(_Strict):
+    """Freshness thresholds for ``scout doctor`` (PRD §14 observability)."""
+
+    default_stale_after_hours: float = Field(gt=0.0)
+    stale_after_hours: dict[Source, float] = Field(default_factory=dict)
+
+    def threshold(self, source: str) -> float:
+        """Staleness threshold in hours for ``source``."""
+        return next(
+            (h for s, h in self.stale_after_hours.items() if s == source),
+            self.default_stale_after_hours,
+        )
+
+
 class ValidationConfig(_Strict):
     """Thresholds for staged-table validation (CLAUDE.md rule 12)."""
 
@@ -156,6 +170,7 @@ class EngineSettings(_Strict):
     diagnosis: DiagnosisConfig
     ingest: IngestConfig
     entity_resolution: EntityResolutionConfig
+    doctor: DoctorConfig
     validation: ValidationConfig
     ml: MLConfig
     reports: ReportsConfig
