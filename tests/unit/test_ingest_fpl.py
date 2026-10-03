@@ -81,7 +81,7 @@ def test_players_carry_status_and_null_news(
     assert players.loc[500012, "fpl_position"] == "FWD"
     assert players.loc[500012, "team_fpl_code"] == 9002
     # Empty news is missing data, not an empty string (CLAUDE.md rule 2).
-    assert players.loc[500011, "news"] is None
+    assert pd.isna(players.loc[500011, "news"])
     assert pd.isna(players.loc[500011, "chance_of_playing"])
 
 

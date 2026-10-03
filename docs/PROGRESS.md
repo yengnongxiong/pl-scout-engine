@@ -22,7 +22,7 @@ Current milestone: M0
 ### M1 (started early: remaining M0 items are blocked on npm; Python-only and independent)
 - [x] M1-01 `dsa/token_bucket.py` + `dsa/lru_cache.py` with complexity docstrings and reference tests — pytest passes
 - [x] M1-02 `ingest/base.py`: SourceAdapter ABC, raw snapshot store (timestamped, checksum), TTL cache, polite httpx client (User-Agent, token bucket, tenacity retries, interstitial detection) — unit tests with mocked transport
-- [ ] M1-03 FPL adapter: bootstrap-static + element-summary + fixtures parse to validated DataFrames keyed on `code`; season derived from events; trimmed synthetic fixtures; contract + schema-changed tests
+- [x] M1-03 FPL adapter: bootstrap-static + element-summary + fixtures parse to validated DataFrames keyed on `code`; season derived from events; trimmed synthetic fixtures; contract + schema-changed tests
 - [ ] M1-04 vaastav history adapter (per-gameweek CSV) with fixture contract tests
 - [ ] M1-05 Understat adapter (player match, team match incl. PPDA/deep) via soccerdata, fixture contract tests
 - [ ] M1-06 FotMob possession adapter, fixture contract tests
