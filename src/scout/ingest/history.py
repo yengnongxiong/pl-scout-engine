@@ -167,6 +167,7 @@ class VaastavHistoryAdapter(SourceAdapter):
             if opponent not in team_codes:
                 raise DataValidationError(f"vaastav {season}: team {opponent} not in teams")
             team_id = player_team.get(element)
+            team_code = None if team_id is None else team_codes.get(int(team_id))
             starts = _optional(rec.get("starts"))
             row: dict[str, object] = {
                 "fpl_code": int(player_codes[element]),
@@ -176,9 +177,7 @@ class VaastavHistoryAdapter(SourceAdapter):
                 "kickoff": pd.Timestamp(rec["kickoff_time"]),
                 # players_raw holds the end-of-season club; mid-season movers are resolved
                 # against fixtures in the warehouse build (M2).
-                "team_fpl_code_end_of_season": (
-                    int(team_codes[int(team_id)]) if team_id in team_codes else None
-                ),
+                "team_fpl_code_end_of_season": (None if team_code is None else int(team_code)),
                 "opponent_fpl_code": int(team_codes[opponent]),
                 "was_home": _as_bool(rec["was_home"]),
                 "minutes": int(rec["minutes"]),
