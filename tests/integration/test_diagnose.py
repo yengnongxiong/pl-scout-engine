@@ -66,6 +66,34 @@ def test_diagnosis_ranks_every_group_with_receipts(built: Settings) -> None:
     assert {e.player_name for e in cb.evidence} == {"Alex Testman"}
 
 
+def test_team_level_needs_from_last_season(built: Settings) -> None:
+    engine = make_engine(built.database_url)
+    config = _config()
+    rovers = find_team(engine, "Synthetic Rovers", config.team_aliases.aliases)
+    blended = diagnose(engine, rovers.team_id, config)
+    current = diagnose(engine, rovers.team_id, config, season_mode="current")
+    engine.dispose()
+    needs = {t.kpi: t for t in blended.team_needs}
+    # 2025-26 fixture games: Rovers' xG 0.45 in one game with data vs Town's 0.95 over two
+    # (0.475 per 90), so Rovers rank bottom of two; Rovers press harder (PPDA 8.5 vs
+    # 11.125), so PPDA is not a need.
+    xg = needs["xg_p90"]
+    assert (xg.club_value, xg.benchmark_value) == (pytest.approx(0.45), pytest.approx(0.475))
+    assert (xg.club_percentile, xg.benchmark_percentile, xg.gap) == (0.0, 100.0, 100.0)
+    assert (xg.matches, xg.previous_matches, xg.n_peers) == (0, 1, 2)
+    assert needs["xga_p90"].club_value == pytest.approx(0.475)  # (0.95 + 0.00) / 2
+    assert "ppda" not in needs
+    assert all(t.source == "understat" and t.as_of for t in blended.team_needs)
+    for need in blended.needs:
+        assert need.team_needs == [
+            t for t in blended.team_needs if need.position_group in t.responsible_groups
+        ]
+    st = next(n for n in blended.needs if n.position_group == "ST")
+    assert "xg_p90" in {t.kpi for t in st.team_needs}
+    # Current-season mode: the fixtures have no 2026-27 Understat games, so no evidence.
+    assert current.team_needs == []
+
+
 def test_cli_diagnose(built: Settings, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(cli, "get_settings", lambda: built)
     monkeypatch.setattr(cli, "get_config", _config)
@@ -73,6 +101,7 @@ def test_cli_diagnose(built: Settings, monkeypatch: pytest.MonkeyPatch) -> None:
     assert ok.exit_code == 0, ok.output
     assert "Synthetic Rovers vs top6" in ok.output
     assert "1. " in ok.output and "evidence rows" in ok.output
+    assert "Team-level needs" in ok.output and "understat as of" in ok.output
     bad = CliRunner().invoke(cli.app, ["diagnose", "Nowhere United"])
     assert bad.exit_code == 1
     wrong = CliRunner().invoke(cli.app, ["diagnose", "Synthetic Rovers", "--benchmark", "top9"])

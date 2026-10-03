@@ -11,7 +11,8 @@ Steps 1-3 of the algorithm:
    not cancel a weakness on another.
 
 Players without a percentile (below the minutes threshold) carry no evidence and are
-left out of the mean rather than treated as average or as zero.
+left out of the mean rather than treated as average or as zero. Team-level KPIs (step 7)
+live in ``engines/team_needs.py`` and are attached to the groups responsible for them.
 """
 
 from __future__ import annotations
@@ -28,6 +29,7 @@ from scout.db.models import DimSeason, DimTeam
 from scout.db.queries import club_players, player_features, standings, team_matches_played
 from scout.db.session import make_session_factory
 from scout.engines.benchmark import Benchmark, benchmark_clubs
+from scout.engines.team_needs import TeamNeed, team_level_needs
 from scout.errors import NotFoundError
 from scout.features.per90 import MINUTES_PER_MATCH
 from scout.ingest.history import previous_seasons
@@ -301,7 +303,11 @@ class Evidence:
 
 @dataclass
 class Need:
-    """A ranked position-group need with gaps, evidence, weak links and risks."""
+    """A ranked position-group need with gaps, evidence, weak links and risks.
+
+    ``team_needs`` are the team-level shortfalls this group is responsible for (step 7);
+    they give context and do not change ``severity``.
+    """
 
     rank: int
     need_id: str
@@ -311,6 +317,7 @@ class Need:
     evidence: list[Evidence]
     weak_links: list[WeakLink]
     risks: list[RiskFlag]
+    team_needs: list[TeamNeed] = field(default_factory=list)
 
 
 @dataclass
@@ -323,6 +330,7 @@ class Diagnosis:
     benchmark_team_ids: list[int]
     season_mode: str
     needs: list[Need]
+    team_needs: list[TeamNeed] = field(default_factory=list)
 
 
 def find_team(engine: Engine, query: str, aliases: Mapping[str, Sequence[str]]) -> DimTeam:
@@ -361,7 +369,7 @@ def diagnose(
     season_mode: str = "blended",
     as_of: date | None = None,
 ) -> Diagnosis:
-    """Diagnose ``team_id`` from the warehouse (PRD §8.8 steps 1-6)."""
+    """Diagnose ``team_id`` from the warehouse (PRD §8.8 steps 1-7)."""
     diag_cfg = config.settings.diagnosis
     bench_name: Benchmark = benchmark or diag_cfg.default_benchmark
     with make_session_factory(engine)() as session:
@@ -375,7 +383,8 @@ def diagnose(
             t.team_id for t in session.scalars(select(DimTeam).where(DimTeam.fpl_code.is_not(None)))
         ]
         team_name = team.name
-    table = standings(engine, previous_seasons(current, 1)[0])
+    previous = previous_seasons(current, 1)[0]
+    table = standings(engine, previous)
     bench_ids = benchmark_clubs(
         table,
         bench_name,
@@ -395,6 +404,15 @@ def diagnose(
     links = weak_links(mine, pct, available_minutes=available, catalogue=config.kpis, cfg=diag_cfg)
     roles = role_scores(mine, pct, config.kpis)
     flags = risk_flags(mine, roles, as_of=as_of or date.today(), cfg=diag_cfg)
+    team_needs = team_level_needs(
+        engine,
+        team_id,
+        bench_ids,
+        league,
+        config,
+        current=current,
+        previous=previous if season_mode == "blended" else None,
+    )
     names = dict(zip(mine["player_id"], mine["canonical_name"], strict=True))
     minutes_here = dict(zip(mine["player_id"], mine["minutes"], strict=True))
 
@@ -431,9 +449,10 @@ def diagnose(
                 evidence=sorted(evidence, key=lambda e: (-e.minutes, e.player_id, e.kpi)),
                 weak_links=[w for w in links if w.position_group == a.position_group],
                 risks=[f for f in flags if f.position_group == a.position_group],
+                team_needs=[t for t in team_needs if a.position_group in t.responsible_groups],
             )
         )
-    return Diagnosis(team_id, team_name, bench_name, bench_ids, season_mode, needs)
+    return Diagnosis(team_id, team_name, bench_name, bench_ids, season_mode, needs, team_needs)
 
 
 def _opt_float(value: object) -> float | None:

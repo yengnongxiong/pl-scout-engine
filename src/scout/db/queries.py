@@ -73,3 +73,8 @@ def team_matches_played(engine: Engine) -> dict[int, int]:
 def player_features(engine: Engine, season_mode: str) -> pd.DataFrame:
     """Materialised ``player_season_features`` rows for one season mode."""
     return run_sql(engine, "player_features", {"season_mode": season_mode})
+
+
+def team_season_totals(engine: Engine, source: str) -> pd.DataFrame:
+    """Team x season totals and per-column match counts (``team_season.sql``)."""
+    return run_sql(engine, "team_season", {"source": source})

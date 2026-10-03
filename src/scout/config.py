@@ -25,6 +25,12 @@ Source = Literal[
     "fpl", "understat", "fotmob", "transfermarkt", "transfermarkt_datasets", "vaastav", "statsbomb"
 ]
 
+# Numeric fact_team_match columns a team KPI can be built from (PRD §11).
+TeamMatchColumn = Literal[
+    "xg", "xga", "npxg", "npxga", "ppda", "ppda_allowed", "deep", "deep_allowed",
+    "set_piece_xg", "set_piece_xga", "open_play_xga",
+]  # fmt: skip
+
 WEIGHT_SUM_TOLERANCE = 1e-6
 
 
@@ -207,6 +213,10 @@ class TeamKpiDef(_Strict):
 
     label: str
     source: Source
+    column: TeamMatchColumn
+    # ``per90``: season total per 90 minutes (counting stats, PRD §8.1). ``match_mean``:
+    # mean of per-match values, for ratios such as PPDA that cannot be summed.
+    aggregate: Literal["per90", "match_mean"]
     higher_is_better: bool
     responsible_groups: list[PositionGroup] = Field(min_length=1)
 

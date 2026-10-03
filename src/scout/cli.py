@@ -175,7 +175,18 @@ def diagnose(
             typer.echo(f"   weak link: player {link.player_id} {link.kpi} p{link.percentile:.0f}")
         for risk in need.risks:
             typer.echo(f"   risk ({risk.kind}): {risk.detail}")
+        for team_need in need.team_needs:
+            typer.echo(f"   team-level: {team_need.label} (gap {team_need.gap:+.0f})")
         typer.echo(f"   evidence rows: {len(need.evidence)}")
+    if result.team_needs:
+        typer.echo("Team-level needs (PRD §8.8 step 7):")
+    for t in result.team_needs[:top]:
+        typer.echo(
+            f"   {t.label}: club {t.club_value:.1f} (p{t.club_percentile:.0f}) vs benchmark "
+            f"{t.benchmark_value:.1f} (p{t.benchmark_percentile:.0f}), gap {t.gap:+.0f}, "
+            f"matches {t.matches} this season + {t.previous_matches} last; "
+            f"groups {', '.join(t.responsible_groups)}; {t.source} as of {t.as_of}"
+        )
 
 
 @app.command()

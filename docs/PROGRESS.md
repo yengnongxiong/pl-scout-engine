@@ -1,7 +1,7 @@
 # Progress
 Status: IN_PROGRESS            <!-- IN_PROGRESS or COMPLETE -->
 Active session: 20261003T2337Z-49bb started 2026-10-03T23:37:32Z
-Current milestone: M4 (M0 web items blocked on npm)
+Current milestone: M5 (M0 web items blocked on npm)
 
 ## Plan for this session
 - M4-05 team-level needs (Understat team KPIs per 90, league percentiles, benchmark gap, mapped to responsible groups)
@@ -56,13 +56,24 @@ Current milestone: M4 (M0 web items blocked on npm)
 - [x] M4-02 `engines/diagnosis.py` group scores: minutes-weighted mean percentile per club x position group x KPI (weights = current-season minutes for that club), benchmark score, gap and need severity (PRD §8.8 steps 1-3) — hand-calculated tests
 - [x] M4-03 weak links + risk flags (depth, age, contract) with config thresholds (§8.8 steps 4-5)
 - [x] M4-04 Need/Evidence objects with source + as-of on every evidence row, team-level needs mapped to responsible groups (step 7), deterministic ranking; `scout diagnose --team` CLI — fixture end-to-end test (team-level part split out to M4-05)
-- [ ] M4-05 Team-level needs (§8.8 step 7): team KPIs per 90 from fact_team_match (Understat), league percentile per KPI (inverse flipped), club vs benchmark gap, mapped to `responsible_groups` and added to `Diagnosis.team_needs`; shown by `scout diagnose`
+- [x] M4-05 Team-level needs (§8.8 step 7): team KPIs per 90 from fact_team_match (Understat), league percentile per KPI (inverse flipped), club vs benchmark gap, mapped to `responsible_groups` and added to `Diagnosis.team_needs`; shown by `scout diagnose`
+
+### M5 Recommendation engine + ML
+- [ ] M5-01 `dsa/heap_topk.py` (bounded min-heap, O(n log k)) with complexity docstring + reference test vs `heapq.nlargest`/sorted, ties deterministic
+- [ ] M5-02 `engines/fit.py` pure FitScore components (NeedFill, RoleQuality, Reliability, StyleFit cosine, AgeProfile vs `peak_age`) + weighted total + upgrade gate (PRD §8.9) — hand-calculated tests; missing component renormalises, never 0
+- [ ] M5-03 Team style vectors (FotMob possession, PPDA, directness proxy) per club x season in SQL + pandas twin; config lists the style features
+- [ ] M5-04 `engines/recommend.py` candidate pool (need's group, other clubs, hard filters: max TM value, age range, min minutes, availability, exclude clubs), incumbent = club's minutes leader in the group, upgrade gate tag, heap top-k ranking, receipts (TM value + TM as-of, minutes, source); `scout recommend --team --need` — fixture integration test
+- [ ] M5-05 deps numpy + scikit-learn; `ml/similarity.py` cosine on standardised KPI-weighted vectors, top-k via heap_topk; `dsa/kdtree.py` + reference test; `scripts/bench_knn.py`
+- [ ] M5-06 `ml/roles.py` GMM on standardised per-90 vectors (≥ roles_min_minutes), k by BIC in [gmm_k_min, gmm_k_max], seeded; auto-labels from distinguishing features + rename map; silhouette + ARI stability across seeds
+- [ ] M5-07 `ml/value_model.py` HistGradientBoosting on log(TM value), time-based split, baseline median by position x age bucket, q10/q90 band, Undervalued/Fair/Premium label; artefacts + metadata JSON (window, features, metrics, git SHA)
+- [ ] M5-08 `scout train` writes models + metadata + `docs/EVALUATION.md` (value model vs baseline, GMM diagnostics, similarity examples) — fixture run in tests
 
 ## Done
 - M0-01, M0-02, M0-03 (2026-10-03); Python halves of M0-05/M0-06.
 - M1-01 to M1-08 (2026-10-03): all ingestion adapters plus `scout ingest`.
 - M2-01 to M2-07 (2026-10-03): warehouse, entity resolution, validation, `scout build`, `scout doctor`.
 - M3-01 to M3-04 (2026-10-03): per-90/blend/shrink/possession maths, player-season and possession-adjusted SQL, percentiles.
+- M3-05, M4-01 to M4-05 (2026-10-03): player_season_features, benchmark clubs, group scores and gaps, weak links, risks, ranked needs with receipts, team-level needs; `scout diagnose`.
 
 ## Blocked
 - **Package registries blocked in the cloud sandbox** (2026-10-03): pypi.org and registry.npmjs.org return `403 host_not_allowed` from the egress proxy, so `uv sync` / `npm ci` can't run. Python checks ran locally against preinstalled packages (ruff, pytest and mypy all pass apart from the missing typer/types-PyYAML imports). GitHub Actions CI is the authoritative check. M0-04/M0-05 (web scaffold, `package-lock.json`, FastAPI + OpenAPI) need npm/PyPI and wait until the owner allows those hosts. `uv.lock` isn't committed yet for the same reason; generate it once PyPI is reachable.
@@ -73,6 +84,8 @@ Current milestone: M4 (M0 web items blocked on npm)
 - Please allow `pypi.org`, `files.pythonhosted.org` and `registry.npmjs.org` (or the Trusted network level) in the routine's environment. Default until then: Python work verified via CI, web work paused.
 
 ## Decisions log (minor)
+- 2026-10-03: Owner now runs sessions from Claude Code on the web chats instead of hourly routines. The chat harness assigns a session branch (e.g. `claude/dazzling-carson-knix23`); work still lands on `main` (CLAUDE.md locked decision, and commits only count on the contribution graph once they're on the default branch), and the session branch is kept pointing at the same commit. Commits stay authored as Yengnong Xiong.
+- 2026-10-03: Team-level needs (PRD §8.8 step 7): team KPIs come from Understat `fact_team_match` via `db/sql/team_season.sql` (per-column totals and match counts, so a missing value counts in neither). Counting stats are per 90; PPDA / PPDA allowed are the mean of per-match ratios (season totals of passes and defensive actions aren't in the source). Blended mode reuses `features/blend.py` with team minutes (matches with data x 90), the same λ and previous-season cap as players. League percentiles use PERCENT_RANK semantics among this season's clubs; gap = benchmark mean percentile − club percentile; only shortfalls become needs. Team needs are attached to their `responsible_groups` as context and do not change group severity (steps 1-3 stay player-KPI based). `kpis.yaml` team KPIs gained `column` and `aggregate`.
 - 2026-10-03: Owner asked to stop the CI-failure emails. Added `.github/workflows/preflight.yml` (workflow_dispatch; applies a gzip+base64 patch to a base SHA, runs ruff/format/mypy/pytest/CLI smoke, reports PASSED/FAILED in the log and always exits 0) plus `scripts/preflight_patch.sh`. Code reaches `main` only after preflight passes; `ci.yml` is unchanged and still strict. CLAUDE.md work loop updated.
 - 2026-10-03: Warehouse fact tables are long by source (unique on entity × match × source), so each stored value has exactly one source and fetched_at. Initial Alembic migration is hand-written, and a test checks it against the models with `compare_metadata`. Dependencies: sqlalchemy, alembic (MIT); rapidfuzz (MIT) for the Levenshtein reference test and fuzzy matching.
 - 2026-10-03: Transfermarkt goes through the owner's self-hosted felipeall/transfermarkt-api (base URL in config, default :8001). TM club ids are resolved by search against club names and aliases (no hardcoded ids). `tm_last_updated` = date of the latest market-value history point; a value with no history point is treated as missing (no receipt). Dependency: unidecode (GPL-2.0+; local, non-distributed use is fine) for name normalisation.

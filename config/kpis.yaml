@@ -139,49 +139,69 @@ position_groups:
       goals_minus_xg_p90: 0.0
 
 # PRD §8.7 team KPIs; §8.8 step 7 maps team-level needs to the most responsible groups.
+# `column` is the fact_team_match column; `aggregate` is per90 (season total per 90) or
+# match_mean (mean of per-match values, for ratios like PPDA that can't be summed).
 team_kpis:
   xg_p90:
     label: "xG for (per 90)"
     source: understat
+    column: xg
+    aggregate: per90
     higher_is_better: true
     responsible_groups: [ST, W, AM]
   xga_p90:
     label: "xG against (per 90)"
     source: understat
+    column: xga
+    aggregate: per90
     higher_is_better: false
     responsible_groups: [CB, DM, FB]
   ppda:
     label: "PPDA (lower = more intense pressing)"
     source: understat
+    column: ppda
+    aggregate: match_mean
     higher_is_better: false
     responsible_groups: [ST, W, CM]
   ppda_allowed:
     label: "PPDA allowed (higher = press resistance)"
     source: understat
+    column: ppda_allowed
+    aggregate: match_mean
     higher_is_better: true
     responsible_groups: [CB, DM, CM]
   deep_p90:
     label: "Deep completions for (per 90)"
     source: understat
+    column: deep
+    aggregate: per90
     higher_is_better: true
     responsible_groups: [AM, W, FB]
   deep_allowed_p90:
     label: "Deep completions against (per 90)"
     source: understat
+    column: deep_allowed
+    aggregate: per90
     higher_is_better: false
     responsible_groups: [DM, CB, FB]
   set_piece_xg_p90:
     label: "Set-piece xG for (per 90)"
     source: understat
+    column: set_piece_xg
+    aggregate: per90
     higher_is_better: true
     responsible_groups: [CB, ST]
   set_piece_xga_p90:
     label: "Set-piece xG against (per 90)"
     source: understat
+    column: set_piece_xga
+    aggregate: per90
     higher_is_better: false
     responsible_groups: [CB, DM]
   open_play_xga_p90:
     label: "Open-play xG against (per 90)"
     source: understat
+    column: open_play_xga
+    aggregate: per90
     higher_is_better: false
     responsible_groups: [CB, DM, FB]
