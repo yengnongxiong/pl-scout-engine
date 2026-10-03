@@ -32,7 +32,7 @@ Current milestone: M2 (M0 web items blocked on npm)
 
 ### M2 Warehouse
 - [x] M2-01 `dsa/union_find.py` + `dsa/levenshtein.py` (DP; agrees with rapidfuzz) with complexity docstrings and reference tests
-- [ ] M2-02 `db/models.py` SQLAlchemy 2.0 star schema (PRD §11) + `db/session.py` + Alembic initial migration — create_all and `alembic upgrade head` on SQLite in tests
+- [x] M2-02 `db/models.py` SQLAlchemy 2.0 star schema (PRD §11) + `db/session.py` + Alembic initial migration — create_all and `alembic upgrade head` on SQLite in tests
 - [ ] M2-03 `transform/validate.py` pandera schemas per staged table + validation report; `transform/clean.py` name normalisation
 - [ ] M2-04 `transform/entity_resolution.py`: club blocking, unidecode, fuzzy match, DOB confirm, overrides CSV, union-find merge, unresolved → entity_map_review — coverage report
 - [ ] M2-05 `db/load.py` loaders (dims/facts, idempotent upserts) + `source_snapshot` freshness rows
@@ -52,6 +52,7 @@ Current milestone: M2 (M0 web items blocked on npm)
 - Please allow `pypi.org`, `files.pythonhosted.org` and `registry.npmjs.org` (or the Trusted network level) in the routine's environment. Default until then: Python work verified via CI, web work paused.
 
 ## Decisions log (minor)
+- 2026-10-03: Warehouse fact tables are long by source (unique on entity × match × source), so each stored value has exactly one source and fetched_at. Initial Alembic migration is hand-written, and a test checks it against the models with `compare_metadata`. Dependencies: sqlalchemy, alembic (MIT); rapidfuzz (MIT) for the Levenshtein reference test and fuzzy matching.
 - 2026-10-03: Transfermarkt goes through the owner's self-hosted felipeall/transfermarkt-api (base URL in config, default :8001). TM club ids are resolved by search against club names and aliases (no hardcoded ids). `tm_last_updated` = date of the latest market-value history point; a value with no history point is treated as missing (no receipt). Dependency: unidecode (GPL-2.0+; local, non-distributed use is fine) for name normalisation.
 - 2026-10-03: Understat is fetched through soccerdata (PRD §10.1) and snapshotted as CSV. npxG per match = xG minus penalty-shot xG from shot events, because player-match rows carry no npxG. Set-piece = From Corner / Set Piece / Direct Freekick. Third-party fetchers call `PoliteClient.throttle()` so they still respect rate limits and budgets. Dependency: soccerdata (Apache-2.0), with a mypy override because it is untyped.
 - 2026-10-03: Dependencies: httpx (HTTP), tenacity (retries with backoff), pandas (DataFrames), pandas-stubs (typing). All BSD/Apache.
