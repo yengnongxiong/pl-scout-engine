@@ -45,3 +45,8 @@ def defensive_padj_totals(
 def kpi_percentiles(engine: Engine, *, min_minutes: float) -> pd.DataFrame:
     """Position-group percentiles over the ``kpi_values`` table (``percentiles.sql``)."""
     return run_sql(engine, "percentiles", {"min_minutes": min_minutes})
+
+
+def standings(engine: Engine, season_id: str) -> pd.DataFrame:
+    """League table for ``season_id`` from scored matches (``standings.sql``)."""
+    return run_sql(engine, "standings", {"season_id": season_id})

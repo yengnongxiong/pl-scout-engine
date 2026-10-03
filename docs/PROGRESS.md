@@ -1,7 +1,7 @@
 # Progress
 Status: IN_PROGRESS            <!-- IN_PROGRESS or COMPLETE -->
 Active session: 20261003T2032Z-df3b started 2026-10-03T20:32:35Z
-Current milestone: M3 (M0 web items blocked on npm)
+Current milestone: M4 (M0 web items blocked on npm)
 
 ## Plan for this session
 - Add a preflight workflow (patch-based remote checks that never fail the run) so main only gets verified pushes and the owner stops getting CI failure emails
@@ -50,6 +50,12 @@ Current milestone: M3 (M0 web items blocked on npm)
   - Design notes (next session): store long format `player_season_features(player_id, season_mode, position_group, kpi, raw_p90, value, shrunk, percentile, n_peers, minutes, blended_minutes, is_proxy, padj_status, source, as_of)` unique (player_id, season_mode, kpi), via migration 0002 (extend the compare_metadata test). KPI sources: `fpl` = current `fpl` rows + previous-season `vaastav` rows; `understat` = both seasons. Per-90 uses each source's own minutes. Defensive KPIs come from `defensive_padj.sql`; `def_activity` = tackles + recoveries, plus CBI for the groups listed in a new `kpis.yaml` key (`def_activity_includes_cbi_groups: [CB, FB]`, PRD §7.2). `cards` = yellow + red. `npxg_per_shot` = npxg / shots (not per 90). Blend with `features/blend.py` (lambda, cap from config), shrink toward the minutes-weighted group mean of blended rates (k from KPI or default), then percentiles on shrunk values among blended minutes ≥ `percentile_min_minutes`. season_mode ∈ {blended, current}.
 - M0-01, M0-02, M0-03 (2026-10-03); Python halves of M0-05/M0-06.
 - M1-01 to M1-04 (2026-10-03).
+
+### M4 Diagnosis engine
+- [x] M4-01 `db/sql/standings.sql` (points/GD/GF, RANK window) + pandas twin; `engines/benchmark.py` picks benchmark clubs (top6/top4/league/custom, excluding the selected club; sizes in config)
+- [ ] M4-02 `engines/diagnosis.py` group scores: minutes-weighted mean percentile per club x position group x KPI (weights = current-season minutes for that club), benchmark score, gap and need severity (PRD §8.8 steps 1-3) — hand-calculated tests
+- [ ] M4-03 weak links + risk flags (depth, age, contract) with config thresholds (§8.8 steps 4-5)
+- [ ] M4-04 Need/Evidence objects with source + as-of on every evidence row, team-level needs mapped to responsible groups (step 7), deterministic ranking; `scout diagnose --team` CLI — fixture end-to-end test
 
 ## Done
 - M0-01, M0-02, M0-03 (2026-10-03); Python halves of M0-05/M0-06.

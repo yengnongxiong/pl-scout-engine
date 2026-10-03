@@ -69,6 +69,7 @@ class DiagnosisConfig(_Strict):
     """PRD §8.8 diagnosis thresholds."""
 
     default_benchmark: Literal["top6", "top4", "league", "custom"]
+    benchmark_sizes: dict[Literal["top6", "top4"], int]
     weak_link_min_minutes_share: float = Field(ge=0.0, le=1.0)
     weak_link_max_percentile: float = Field(ge=0.0, le=100.0)
     weak_link_min_kpi_weight: float = Field(ge=0.0, le=1.0)

@@ -19,6 +19,10 @@ methodology:
 diagnosis:
   # PRD §8.8
   default_benchmark: top6          # top6 | top4 | league | custom
+  # Number of clubs from the top of last season's table for each benchmark.
+  benchmark_sizes:
+    top6: 6
+    top4: 4
   weak_link_min_minutes_share: 0.40
   weak_link_max_percentile: 30
   weak_link_min_kpi_weight: 0.20
