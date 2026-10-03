@@ -1,7 +1,7 @@
 # Progress
 Status: IN_PROGRESS            <!-- IN_PROGRESS or COMPLETE -->
 Active session: 20261003T1947Z-9149 started 2026-10-03T19:47:47Z
-Current milestone: M0
+Current milestone: M2 (M0 web items blocked on npm)
 
 ## Plan for this session
 - M1-05 Understat adapter (soccerdata-backed fetch, CSV snapshots, schema-validated parse)
@@ -29,6 +29,15 @@ Current milestone: M0
 - [x] M1-07a Transfermarkt live adapter via self-hosted transfermarkt-api: club search by name/alias, squads, market value with TM as-of = latest history point, position/DOB/contract; value/date parsers — contract tests
 - [x] M1-07b transfermarkt-datasets snapshot fallback (source=snapshot, is_stale=True) + market_value_overrides.csv loader (source=override, reason + date required) — tests
 - [x] M1-08 StatsBomb open-data loader (dev) + `scout ingest --source` CLI wiring with per-session request caps
+
+### M2 Warehouse
+- [x] M2-01 `dsa/union_find.py` + `dsa/levenshtein.py` (DP; agrees with rapidfuzz) with complexity docstrings and reference tests
+- [ ] M2-02 `db/models.py` SQLAlchemy 2.0 star schema (PRD §11) + `db/session.py` + Alembic initial migration — create_all and `alembic upgrade head` on SQLite in tests
+- [ ] M2-03 `transform/validate.py` pandera schemas per staged table + validation report; `transform/clean.py` name normalisation
+- [ ] M2-04 `transform/entity_resolution.py`: club blocking, unidecode, fuzzy match, DOB confirm, overrides CSV, union-find merge, unresolved → entity_map_review — coverage report
+- [ ] M2-05 `db/load.py` loaders (dims/facts, idempotent upserts) + `source_snapshot` freshness rows
+- [ ] M2-06 `scout build` raw → validated → warehouse with `--allow-invalid` (logged); fixture end-to-end integration test; a validation failure stops the build
+- [ ] M2-07 `scout doctor`: freshness, coverage, validation status, missing FPL fields
 
 ## Done
 - M0-01, M0-02, M0-03 (2026-10-03); Python halves of M0-05/M0-06.

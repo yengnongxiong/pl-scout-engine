@@ -79,10 +79,10 @@ def club_aliases(
             index[normalise_name(name)] = canonical
     out: dict[str, list[str]] = {}
     for club in club_names:
-        canonical = index.get(normalise_name(club))
+        matched = index.get(normalise_name(club))
         spellings = [club]
-        if canonical is not None:
-            spellings += [canonical, *aliases[canonical]]
+        if matched is not None:
+            spellings += [matched, *aliases[matched]]
         out[club] = list(dict.fromkeys(s for s in spellings if s != club))
     return out
 
