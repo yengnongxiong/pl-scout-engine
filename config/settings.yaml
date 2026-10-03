@@ -31,6 +31,8 @@ ingest:
   base_urls:
     fpl: "https://fantasy.premierleague.com/api/"
     vaastav: "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/master/data/"
+  # FotMob possession shares of a match must sum to 1 within this tolerance.
+  possession_sum_tolerance: 0.02
   # Past seasons pulled from the vaastav archive, counted back from the current season.
   history_seasons_back: 3
   user_agent: "pl-scout-engine/0.1 (personal, non-commercial research project)"

@@ -23,7 +23,7 @@ Current milestone: M0
 - [x] M1-02 `ingest/base.py`: SourceAdapter ABC, raw snapshot store (timestamped, checksum), TTL cache, polite httpx client (User-Agent, token bucket, tenacity retries, interstitial detection) — unit tests with mocked transport
 - [x] M1-03 FPL adapter: bootstrap-static + element-summary + fixtures parse to validated DataFrames keyed on `code`; season derived from events; trimmed synthetic fixtures; contract + schema-changed tests
 - [x] M1-04 vaastav history adapter (per-gameweek CSV) with fixture contract tests
-- [ ] M1-05 Understat adapter (player match, team match incl. PPDA/deep) via soccerdata, fixture contract tests
+- [x] M1-05 Understat adapter (player match, team match incl. PPDA/deep) via soccerdata, fixture contract tests
   - Note: understat.com is probably blocked here and PyPI is blocked, so soccerdata's current output schema can't be checked live. Build synthetic fixtures from soccerdata's documented `read_player_match_stats` / `read_team_match_stats` columns, parse defensively (required vs optional columns), and add a line to Questions asking the owner to run one live fetch.
 - [ ] M1-06 FotMob possession adapter, fixture contract tests
 - [ ] M1-07 Transfermarkt adapter (value + TM last-updated, position, DOB, contract) + snapshot fallback labelled stale + overrides; interstitial = failure
