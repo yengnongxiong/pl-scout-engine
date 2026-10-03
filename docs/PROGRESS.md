@@ -1,10 +1,11 @@
 # Progress
 Status: IN_PROGRESS            <!-- IN_PROGRESS or COMPLETE -->
-Active session: none
+Active session: 20261003T2032Z-df3b started 2026-10-03T20:32:35Z
 Current milestone: M3 (M0 web items blocked on npm)
 
 ## Plan for this session
-(none: no session active)
+- Add a preflight workflow (patch-based remote checks that never fail the run) so main only gets verified pushes and the owner stops getting CI failure emails
+- M3-05 materialise player_season_features
 
 ## Task queue (current milestone)
 - [x] M0-01 Apply ADR-0001 edits to PRD, bump to v1.1 + changelog — PRD diff matches ADR list
