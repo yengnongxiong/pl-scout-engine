@@ -25,8 +25,9 @@ Current milestone: M0
 - [x] M1-04 vaastav history adapter (per-gameweek CSV) with fixture contract tests
 - [x] M1-05 Understat adapter (player match, team match incl. PPDA/deep) via soccerdata, fixture contract tests
   - Note: understat.com is probably blocked here and PyPI is blocked, so soccerdata's current output schema can't be checked live. Build synthetic fixtures from soccerdata's documented `read_player_match_stats` / `read_team_match_stats` columns, parse defensively (required vs optional columns), and add a line to Questions asking the owner to run one live fetch.
-- [ ] M1-06 FotMob possession adapter, fixture contract tests
-- [ ] M1-07 Transfermarkt adapter (value + TM last-updated, position, DOB, contract) + snapshot fallback labelled stale + overrides; interstitial = failure
+- [x] M1-06 FotMob possession adapter, fixture contract tests
+- [x] M1-07a Transfermarkt live adapter via self-hosted transfermarkt-api: club search by name/alias, squads, market value with TM as-of = latest history point, position/DOB/contract; value/date parsers — contract tests
+- [ ] M1-07b transfermarkt-datasets snapshot fallback (source=snapshot, is_stale=True) + market_value_overrides.csv loader (source=override, reason + date required) — tests
 - [ ] M1-08 StatsBomb open-data loader (dev) + `scout ingest --source` CLI wiring with per-session request caps
 
 ## Done
@@ -40,6 +41,7 @@ Current milestone: M0
 - Please allow `pypi.org`, `files.pythonhosted.org` and `registry.npmjs.org` (or the Trusted network level) in the routine's environment. Default until then: Python work verified via CI, web work paused.
 
 ## Decisions log (minor)
+- 2026-10-03: Transfermarkt goes through the owner's self-hosted felipeall/transfermarkt-api (base URL in config, default :8001). TM club ids are resolved by search against club names and aliases (no hardcoded ids). `tm_last_updated` = date of the latest market-value history point; a value with no history point is treated as missing (no receipt). Dependency: unidecode (GPL-2.0+; local, non-distributed use is fine) for name normalisation.
 - 2026-10-03: Understat is fetched through soccerdata (PRD §10.1) and snapshotted as CSV. npxG per match = xG minus penalty-shot xG from shot events, because player-match rows carry no npxG. Set-piece = From Corner / Set Piece / Direct Freekick. Third-party fetchers call `PoliteClient.throttle()` so they still respect rate limits and budgets. Dependency: soccerdata (Apache-2.0), with a mypy override because it is untyped.
 - 2026-10-03: Dependencies: httpx (HTTP), tenacity (retries with backoff), pandas (DataFrames), pandas-stubs (typing). All BSD/Apache.
 - 2026-10-03: Started M1 Python tasks before M0 is fully done, because the remaining M0 items (web scaffold, contract job) are blocked on npm egress. Resume M0-04/05/06 first once npm is reachable.

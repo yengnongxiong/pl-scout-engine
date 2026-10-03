@@ -30,6 +30,8 @@ diagnosis:
 ingest:
   base_urls:
     fpl: "https://fantasy.premierleague.com/api/"
+    # Self-hosted felipeall/transfermarkt-api (run locally; port 8001 avoids the scout API).
+    transfermarkt: "http://localhost:8001/"
     vaastav: "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/master/data/"
   # FotMob possession shares of a match must sum to 1 within this tolerance.
   possession_sum_tolerance: 0.02

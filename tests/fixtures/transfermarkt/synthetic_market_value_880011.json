@@ -1,0 +1,21 @@
+{
+ "id": "880011",
+ "marketValue": 32000000,
+ "marketValueHistory": [
+  {
+   "age": 26,
+   "date": "2024-12-17",
+   "clubId": "99001",
+   "clubName": "Synthetic Rovers",
+   "value": 25000000
+  },
+  {
+   "age": 28,
+   "date": "2026-06-10",
+   "clubId": "99001",
+   "clubName": "Synthetic Rovers",
+   "value": 32000000
+  }
+ ],
+ "updatedAt": "2026-09-01T08:00:05"
+}

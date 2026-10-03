@@ -1,0 +1,32 @@
+{
+ "id": "99001",
+ "players": [
+  {
+   "id": "880011",
+   "name": "Alex Testman",
+   "position": "Centre-Back",
+   "dateOfBirth": "1998-03-14",
+   "age": 28,
+   "nationality": [
+    "England"
+   ],
+   "contract": "2028-06-30",
+   "marketValue": 32000000,
+   "status": ""
+  },
+  {
+   "id": "880013",
+   "name": "Cy Benchley",
+   "position": "Central Midfield",
+   "dateOfBirth": null,
+   "age": null,
+   "nationality": [
+    "Wales"
+   ],
+   "contract": null,
+   "marketValue": null,
+   "status": ""
+  }
+ ],
+ "updatedAt": "2026-09-01T08:00:00"
+}

@@ -1,0 +1,23 @@
+{
+ "query": "Synthetic Rovers",
+ "pageNumber": 1,
+ "lastPageNumber": 1,
+ "results": [
+  {
+   "id": "99001",
+   "url": "/synthetic-rovers/startseite/verein/99001",
+   "name": "Synthetic Rovers",
+   "country": "England",
+   "squad": 25,
+   "marketValue": 500000000
+  },
+  {
+   "id": "99009",
+   "url": "/synthetic-rovers-u21/startseite/verein/99009",
+   "name": "Synthetic Rovers U21",
+   "country": "England",
+   "squad": 30,
+   "marketValue": 1000000
+  }
+ ]
+}
