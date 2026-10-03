@@ -40,6 +40,7 @@ Current milestone: M0
 - Please allow `pypi.org`, `files.pythonhosted.org` and `registry.npmjs.org` (or the Trusted network level) in the routine's environment. Default until then: Python work verified via CI, web work paused.
 
 ## Decisions log (minor)
+- 2026-10-03: Understat is fetched through soccerdata (PRD §10.1) and snapshotted as CSV. npxG per match = xG minus penalty-shot xG from shot events, because player-match rows carry no npxG. Set-piece = From Corner / Set Piece / Direct Freekick. Third-party fetchers call `PoliteClient.throttle()` so they still respect rate limits and budgets. Dependency: soccerdata (Apache-2.0), with a mypy override because it is untyped.
 - 2026-10-03: Dependencies: httpx (HTTP), tenacity (retries with backoff), pandas (DataFrames), pandas-stubs (typing). All BSD/Apache.
 - 2026-10-03: Started M1 Python tasks before M0 is fully done, because the remaining M0 items (web scaffold, contract job) are blocked on npm egress. Resume M0-04/05/06 first once npm is reachable.
 - 2026-10-03: `config/kpis.yaml` defines each KPI once under `kpis:` and position groups reference KPI ids with weights (PRD §8.7 shape, deduplicated). Validated: weights sum to 1, proxies need `proxy_for`.

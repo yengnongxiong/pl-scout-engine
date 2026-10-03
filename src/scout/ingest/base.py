@@ -165,13 +165,21 @@ class PoliteClient:
                     details={"status": response.status_code, "marker": marker},
                 )
 
-    def _attempt(self, url: str, params: dict[str, str] | None) -> httpx.Response:
+    def throttle(self) -> None:
+        """Spend one request from the budget and wait for the rate limiter.
+
+        Used before calls made by third-party fetchers (e.g. ``soccerdata``) that do their
+        own HTTP, so they still respect this source's rate limit and per-run budget.
+        """
         if self._max_requests is not None and self.requests_made >= self._max_requests:
             raise SourceUnavailableError(
                 f"{self.source}: request budget of {self._max_requests} exhausted"
             )
         self._bucket.acquire()
         self.requests_made += 1
+
+    def _attempt(self, url: str, params: dict[str, str] | None) -> httpx.Response:
+        self.throttle()
         try:
             response = self._client.get(url, params=params)
         except httpx.TransportError as exc:
