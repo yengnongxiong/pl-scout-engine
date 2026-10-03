@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# Env
+.env
+
+# Data (never commit scraped data; overrides are committed)
+data/*
+!data/overrides/
+!data/overrides/**
+
+# Node
+node_modules/
+web/dist/
+web/coverage/
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/

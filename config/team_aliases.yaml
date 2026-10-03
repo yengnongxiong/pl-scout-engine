@@ -1,0 +1,27 @@
+# Club name aliases used for search and cross-source matching.
+# Membership of the current season comes from FPL bootstrap-static, never from this file.
+# Keys are canonical club names; values are alternative spellings seen across sources.
+aliases:
+  "Arsenal": ["Arsenal FC", "The Gunners"]
+  "Aston Villa": ["Villa", "Aston Villa FC"]
+  "AFC Bournemouth": ["Bournemouth", "Cherries"]
+  "Brentford": ["Brentford FC"]
+  "Brighton & Hove Albion": ["Brighton", "Brighton and Hove Albion"]
+  "Burnley": ["Burnley FC"]
+  "Chelsea": ["Chelsea FC"]
+  "Crystal Palace": ["Palace", "Crystal Palace FC"]
+  "Everton": ["Everton FC", "Toffees"]
+  "Fulham": ["Fulham FC"]
+  "Ipswich Town": ["Ipswich"]
+  "Leeds United": ["Leeds"]
+  "Leicester City": ["Leicester"]
+  "Liverpool": ["Liverpool FC"]
+  "Manchester City": ["Man City", "Man. City", "Manchester City FC"]
+  "Manchester United": ["Man Utd", "Man United", "Manchester Utd", "Man. United"]
+  "Newcastle United": ["Newcastle", "Newcastle Utd"]
+  "Nottingham Forest": ["Nott'm Forest", "Nottm Forest", "Forest"]
+  "Southampton": ["Southampton FC", "Saints"]
+  "Sunderland": ["Sunderland AFC"]
+  "Tottenham Hotspur": ["Tottenham", "Spurs"]
+  "West Ham United": ["West Ham"]
+  "Wolverhampton Wanderers": ["Wolves", "Wolverhampton"]

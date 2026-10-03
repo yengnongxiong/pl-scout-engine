@@ -1,0 +1,20 @@
+# PRD §8.9 recommendation FitScore weights (must sum to 1.0).
+components:
+  need_fill: 0.40
+  role_quality: 0.25
+  reliability: 0.15
+  style_fit: 0.10
+  age_profile: 0.10
+
+# Candidate must beat the incumbent on NeedFill by at least this many percentile points.
+upgrade_gate_min_delta: 15
+
+# Peak-age window per position group (AgeProfile). Expert-set starting points.
+peak_age:
+  CB: [26, 30]
+  FB: [24, 28]
+  DM: [25, 29]
+  CM: [24, 29]
+  AM: [24, 28]
+  W: [23, 27]
+  ST: [24, 29]

@@ -1,0 +1,54 @@
+# Engine-wide settings. Every threshold here is referenced by PRD section.
+# Environment variables (prefix SCOUT_) override paths; see .env.example.
+
+methodology:
+  # PRD §8.2 season blending
+  blend_lambda: 0.5
+  prev_season_minutes_cap: 2000
+  # PRD §8.3 empirical-Bayes shrinkage: default stabilisation constant k (in 90s);
+  # per-KPI overrides live in kpis.yaml (`shrinkage_k`).
+  default_shrinkage_k: 10.0
+  # PRD §8.4 possession adjustment multiplier clip range
+  possession_multiplier_min: 0.67
+  possession_multiplier_max: 1.5
+  # PRD §8.6 percentile peer threshold (blended minutes)
+  percentile_min_minutes: 600
+  # PRD §8.10 GMM role archetypes
+  roles_min_minutes: 900
+
+diagnosis:
+  # PRD §8.8
+  default_benchmark: top6          # top6 | top4 | league | custom
+  weak_link_min_minutes_share: 0.40
+  weak_link_max_percentile: 30
+  weak_link_min_kpi_weight: 0.20
+  depth_single_player_share: 0.80
+  depth_backup_min_percentile: 40
+  age_risk_min_weighted_age: 30
+  contract_risk_months: 12
+
+ingest:
+  user_agent: "pl-scout-engine/0.1 (personal, non-commercial research project)"
+  cache_ttl_hours: 12
+  max_retries: 3
+  # Requests per second per source (token bucket). Transfermarkt ≤ 1 request / 3 s (PRD §14).
+  rate_limits:
+    fpl: 1.0
+    understat: 0.5
+    fotmob: 0.5
+    transfermarkt: 0.333
+    vaastav: 1.0
+    statsbomb: 1.0
+
+ml:
+  seed: 42
+  gmm_k_min: 6
+  gmm_k_max: 12
+
+reports:
+  # PRD §9 percentile bands (lower bounds, inclusive)
+  bands:
+    elite: 90
+    strong: 75
+    above_average: 50
+    below_average: 25

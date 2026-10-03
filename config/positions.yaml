@@ -1,0 +1,23 @@
+# PRD §8.5: Transfermarkt detailed position → position group.
+# GK is stretch S2 and is not mapped to an outfield group.
+groups: [CB, FB, DM, CM, AM, W, ST]
+
+transfermarkt:
+  "Centre-Back": CB
+  "Left-Back": FB
+  "Right-Back": FB
+  "Defensive Midfield": DM
+  "Central Midfield": CM
+  "Attacking Midfield": AM
+  "Left Midfield": W
+  "Right Midfield": W
+  "Left Winger": W
+  "Right Winger": W
+  "Second Striker": ST
+  "Centre-Forward": ST
+
+# Fallback when only the FPL element type is known (coarse; flagged in the UI).
+fpl_element_type_fallback:
+  DEF: CB
+  MID: CM
+  FWD: ST

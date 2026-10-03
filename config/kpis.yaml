@@ -1,0 +1,183 @@
+# PRD §8.7 KPI catalogue. Each KPI is defined once in `kpis`; position groups reference
+# KPI ids with weights (weights per group must sum to 1.0, PRD §8.7).
+# `is_proxy: true` KPIs must say what they stand in for (PRD §7.2) and are badged in the UI.
+# `possession_adjusted: true` KPIs use PRD §8.4 when possession exists, else flagged "unadjusted".
+# `shrinkage_k` (optional) overrides methodology.default_shrinkage_k (PRD §8.3).
+
+kpis:
+  def_activity_padj_p90:
+    label: "Defensive activity, possession-adjusted (per 90)"
+    source: fpl
+    higher_is_better: true
+    is_proxy: true
+    proxy_for: "player-level pressing (pressure counts are not freely available)"
+    possession_adjusted: true
+  cbi_padj_p90:
+    label: "Clearances, blocks & interceptions, possession-adjusted (per 90)"
+    source: fpl
+    higher_is_better: true
+    is_proxy: false
+    possession_adjusted: true
+  recoveries_padj_p90:
+    label: "Recoveries, possession-adjusted (per 90)"
+    source: fpl
+    higher_is_better: true
+    is_proxy: false
+    possession_adjusted: true
+  tackles_padj_p90:
+    label: "Tackles, possession-adjusted (per 90)"
+    source: fpl
+    higher_is_better: true
+    is_proxy: false
+    possession_adjusted: true
+  xgc_on_pitch_p90:
+    label: "xG conceded while on pitch (per 90)"
+    source: fpl
+    higher_is_better: false
+    is_proxy: false
+  cards_p90:
+    label: "Cards (per 90)"
+    source: fpl
+    higher_is_better: false
+    is_proxy: false
+  xg_buildup_p90:
+    label: "Build-up involvement (xGBuildup per 90)"
+    source: understat
+    higher_is_better: true
+    is_proxy: true
+    proxy_for: "ball progression (progressive passes need event data)"
+  xg_chain_p90:
+    label: "Possession involvement (xGChain per 90)"
+    source: understat
+    higher_is_better: true
+    is_proxy: true
+    proxy_for: "ball progression (progressive passes need event data)"
+  xa_p90:
+    label: "Expected assists (Understat xA per 90)"
+    source: understat
+    higher_is_better: true
+    is_proxy: false
+  npxg_p90:
+    label: "Non-penalty xG (per 90)"
+    source: understat
+    higher_is_better: true
+    is_proxy: false
+  key_passes_p90:
+    label: "Key passes (per 90)"
+    source: understat
+    higher_is_better: true
+    is_proxy: false
+  shots_p90:
+    label: "Shots (per 90)"
+    source: understat
+    higher_is_better: true
+    is_proxy: false
+  npxg_per_shot:
+    label: "Non-penalty xG per shot"
+    source: understat
+    higher_is_better: true
+    is_proxy: false
+  goals_minus_xg_p90:
+    label: "Goals minus xG (per 90; shown, not weighted: finishing is noisy)"
+    source: understat
+    higher_is_better: true
+    is_proxy: false
+
+position_groups:
+  CB:
+    weights:
+      def_activity_padj_p90: 0.30
+      cbi_padj_p90: 0.20
+      xg_buildup_p90: 0.25
+      xgc_on_pitch_p90: 0.20
+      cards_p90: 0.05
+  FB:
+    weights:
+      xa_p90: 0.25
+      xg_chain_p90: 0.20
+      xg_buildup_p90: 0.15
+      def_activity_padj_p90: 0.25
+      xgc_on_pitch_p90: 0.15
+  DM:
+    weights:
+      recoveries_padj_p90: 0.25
+      tackles_padj_p90: 0.20
+      xg_buildup_p90: 0.30
+      xgc_on_pitch_p90: 0.15
+      cards_p90: 0.10
+  CM:
+    weights:
+      xg_buildup_p90: 0.25
+      xg_chain_p90: 0.20
+      xa_p90: 0.20
+      def_activity_padj_p90: 0.20
+      npxg_p90: 0.15
+  AM:
+    weights:
+      xa_p90: 0.30
+      key_passes_p90: 0.25
+      npxg_p90: 0.25
+      xg_chain_p90: 0.20
+  W:
+    weights:
+      npxg_p90: 0.25
+      xa_p90: 0.25
+      shots_p90: 0.15
+      key_passes_p90: 0.15
+      xg_chain_p90: 0.20
+  ST:
+    weights:
+      npxg_p90: 0.40
+      shots_p90: 0.20
+      npxg_per_shot: 0.15
+      xa_p90: 0.10
+      xg_chain_p90: 0.15
+      goals_minus_xg_p90: 0.0
+
+# PRD §8.7 team KPIs; §8.8 step 7 maps team-level needs to the most responsible groups.
+team_kpis:
+  xg_p90:
+    label: "xG for (per 90)"
+    source: understat
+    higher_is_better: true
+    responsible_groups: [ST, W, AM]
+  xga_p90:
+    label: "xG against (per 90)"
+    source: understat
+    higher_is_better: false
+    responsible_groups: [CB, DM, FB]
+  ppda:
+    label: "PPDA (lower = more intense pressing)"
+    source: understat
+    higher_is_better: false
+    responsible_groups: [ST, W, CM]
+  ppda_allowed:
+    label: "PPDA allowed (higher = press resistance)"
+    source: understat
+    higher_is_better: true
+    responsible_groups: [CB, DM, CM]
+  deep_p90:
+    label: "Deep completions for (per 90)"
+    source: understat
+    higher_is_better: true
+    responsible_groups: [AM, W, FB]
+  deep_allowed_p90:
+    label: "Deep completions against (per 90)"
+    source: understat
+    higher_is_better: false
+    responsible_groups: [DM, CB, FB]
+  set_piece_xg_p90:
+    label: "Set-piece xG for (per 90)"
+    source: understat
+    higher_is_better: true
+    responsible_groups: [CB, ST]
+  set_piece_xga_p90:
+    label: "Set-piece xG against (per 90)"
+    source: understat
+    higher_is_better: false
+    responsible_groups: [CB, DM]
+  open_play_xga_p90:
+    label: "Open-play xG against (per 90)"
+    source: understat
+    higher_is_better: false
+    responsible_groups: [CB, DM, FB]
