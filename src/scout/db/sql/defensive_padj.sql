@@ -1,6 +1,6 @@
 -- Possession-adjusted defensive totals per player x season x club x source (PRD §8.4).
--- Each match is scaled by :even_share / opponent possession share, clipped to
--- [:clip_min, :clip_max]. Matches without possession keep the raw value and are counted
+-- Each match is scaled by even_share / opponent possession share, clipped to
+-- [clip_min, clip_max]. Matches without possession keep the raw value and are counted
 -- in unadjusted_matches so the KPI can be flagged "unadjusted" (CLAUDE.md rule 9).
 WITH player_matches AS (
     SELECT

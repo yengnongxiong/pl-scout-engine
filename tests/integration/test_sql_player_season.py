@@ -82,3 +82,13 @@ def test_totals_keep_source_specific_nulls(
 def test_unknown_sql_file() -> None:
     with pytest.raises(ConfigError):
         load_sql("does_not_exist")
+
+
+def test_sql_comments_do_not_declare_bind_parameters() -> None:
+    import re
+
+    sql_dir = PROJECT_ROOT / "src" / "scout" / "db" / "sql"
+    for path in sql_dir.glob("*.sql"):
+        for line in path.read_text().splitlines():
+            if line.lstrip().startswith("--"):
+                assert not re.search(r"(?<!:):[a-z_]+", line), f"{path.name}: {line}"

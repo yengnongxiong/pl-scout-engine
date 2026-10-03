@@ -1,5 +1,5 @@
 -- Within-position-group percentiles (PRD §8.6), 0-100, higher always better.
--- Only players meeting :min_minutes with a known value are ranked; n_peers is exposed
+-- Only players meeting min_minutes with a known value are ranked; n_peers is exposed
 -- (CLAUDE.md rule 8). Inverse KPIs (e.g. xG conceded, cards) are ranked on the negated
 -- value so a higher percentile is always better. Input: kpi_values(player_id,
 -- position_group, kpi, value, minutes, higher_is_better).
