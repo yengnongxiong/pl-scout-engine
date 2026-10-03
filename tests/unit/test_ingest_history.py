@@ -53,6 +53,7 @@ def test_parse_maps_ids_to_stable_codes(adapter: VaastavHistoryAdapter, tmp_path
     bo = pm[pm["fpl_code"] == 500012].iloc[0]
     assert bo["team_fpl_code_end_of_season"] == 9002
     assert bo["opponent_fpl_code"] == 9001
+    assert bo["opponent_name"] == "Synthetic Rovers"
     assert bool(bo["was_home"]) is False
     assert bo["xg"] == pytest.approx(0.55)
     assert bo["tackles"] == 0  # a real recorded zero stays zero

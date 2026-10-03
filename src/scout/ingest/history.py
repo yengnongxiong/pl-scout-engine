@@ -157,6 +157,7 @@ class VaastavHistoryAdapter(SourceAdapter):
             else {}
         )
         team_codes = dict(zip(teams_df["id"], teams_df["code"], strict=True))
+        team_names = dict(zip(teams_df["id"], teams_df["name"], strict=True))
 
         rows: list[dict[str, object]] = []
         for rec in gw_df.to_dict(orient="records"):
@@ -179,6 +180,7 @@ class VaastavHistoryAdapter(SourceAdapter):
                 # against fixtures in the warehouse build (M2).
                 "team_fpl_code_end_of_season": (None if team_code is None else int(team_code)),
                 "opponent_fpl_code": int(team_codes[opponent]),
+                "opponent_name": str(team_names[opponent]),
                 "was_home": _as_bool(rec["was_home"]),
                 "minutes": int(rec["minutes"]),
                 "started": None if starts is None else bool(int(str(starts)) > 0),

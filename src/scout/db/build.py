@@ -29,6 +29,7 @@ from scout.errors import SourceUnavailableError
 from scout.ingest.base import RawSnapshot, SnapshotStore
 from scout.ingest.fotmob import FotMobAdapter
 from scout.ingest.fpl import FplAdapter
+from scout.ingest.history import VaastavHistoryAdapter
 from scout.ingest.transfermarkt import (
     TransfermarktAdapter,
     TransfermarktDatasetsAdapter,
@@ -92,6 +93,13 @@ def build_warehouse(
     report.sources.append("fpl")
     frames: dict[str, pd.DataFrame] = {"fpl_player_match": fpl_pm}
 
+    va_snaps = store.latest_all("vaastav")
+    history: pd.DataFrame | None = None
+    if va_snaps:
+        history = VaastavHistoryAdapter("", seasons_in(va_snaps)).parse(va_snaps)
+        frames["vaastav_player_match"] = history
+        report.sources.append("vaastav")
+
     us_snaps = store.latest_all("understat")
     us_pm: pd.DataFrame | None = None
     us_tm: pd.DataFrame | None = None
@@ -131,6 +139,10 @@ def build_warehouse(
     # Entity resolution: live Transfermarkt squads if present, else the stale snapshot.
     tm_for_er = tm_live if tm_live is not None and not tm_live.empty else tm_stale
     fpl_teams = dict(zip(teams["fpl_code"], teams["name"], strict=True))
+    if history is not None:
+        # Past-season clubs (e.g. relegated) keep their stable FPL team code.
+        for code, name in zip(history["opponent_fpl_code"], history["opponent_name"], strict=True):
+            fpl_teams.setdefault(int(code), str(name))
     source_clubs: set[str] = set()
     if us_pm is not None:
         source_clubs |= {str(c) for c in us_pm["team_name"]}
@@ -172,7 +184,18 @@ def build_warehouse(
         facts.player_status(players, player_ids, _contracts(mapping, tm_for_er))
         facts.snapshots(fpl_snaps, "ok", len(fpl_pm))
 
-        team_by_code = {code: team_ids[code] for code in team_ids}
+        if history is not None:
+            vaastav_matches = dims.matches_from_vaastav(history)
+            all_codes = {
+                t.fpl_code: t.team_id
+                for t in session.scalars(select(DimTeam))
+                if t.fpl_code is not None
+            }
+            facts.player_match_vaastav(history, player_ids, vaastav_matches, all_codes)
+            facts.snapshots(va_snaps, "ok", len(history))
+        team_by_code = {
+            t.fpl_code: t.team_id for t in session.scalars(select(DimTeam)) if t.fpl_code
+        }
         if us_pm is not None and us_tm is not None:
             game_ids = dims.matches_from_understat(us_tm, clubs)
             understat_teams = {

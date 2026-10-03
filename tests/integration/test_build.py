@@ -41,6 +41,12 @@ def _seed(data_dir: Path, *, corrupt_xg: bool = False) -> None:
             element_summary_name(i),
             (FIX / f"fpl/synthetic_element_summary_{i}.json").read_bytes(),
         )
+    for name in ("merged_gw", "players_raw", "teams"):
+        store.write(
+            "vaastav",
+            f"2025-26_{name}.csv",
+            (FIX / f"vaastav/synthetic_2025-26_{name}.csv").read_bytes(),
+        )
     for kind in KINDS:
         body = (FIX / f"understat/synthetic_{us_name('2025-26', kind)}").read_bytes()
         if corrupt_xg and kind == "player_match":
@@ -80,13 +86,15 @@ def test_end_to_end_build_from_fixtures(tmp_path: Path) -> None:
     settings = _settings(tmp_path)
     _seed(settings.data_dir)
     report = build_warehouse(settings, CONFIG)
-    assert report.sources == ["fpl", "understat", "fotmob", "transfermarkt"]
+    assert report.sources == ["fpl", "vaastav", "understat", "fotmob", "transfermarkt"]
     assert report.validation.ok
     assert "understat: 100.0% of FPL minutes mapped" in report.coverage
     assert _count(settings, DimPlayer) == 3
     assert _count(settings, DimMatch) == 3 + 2
     assert _count(settings, FactPlayerMatch, source="fpl") == 4
     assert _count(settings, FactPlayerMatch, source="understat") == 3
+    # Last season's vaastav rows attach to the same 2025-26 match Understat created.
+    assert _count(settings, FactPlayerMatch, source="vaastav") == 2
     assert _count(settings, FactTeamMatch, source="understat") == 4
     assert _count(settings, FactTeamMatch, source="fotmob") == 4
     assert _count(settings, FactMarketValue, source="transfermarkt") == 2

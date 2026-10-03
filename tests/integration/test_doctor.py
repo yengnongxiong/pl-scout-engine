@@ -28,7 +28,13 @@ def test_doctor_after_build_reports_fresh_sources_and_coverage(tmp_path: Path) -
     report = run_doctor(settings, CONFIG, now=FETCHED + timedelta(hours=1))
     assert report.warehouse_exists
     assert report.fpl_schema.startswith("ok")
-    assert {f.source for f in report.freshness} == {"fpl", "understat", "fotmob", "transfermarkt"}
+    assert {f.source for f in report.freshness} == {
+        "fpl",
+        "vaastav",
+        "understat",
+        "fotmob",
+        "transfermarkt",
+    }
     assert not any(f.stale for f in report.freshness)
     assert report.coverage["understat"] == pytest.approx(1.0)
     assert report.coverage["transfermarkt"] == pytest.approx(180 / 275)

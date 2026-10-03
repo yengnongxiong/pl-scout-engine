@@ -61,6 +61,24 @@ def build_schemas(cfg: ValidationConfig) -> dict[str, pa.DataFrameSchema]:
             },
             unique=["fpl_code", "fpl_fixture_code"],
         ),
+        "vaastav_player_match": pa.DataFrameSchema(
+            {
+                "fpl_code": pa.Column(int, nullable=False, coerce=True),
+                "season_id": pa.Column(str, nullable=False),
+                "fpl_fixture_id": pa.Column(int, nullable=False, coerce=True),
+                "opponent_fpl_code": pa.Column(int, nullable=False, coerce=True),
+                "minutes": minutes,
+                "goals": _nonneg(),
+                "assists": _nonneg(),
+                "xg": _nonneg(),
+                "xa": _nonneg(),
+                "tackles": _nonneg(),
+                "cbi": _nonneg(),
+                "recoveries": _nonneg(),
+                **_provenance(),
+            },
+            unique=["fpl_code", "season_id", "fpl_fixture_id"],
+        ),
         "understat_player_match": pa.DataFrameSchema(
             {
                 "understat_player_id": pa.Column(int, nullable=False, coerce=True),

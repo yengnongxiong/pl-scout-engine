@@ -37,7 +37,7 @@ Current milestone: M2 (M0 web items blocked on npm)
 - [x] M2-04 `transform/entity_resolution.py`: club blocking, unidecode, fuzzy match, DOB confirm, overrides CSV, union-find merge, unresolved → entity_map_review — coverage report
 - [x] M2-05a `db/load.py` dimension loaders: seasons, teams (FPL + source ids), players (resolved ids, TM position → group, FPL fallback, DOB), matches (FPL fixtures; Understat/FotMob joined on season + home + away); idempotent
 - [x] M2-05b fact loaders: fact_player_match (FPL + Understat rows), fact_team_match (Understat + FotMob possession), fact_market_value (live/snapshot/override precedence kept as rows), fact_player_status, source_snapshot rows, entity_map_review; idempotent delete-and-insert per source
-- [ ] M2-05c previous-season FPL defensive data from vaastav: map season fixture ids to matches via (season, home, away)
+- [x] M2-05c previous-season FPL defensive data from vaastav: map season fixture ids to matches via (season, home, away)
 - [x] M2-06 `scout build` raw → validated → warehouse with `--allow-invalid` (logged); fixture end-to-end integration test; a validation failure stops the build
 - [x] M2-07 `scout doctor`: freshness, coverage, validation status, missing FPL fields
 

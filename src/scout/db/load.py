@@ -116,8 +116,9 @@ class DimensionLoader:
         if row is None and fpl_code is not None:
             row = self.session.scalars(select(DimTeam).where(DimTeam.fpl_code == fpl_code)).first()
         if row is None:
-            # A club outside the current FPL season (e.g. relegated last season).
-            row = DimTeam(name=name)
+            # A club outside the current FPL season (e.g. relegated last season). Its FPL
+            # team code is stable across seasons, so keep it when known.
+            row = DimTeam(name=name, fpl_code=fpl_code)
             self.session.add(row)
         if understat_id is not None:
             row.understat_id = understat_id
@@ -262,6 +263,43 @@ class DimensionLoader:
             out[game_id] = row.match_id
         return out
 
+    def matches_from_vaastav(self, frame: pd.DataFrame) -> dict[tuple[str, int], int]:
+        """Attach past-season FPL fixtures to matches; returns ``(season, fixture) → match``.
+
+        vaastav rows give each player's opponent and ``was_home``. A fixture's home club
+        is the opponent of its away players and vice versa, which avoids relying on the
+        end-of-season club in ``players_raw`` (wrong for mid-season movers).
+        """
+        sides: dict[tuple[str, int], dict[str, tuple[int, str]]] = {}
+        for rec in frame.to_dict(orient="records"):
+            key = (str(rec["season_id"]), int(rec["fpl_fixture_id"]))
+            side = "away" if bool(rec["was_home"]) else "home"  # the opponent's side
+            sides.setdefault(key, {})[side] = (
+                int(rec["opponent_fpl_code"]),
+                str(rec["opponent_name"]),
+            )
+        out: dict[tuple[str, int], int] = {}
+        for (season_id, fixture_id), teams in sides.items():
+            if "home" not in teams or "away" not in teams:
+                logger.warning(
+                    "vaastav fixture has players from one side only",
+                    extra={"season": season_id, "fixture": fixture_id},
+                )
+                continue
+            if self.session.get(DimSeason, season_id) is None:
+                self.season(season_id, is_current=False)
+            home_code, home_name = teams["home"]
+            away_code, away_name = teams["away"]
+            home = self.team_for_source(home_name, fpl_code=home_code)
+            away = self.team_for_source(away_name, fpl_code=away_code)
+            row = self._match(season_id, home, away)
+            if row is None:
+                row = DimMatch(season_id=season_id, home_team_id=home, away_team_id=away)
+                self.session.add(row)
+                self.session.flush()
+            out[(season_id, fixture_id)] = row.match_id
+        return out
+
     def matches_from_fotmob(
         self, possession: pd.DataFrame, team_lookup: Mapping[str, int]
     ) -> dict[str, int]:
@@ -393,6 +431,49 @@ class FactLoader:
                 }
             )
         self._replace(FactPlayerMatch, "understat", rows)
+
+    def player_match_vaastav(
+        self,
+        frame: pd.DataFrame,
+        player_ids: Mapping[int, int],
+        match_ids: Mapping[tuple[str, int], int],
+        team_ids: Mapping[int, int],
+    ) -> None:
+        """Past-season FPL rows from the vaastav archive (source ``vaastav``).
+
+        The player's club for the match is the side opposite their opponent.
+        """
+        match_teams = self._match_teams(set(match_ids.values()))
+        rows: list[dict[str, object]] = []
+        for rec in frame.to_dict(orient="records"):
+            player = player_ids.get(int(rec["fpl_code"]))
+            match = match_ids.get((str(rec["season_id"]), int(rec["fpl_fixture_id"])))
+            opponent = team_ids.get(int(rec["opponent_fpl_code"]))
+            if player is None or match is None or opponent is None:
+                self._skip("fact_player_match:vaastav")
+                continue
+            home, away = match_teams[match]
+            rows.append(
+                {
+                    "player_id": player,
+                    "match_id": match,
+                    "team_id": away if opponent == home else home,
+                    **{c: rec.get(c) for c in _FPL_PM_COLS},
+                    "source": rec["source"],
+                    "fetched_at": rec["fetched_at"],
+                }
+            )
+        self._replace(FactPlayerMatch, "vaastav", rows)
+
+    def _match_teams(self, match_ids: set[int]) -> dict[int, tuple[int, int]]:
+        if not match_ids:
+            return {}
+        rows = self.session.execute(
+            select(DimMatch.match_id, DimMatch.home_team_id, DimMatch.away_team_id).where(
+                DimMatch.match_id.in_(match_ids)
+            )
+        ).all()
+        return {m: (h, a) for m, h, a in rows}
 
     def team_match_understat(
         self, frame: pd.DataFrame, match_ids: Mapping[int, int], team_ids: Mapping[int, int]
