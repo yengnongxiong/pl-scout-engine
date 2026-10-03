@@ -1,0 +1,273 @@
+"""Club diagnosis: where is the squad weakest against the benchmark? (PRD §8.8).
+
+Steps 1-3 of the algorithm:
+
+1. **Group score** per club x position group x KPI: the minutes-weighted mean of the
+   club's players' percentiles, weighted by current-season minutes *for this club* in
+   that group, so a mid-season signing only counts for minutes played here.
+2. **Benchmark score**: the same score averaged over the benchmark clubs.
+3. **Gap** = benchmark - club per KPI; **need severity** = sum of KPI weight x
+   max(0, gap). Only shortfalls count: being better than the benchmark on one KPI does
+   not cancel a weakness on another.
+
+Players without a percentile (below the minutes threshold) carry no evidence and are
+left out of the mean rather than treated as average or as zero.
+"""
+
+from __future__ import annotations
+
+from collections.abc import Sequence
+from dataclasses import dataclass, field
+from datetime import date
+
+import pandas as pd
+
+from scout.config import DiagnosisConfig, KpiCatalogue
+
+
+@dataclass(frozen=True)
+class KpiGap:
+    """Club vs benchmark on one KPI within a position group."""
+
+    kpi: str
+    label: str
+    weight: float
+    club_score: float | None
+    benchmark_score: float | None
+    gap: float | None
+    is_proxy: bool
+
+
+@dataclass
+class GroupAssessment:
+    """Need severity for one position group of the club."""
+
+    position_group: str
+    severity: float
+    gaps: list[KpiGap] = field(default_factory=list)
+
+
+def group_scores(club_players: pd.DataFrame, percentiles: pd.DataFrame) -> pd.DataFrame:
+    """Minutes-weighted mean percentile per club x position group x KPI.
+
+    Args:
+        club_players: ``team_id, player_id, position_group, minutes`` (current season,
+            minutes earned at that club).
+        percentiles: ``player_id, kpi, percentile`` (blended mode).
+
+    Returns:
+        ``team_id, position_group, kpi, score, weight_minutes, players``.
+    """
+    merged = club_players.merge(percentiles, on="player_id", how="inner")
+    merged = merged[merged["percentile"].notna() & (merged["minutes"] > 0)]
+    merged = merged.assign(weighted=merged["percentile"] * merged["minutes"])
+    grouped = merged.groupby(["team_id", "position_group", "kpi"], as_index=False).agg(
+        weighted=("weighted", "sum"),
+        weight_minutes=("minutes", "sum"),
+        players=("player_id", "nunique"),
+    )
+    grouped["score"] = grouped["weighted"] / grouped["weight_minutes"]
+    return grouped.drop(columns=["weighted"])
+
+
+def assess_groups(
+    club_id: int,
+    benchmark_ids: Sequence[int],
+    scores: pd.DataFrame,
+    catalogue: KpiCatalogue,
+) -> list[GroupAssessment]:
+    """Gaps and need severity per position group, most severe first."""
+    lookup: dict[tuple[int, str, str], float] = {
+        (int(t), str(g), str(k)): float(s)
+        for t, g, k, s in zip(
+            scores["team_id"], scores["position_group"], scores["kpi"], scores["score"],
+            strict=True,
+        )
+    }  # fmt: skip
+    out: list[GroupAssessment] = []
+    for group, cfg in catalogue.position_groups.items():
+        assessment = GroupAssessment(position_group=group, severity=0.0)
+        for kpi_id, weight in cfg.weights.items():
+            club = lookup.get((club_id, group, kpi_id))
+            bench_values = [
+                v for b in benchmark_ids if (v := lookup.get((b, group, kpi_id))) is not None
+            ]
+            bench = sum(bench_values) / len(bench_values) if bench_values else None
+            gap = bench - club if bench is not None and club is not None else None
+            kpi = catalogue.kpis[kpi_id]
+            assessment.gaps.append(
+                KpiGap(kpi_id, kpi.label, weight, club, bench, gap, kpi.is_proxy)
+            )
+            if gap is not None and gap > 0:
+                assessment.severity += weight * gap
+        out.append(assessment)
+    return sorted(out, key=lambda a: (-a.severity, a.position_group))
+
+
+@dataclass(frozen=True)
+class WeakLink:
+    """A regular starter who rates poorly on an important KPI (PRD §8.8 step 4)."""
+
+    player_id: int
+    position_group: str
+    kpi: str
+    percentile: float
+    minutes_share: float
+
+
+@dataclass(frozen=True)
+class RiskFlag:
+    """A squad risk in one position group (PRD §8.8 step 5)."""
+
+    position_group: str
+    kind: str  # "depth" | "age" | "contract"
+    detail: str
+    player_id: int | None = None
+    value: float | None = None
+
+
+def group_weights(catalogue: KpiCatalogue, group: str) -> dict[str, float]:
+    """KPI weights for ``group`` (empty for groups outside the catalogue, e.g. GK)."""
+    for name, cfg in catalogue.position_groups.items():
+        if name == group:
+            return dict(cfg.weights)
+    return {}
+
+
+def role_scores(
+    players: pd.DataFrame, percentiles: pd.DataFrame, catalogue: KpiCatalogue
+) -> dict[int, float]:
+    """Overall position-weighted percentile per player (RoleQuality, PRD §8.9).
+
+    Weights are renormalised over the KPIs that have a percentile, so a missing KPI
+    shrinks the evidence instead of counting as zero.
+    """
+    group_of = dict(zip(players["player_id"], players["position_group"], strict=True))
+    acc: dict[int, tuple[float, float]] = {}
+    for pid, kpi, pct in zip(
+        percentiles["player_id"], percentiles["kpi"], percentiles["percentile"], strict=True
+    ):
+        group = group_of.get(pid)
+        if group is None or pd.isna(pct):
+            continue
+        weight = group_weights(catalogue, str(group)).get(str(kpi), 0.0)
+        if weight <= 0:
+            continue
+        total, wsum = acc.get(int(pid), (0.0, 0.0))
+        acc[int(pid)] = (total + weight * float(pct), wsum + weight)
+    return {pid: total / wsum for pid, (total, wsum) in acc.items() if wsum > 0}
+
+
+def weak_links(
+    players: pd.DataFrame,
+    percentiles: pd.DataFrame,
+    *,
+    available_minutes: float,
+    catalogue: KpiCatalogue,
+    cfg: DiagnosisConfig,
+) -> list[WeakLink]:
+    """Players with a big minutes share and a low percentile on a heavy-weight KPI.
+
+    Args:
+        players: The club's ``player_id, position_group, minutes`` (this season, here).
+        percentiles: ``player_id, kpi, percentile``.
+        available_minutes: Minutes the club has played this season (matches x 90).
+        catalogue: KPI weights per group.
+        cfg: Thresholds (``weak_link_*``).
+    """
+    if available_minutes <= 0:
+        return []
+    info = {
+        int(p): (str(g), float(m))
+        for p, g, m in zip(
+            players["player_id"], players["position_group"], players["minutes"], strict=True
+        )
+    }
+    out: list[WeakLink] = []
+    for pid, kpi, pct in zip(
+        percentiles["player_id"], percentiles["kpi"], percentiles["percentile"], strict=True
+    ):
+        if int(pid) not in info or pd.isna(pct):
+            continue
+        group, minutes = info[int(pid)]
+        share = minutes / available_minutes
+        weight = group_weights(catalogue, group).get(str(kpi), 0.0)
+        if (
+            share >= cfg.weak_link_min_minutes_share
+            and float(pct) < cfg.weak_link_max_percentile
+            and weight >= cfg.weak_link_min_kpi_weight
+        ):
+            out.append(WeakLink(int(pid), group, str(kpi), float(pct), share))
+    return sorted(out, key=lambda w: (w.percentile, w.player_id, w.kpi))
+
+
+DAYS_PER_YEAR = 365.25
+DAYS_PER_MONTH = DAYS_PER_YEAR / 12
+
+
+def _known_date(value: object) -> date | None:
+    if isinstance(value, date):
+        return value
+    return None
+
+
+def risk_flags(
+    players: pd.DataFrame,
+    roles: dict[int, float],
+    *,
+    as_of: date,
+    cfg: DiagnosisConfig,
+) -> list[RiskFlag]:
+    """Depth, age and contract risks per position group (PRD §8.8 step 5).
+
+    Args:
+        players: The club's ``player_id, position_group, minutes, birth_date,
+            contract_expiry`` (dates may be missing; missing dates raise no flag).
+        roles: Overall role score per player (``role_scores``).
+        as_of: Date ages and contract windows are measured from.
+        cfg: Thresholds (``depth_*``, ``age_risk_*``, ``contract_risk_months``).
+    """
+    out: list[RiskFlag] = []
+    for group, grp in players.groupby("position_group", sort=True):
+        grp = grp.sort_values(["minutes", "player_id"], ascending=[False, True])
+        total = float(grp["minutes"].sum())
+        if total <= 0:
+            continue
+        key_player = int(grp["player_id"].iloc[0])
+        key_share = float(grp["minutes"].iloc[0]) / total
+        backups = [int(p) for p in grp["player_id"].iloc[1:]]
+        if key_share > cfg.depth_single_player_share and not any(
+            roles.get(p, 0.0) > cfg.depth_backup_min_percentile for p in backups
+        ):
+            out.append(
+                RiskFlag(
+                    str(group), "depth",
+                    f"one player has {key_share:.0%} of minutes and no backup rates above "
+                    f"the {cfg.depth_backup_min_percentile:.0f}th percentile",
+                    key_player, key_share,
+                )
+            )  # fmt: skip
+        aged = [
+            ((as_of - dob).days / DAYS_PER_YEAR, float(m))
+            for b, m in zip(grp["birth_date"], grp["minutes"], strict=True)
+            if (dob := _known_date(b)) is not None and m > 0
+        ]
+        weight = sum(m for _, m in aged)
+        if weight > 0:
+            age = sum(a * m for a, m in aged) / weight
+            if age >= cfg.age_risk_min_weighted_age:
+                out.append(
+                    RiskFlag(str(group), "age", f"minutes-weighted age {age:.1f}", None, age)
+                )
+        expiry = _known_date(grp["contract_expiry"].iloc[0])
+        if expiry is not None:
+            months = (expiry - as_of).days / DAYS_PER_MONTH
+            if months <= cfg.contract_risk_months:
+                out.append(
+                    RiskFlag(
+                        str(group), "contract",
+                        f"key player's contract ends {expiry.isoformat()}",
+                        key_player, months,
+                    )
+                )  # fmt: skip
+    return out

@@ -53,8 +53,8 @@ Current milestone: M4 (M0 web items blocked on npm)
 
 ### M4 Diagnosis engine
 - [x] M4-01 `db/sql/standings.sql` (points/GD/GF, RANK window) + pandas twin; `engines/benchmark.py` picks benchmark clubs (top6/top4/league/custom, excluding the selected club; sizes in config)
-- [ ] M4-02 `engines/diagnosis.py` group scores: minutes-weighted mean percentile per club x position group x KPI (weights = current-season minutes for that club), benchmark score, gap and need severity (PRD §8.8 steps 1-3) — hand-calculated tests
-- [ ] M4-03 weak links + risk flags (depth, age, contract) with config thresholds (§8.8 steps 4-5)
+- [x] M4-02 `engines/diagnosis.py` group scores: minutes-weighted mean percentile per club x position group x KPI (weights = current-season minutes for that club), benchmark score, gap and need severity (PRD §8.8 steps 1-3) — hand-calculated tests
+- [x] M4-03 weak links + risk flags (depth, age, contract) with config thresholds (§8.8 steps 4-5)
 - [ ] M4-04 Need/Evidence objects with source + as-of on every evidence row, team-level needs mapped to responsible groups (step 7), deterministic ranking; `scout diagnose --team` CLI — fixture end-to-end test
 
 ## Done
