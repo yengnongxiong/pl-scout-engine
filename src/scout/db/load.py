@@ -10,16 +10,31 @@ from __future__ import annotations
 
 import json
 import logging
-from collections.abc import Hashable, Mapping
+import math
+from collections.abc import Hashable, Mapping, Sequence
+from dataclasses import dataclass, field
 from datetime import date, datetime
 from typing import Any
 
 import pandas as pd
-from sqlalchemy import select
+from sqlalchemy import delete, insert, select
 from sqlalchemy.orm import Session
 
 from scout.config import PositionsConfig
-from scout.db.models import DimMatch, DimPlayer, DimSeason, DimTeam
+from scout.db.models import (
+    DimMatch,
+    DimPlayer,
+    DimSeason,
+    DimTeam,
+    EntityMapReview,
+    FactMarketValue,
+    FactPlayerMatch,
+    FactPlayerStatus,
+    FactTeamMatch,
+    SourceSnapshot,
+)
+from scout.ingest.base import RawSnapshot
+from scout.transform.entity_resolution import ReviewItem
 
 logger = logging.getLogger(__name__)
 
@@ -274,3 +289,284 @@ class DimensionLoader:
             self.session.flush()
             out[game] = row.match_id
         return out
+
+
+def _clean(value: object) -> object:
+    """Convert pandas/numpy scalars to plain Python; NaN/NaT become None (never 0)."""
+    if value is None:
+        return None
+    if isinstance(value, float) and math.isnan(value):
+        return None
+    if value is pd.NaT or value is pd.NA:
+        return None
+    if isinstance(value, pd.Timestamp):
+        return value.to_pydatetime()
+    item = getattr(value, "item", None)
+    if callable(item) and type(value).__module__ == "numpy":
+        return _clean(item())
+    return value
+
+
+@dataclass
+class FactLoadStats:
+    """Rows written and source rows skipped (unresolved player/match) per fact table."""
+
+    written: dict[str, int] = field(default_factory=dict)
+    skipped: dict[str, int] = field(default_factory=dict)
+
+
+SourcedFact = FactPlayerMatch | FactTeamMatch | FactMarketValue | FactPlayerStatus
+
+
+class FactLoader:
+    """Replace each source's fact rows on every build (idempotent delete-and-insert)."""
+
+    def __init__(self, session: Session) -> None:
+        self.session = session
+        self.stats = FactLoadStats()
+
+    def _replace(
+        self, model: type[SourcedFact], source: str, rows: list[dict[str, object]]
+    ) -> None:
+        self.session.execute(delete(model).where(model.source == source))
+        if rows:
+            cleaned = [{k: _clean(v) for k, v in r.items()} for r in rows]
+            self.session.execute(insert(model), cleaned)
+        label = f"{model.__tablename__}:{source}"
+        self.stats.written[label] = len(rows)
+
+    def _skip(self, label: str) -> None:
+        self.stats.skipped[label] = self.stats.skipped.get(label, 0) + 1
+
+    def player_match_fpl(
+        self,
+        frame: pd.DataFrame,
+        player_ids: Mapping[int, int],
+        match_ids: Mapping[int, int],
+        team_ids: Mapping[int, int],
+    ) -> None:
+        """FPL player-match rows keyed by FPL code / fixture code / team code."""
+        rows: list[dict[str, object]] = []
+        for rec in frame.to_dict(orient="records"):
+            player = player_ids.get(int(rec["fpl_code"]))
+            match = match_ids.get(int(rec["fpl_fixture_code"]))
+            team = team_ids.get(int(rec["team_fpl_code"]))
+            if player is None or match is None or team is None:
+                self._skip("fact_player_match:fpl")
+                continue
+            rows.append(
+                {
+                    "player_id": player,
+                    "match_id": match,
+                    "team_id": team,
+                    **{c: rec.get(c) for c in _FPL_PM_COLS},
+                    "source": rec["source"],
+                    "fetched_at": rec["fetched_at"],
+                }
+            )
+        self._replace(FactPlayerMatch, "fpl", rows)
+
+    def player_match_understat(
+        self,
+        frame: pd.DataFrame,
+        player_ids: Mapping[int, int],
+        match_ids: Mapping[int, int],
+        team_ids: Mapping[int, int],
+    ) -> None:
+        """Understat rows keyed by Understat player / game / team ids."""
+        rows: list[dict[str, object]] = []
+        for rec in frame.to_dict(orient="records"):
+            player = player_ids.get(int(rec["understat_player_id"]))
+            match = match_ids.get(int(rec["understat_game_id"]))
+            team = team_ids.get(int(rec["understat_team_id"]))
+            if player is None or match is None or team is None:
+                self._skip("fact_player_match:understat")
+                continue
+            rows.append(
+                {
+                    "player_id": player,
+                    "match_id": match,
+                    "team_id": team,
+                    **{c: rec.get(c) for c in _UNDERSTAT_PM_COLS},
+                    "source": rec["source"],
+                    "fetched_at": rec["fetched_at"],
+                }
+            )
+        self._replace(FactPlayerMatch, "understat", rows)
+
+    def team_match_understat(
+        self, frame: pd.DataFrame, match_ids: Mapping[int, int], team_ids: Mapping[int, int]
+    ) -> None:
+        """Understat team-match rows (xG, PPDA, deep, set pieces)."""
+        rows: list[dict[str, object]] = []
+        for rec in frame.to_dict(orient="records"):
+            match = match_ids.get(int(rec["understat_game_id"]))
+            team = team_ids.get(int(rec["understat_team_id"]))
+            if match is None or team is None:
+                self._skip("fact_team_match:understat")
+                continue
+            rows.append(
+                {
+                    "match_id": match,
+                    "team_id": team,
+                    **{c: rec.get(c) for c in _UNDERSTAT_TM_COLS},
+                    "source": rec["source"],
+                    "fetched_at": rec["fetched_at"],
+                }
+            )
+        self._replace(FactTeamMatch, "understat", rows)
+
+    def team_possession_fotmob(
+        self, frame: pd.DataFrame, match_ids: Mapping[str, int], team_ids: Mapping[str, int]
+    ) -> None:
+        """FotMob possession rows (share in [0, 1]; missing stays null)."""
+        rows: list[dict[str, object]] = []
+        for rec in frame.to_dict(orient="records"):
+            match = match_ids.get(str(rec["game"]))
+            team = team_ids.get(str(rec["team_name"]))
+            if match is None or team is None:
+                self._skip("fact_team_match:fotmob")
+                continue
+            rows.append(
+                {
+                    "match_id": match,
+                    "team_id": team,
+                    "possession": rec.get("possession_share"),
+                    "source": rec["source"],
+                    "fetched_at": rec["fetched_at"],
+                }
+            )
+        self._replace(FactTeamMatch, "fotmob", rows)
+
+    def market_values(self, frame: pd.DataFrame, player_ids: Mapping[str, int]) -> None:
+        """Market values from one source (live, datasets snapshot or override)."""
+        by_source: dict[str, list[dict[str, object]]] = {}
+        for rec in frame.to_dict(orient="records"):
+            source = str(rec["source"])
+            by_source.setdefault(source, [])
+            player = player_ids.get(str(rec["tm_player_id"]))
+            if player is None:
+                self._skip(f"fact_market_value:{source}")
+                continue
+            by_source[source].append(
+                {
+                    "player_id": player,
+                    "value_eur": rec.get("value_eur"),
+                    "tm_last_updated": rec.get("tm_last_updated"),
+                    "is_stale": bool(rec.get("is_stale", False)),
+                    "reason": rec.get("reason"),
+                    "source": source,
+                    "fetched_at": rec["fetched_at"],
+                }
+            )
+        for source, rows in by_source.items():
+            self._replace(FactMarketValue, source, rows)
+
+    def player_status(
+        self,
+        fpl_players: pd.DataFrame,
+        player_ids: Mapping[int, int],
+        contracts: Mapping[int, date | None] | None = None,
+    ) -> None:
+        """FPL availability snapshot plus Transfermarkt contract expiry when known."""
+        rows: list[dict[str, object]] = []
+        for rec in fpl_players.to_dict(orient="records"):
+            code = int(rec["fpl_code"])
+            player = player_ids.get(code)
+            if player is None:
+                self._skip("fact_player_status:fpl")
+                continue
+            rows.append(
+                {
+                    "player_id": player,
+                    "fpl_status": rec.get("fpl_status"),
+                    "news": rec.get("news"),
+                    "chance_of_playing": rec.get("chance_of_playing"),
+                    "contract_expiry": (contracts or {}).get(code),
+                    "source": rec["source"],
+                    "fetched_at": rec["fetched_at"],
+                }
+            )
+        self._replace(FactPlayerStatus, "fpl", rows)
+
+    def snapshots(self, snapshots: Sequence[RawSnapshot], status: str, rows: int | None) -> None:
+        """Record ingested raw snapshots for freshness reporting (``scout doctor``)."""
+        for snap in snapshots:
+            self.session.add(
+                SourceSnapshot(
+                    source=snap.source,
+                    name=snap.name,
+                    fetched_at=snap.fetched_at,
+                    rows=rows,
+                    checksum=snap.checksum,
+                    status=status,
+                )
+            )
+        self.session.flush()
+
+    def review(
+        self, items: Sequence[ReviewItem], player_ids: Mapping[int, int], now: datetime
+    ) -> None:
+        """Replace the entity review queue with this build's unresolved records."""
+        self.session.execute(delete(EntityMapReview))
+        for item in items:
+            self.session.add(
+                EntityMapReview(
+                    source=item.source,
+                    source_id=item.source_id,
+                    name=item.name,
+                    team=item.team,
+                    best_candidate=(
+                        player_ids.get(item.best_candidate)
+                        if item.best_candidate is not None
+                        else None
+                    ),
+                    score=item.score,
+                    created_at=now,
+                )
+            )
+        self.session.flush()
+
+
+_FPL_PM_COLS = (
+    "minutes",
+    "started",
+    "goals",
+    "assists",
+    "xg",
+    "xa",
+    "xgc_on_pitch",
+    "tackles",
+    "cbi",
+    "recoveries",
+    "def_contribution",
+    "yellow_cards",
+    "red_cards",
+)
+_UNDERSTAT_PM_COLS = (
+    "minutes",
+    "goals",
+    "shots",
+    "xg",
+    "npxg",
+    "xa",
+    "xg_chain",
+    "xg_buildup",
+    "key_passes",
+    "assists",
+    "yellow_cards",
+    "red_cards",
+)
+_UNDERSTAT_TM_COLS = (
+    "xg",
+    "xga",
+    "npxg",
+    "npxga",
+    "ppda",
+    "ppda_allowed",
+    "deep",
+    "deep_allowed",
+    "set_piece_xg",
+    "set_piece_xga",
+    "open_play_xga",
+)
