@@ -14,7 +14,7 @@ import typer
 
 from scout import __version__
 from scout.config import PROJECT_ROOT, get_config, get_settings
-from scout.errors import ConfigError
+from scout.errors import ConfigError, ScoutError
 
 DEFAULT_OPENAPI_PATH = PROJECT_ROOT / "web" / "openapi.json"
 
@@ -54,6 +54,38 @@ def config_check() -> None:
         f"{len(cfg.kpis.position_groups)} position groups, "
         f"{len(cfg.kpis.team_kpis)} team KPIs, {len(cfg.team_aliases.aliases)} clubs with aliases."
     )
+
+
+@app.command()
+def ingest(
+    source: Annotated[
+        list[str] | None,
+        typer.Option("--source", "-s", help="Source to ingest (repeatable) or 'all'."),
+    ] = None,
+    max_requests: Annotated[
+        int | None, typer.Option(help="Per-source request budget (cloud sessions use caps).")
+    ] = None,
+) -> None:
+    """Fetch raw snapshots from live sources and validate them (owner's machine)."""
+    from scout.ingest.runner import ALL_SOURCES, run_ingest
+
+    try:
+        results = run_ingest(
+            source or ["all"], get_settings(), get_config(), max_requests=max_requests
+        )
+    except ScoutError as exc:
+        typer.echo(f"Ingest failed: {exc.message}", err=True)
+        raise typer.Exit(code=1) from exc
+    for r in results:
+        status = "ok" if r.ok else f"FAILED: {r.error}"
+        extra = f" ({'; '.join(r.notes)})" if r.notes else ""
+        typer.echo(
+            f"{r.source:<24} {status}  snapshots={r.snapshots} rows={r.rows} "
+            f"requests={r.requests}{extra}"
+        )
+    if not all(r.ok for r in results):
+        typer.echo(f"Some sources failed. Valid sources: {', '.join(ALL_SOURCES)}", err=True)
+        raise typer.Exit(code=1)
 
 
 @app.command()

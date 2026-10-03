@@ -1,0 +1,109 @@
+[
+ {
+  "id": "e1",
+  "index": 1,
+  "period": 1,
+  "minute": 0,
+  "second": 0,
+  "type": {
+   "id": 35,
+   "name": "Starting XI"
+  },
+  "team": {
+   "id": 9001,
+   "name": "Synthetic Rovers"
+  }
+ },
+ {
+  "id": "e2",
+  "index": 2,
+  "period": 1,
+  "minute": 3,
+  "second": 12,
+  "type": {
+   "id": 30,
+   "name": "Pass"
+  },
+  "team": {
+   "id": 9001,
+   "name": "Synthetic Rovers"
+  },
+  "player": {
+   "id": 501,
+   "name": "Alex Testman"
+  },
+  "position": {
+   "id": 3,
+   "name": "Right Center Back"
+  },
+  "location": [
+   30.0,
+   40.0
+  ],
+  "pass": {
+   "end_location": [
+    62.5,
+    35.0
+   ]
+  }
+ },
+ {
+  "id": "e3",
+  "index": 3,
+  "period": 1,
+  "minute": 4,
+  "second": 1,
+  "type": {
+   "id": 43,
+   "name": "Carry"
+  },
+  "team": {
+   "id": 9001,
+   "name": "Synthetic Rovers"
+  },
+  "player": {
+   "id": 502,
+   "name": "Cy Benchley"
+  },
+  "location": [
+   62.5,
+   35.0
+  ],
+  "carry": {
+   "end_location": [
+    80.0,
+    30.0
+   ]
+  }
+ },
+ {
+  "id": "e4",
+  "index": 4,
+  "period": 1,
+  "minute": 4,
+  "second": 9,
+  "type": {
+   "id": 16,
+   "name": "Shot"
+  },
+  "team": {
+   "id": 9001,
+   "name": "Synthetic Rovers"
+  },
+  "player": {
+   "id": 502,
+   "name": "Cy Benchley"
+  },
+  "location": [
+   105.0,
+   38.0
+  ],
+  "shot": {
+   "statsbomb_xg": 0.123,
+   "outcome": {
+    "id": 97,
+    "name": "Goal"
+   }
+  }
+ }
+]

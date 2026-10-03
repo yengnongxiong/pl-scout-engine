@@ -28,7 +28,7 @@ Current milestone: M0
 - [x] M1-06 FotMob possession adapter, fixture contract tests
 - [x] M1-07a Transfermarkt live adapter via self-hosted transfermarkt-api: club search by name/alias, squads, market value with TM as-of = latest history point, position/DOB/contract; value/date parsers — contract tests
 - [x] M1-07b transfermarkt-datasets snapshot fallback (source=snapshot, is_stale=True) + market_value_overrides.csv loader (source=override, reason + date required) — tests
-- [ ] M1-08 StatsBomb open-data loader (dev) + `scout ingest --source` CLI wiring with per-session request caps
+- [x] M1-08 StatsBomb open-data loader (dev) + `scout ingest --source` CLI wiring with per-session request caps
 
 ## Done
 - M0-01, M0-02, M0-03 (2026-10-03); Python halves of M0-05/M0-06.

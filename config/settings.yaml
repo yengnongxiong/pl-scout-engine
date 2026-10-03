@@ -34,11 +34,17 @@ ingest:
     transfermarkt: "http://localhost:8001/"
     # dcaribou/transfermarkt-datasets public export (stale fallback only; updates paused).
     transfermarkt_datasets: "https://pub-e682421888d945d684bcae8890b0ec20.r2.dev/data/"
+    statsbomb: "https://raw.githubusercontent.com/statsbomb/open-data/master/data/"
     vaastav: "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/master/data/"
   # FotMob possession shares of a match must sum to 1 within this tolerance.
   possession_sum_tolerance: 0.02
   # transfermarkt-datasets competition id for the Premier League.
   tm_datasets_competition_id: GB1
+  # StatsBomb open data (dev/validation only, PRD §7.1): competition/season ids and how many
+  # matches of event data to pull.
+  statsbomb_competition_id: 2
+  statsbomb_season_id: 27
+  statsbomb_max_matches: 10
   # Past seasons pulled from the vaastav archive, counted back from the current season.
   history_seasons_back: 3
   user_agent: "pl-scout-engine/0.1 (personal, non-commercial research project)"

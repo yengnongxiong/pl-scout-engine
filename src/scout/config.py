@@ -85,6 +85,9 @@ class IngestConfig(_Strict):
     history_seasons_back: int = Field(default=3, ge=1)
     possession_sum_tolerance: float = Field(default=0.02, ge=0.0, le=1.0)
     tm_datasets_competition_id: str = "GB1"
+    statsbomb_competition_id: int = 2
+    statsbomb_season_id: int = 27
+    statsbomb_max_matches: int = Field(default=10, ge=1)
     user_agent: str = Field(min_length=1)
     cache_ttl_hours: float = Field(gt=0.0)
     max_retries: int = Field(ge=0)
