@@ -1,7 +1,7 @@
 # Progress
 Status: IN_PROGRESS            <!-- IN_PROGRESS or COMPLETE -->
 Active session: 20261003T1947Z-9149 started 2026-10-03T19:47:47Z
-Current milestone: M2 (M0 web items blocked on npm)
+Current milestone: M3 (M0 web items blocked on npm)
 
 ## Plan for this session
 - M1-05 Understat adapter (soccerdata-backed fetch, CSV snapshots, schema-validated parse)
@@ -41,7 +41,12 @@ Current milestone: M2 (M0 web items blocked on npm)
 - [x] M2-06 `scout build` raw → validated → warehouse with `--allow-invalid` (logged); fixture end-to-end integration test; a validation failure stops the build
 - [x] M2-07 `scout doctor`: freshness, coverage, validation status, missing FPL fields
 
-## Done
+### M3 Feature layer
+- [x] M3-01 `features/per90.py`, `blend.py`, `shrinkage.py`, `possession.py` pure functions (PRD §8.1-8.4) with hand-calculated tests
+- [ ] M3-02 `db/sql/player_season.sql` (CTEs) per player × season × club totals by source + pandas twin test; club splits for movers
+- [ ] M3-03 possession-adjusted defensive totals per match (opponent possession from fotmob; clipped multiplier; unadjusted flag) in SQL + pandas twin
+- [ ] M3-04 `features/percentiles.py` + `db/sql/percentiles.sql` (PERCENT_RANK within position group, minutes threshold, inverse flip, n_peers) + twin test
+- [ ] M3-05 `player_season_features` table (migration 0002) materialised by `scout build` from `config/kpis.yaml` (raw per-90, blended, shrunk, percentiles, minutes, n_peers, flags)
 - M0-01, M0-02, M0-03 (2026-10-03); Python halves of M0-05/M0-06.
 - M1-01 to M1-04 (2026-10-03).
 
