@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from typer.testing import CliRunner
 
 from scout import __version__
@@ -23,3 +25,10 @@ def test_config_check_passes_on_committed_config() -> None:
     result = runner.invoke(app, ["config-check"])
     assert result.exit_code == 0, result.output
     assert "Config OK" in result.output
+
+
+def test_export_openapi_writes_schema(tmp_path: Path) -> None:
+    out = tmp_path / "openapi.json"
+    result = runner.invoke(app, ["export-openapi", "--out", str(out)])
+    assert result.exit_code == 0, result.output
+    assert '"/health"' in out.read_text()

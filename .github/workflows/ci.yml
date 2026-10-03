@@ -25,5 +25,5 @@ jobs:
       - name: Test
         run: uv run pytest --cov=scout --cov-report=term
       - name: CLI smoke
-        run: uv run scout --help && uv run scout config-check
+        run: uv run scout --help && uv run scout config-check && uv run scout export-openapi --out "$RUNNER_TEMP/openapi.json"
   # `web` and `contract` jobs are added with the web/ scaffold (M0-04, M0-05).

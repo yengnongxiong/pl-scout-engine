@@ -5,13 +5,18 @@ Commands are added milestone by milestone (PRD §16); M0 ships the skeleton.
 
 from __future__ import annotations
 
+import json
 import logging
+from pathlib import Path
+from typing import Annotated
 
 import typer
 
 from scout import __version__
-from scout.config import get_config, get_settings
+from scout.config import PROJECT_ROOT, get_config, get_settings
 from scout.errors import ConfigError
+
+DEFAULT_OPENAPI_PATH = PROJECT_ROOT / "web" / "openapi.json"
 
 app = typer.Typer(
     name="scout",
@@ -49,6 +54,31 @@ def config_check() -> None:
         f"{len(cfg.kpis.position_groups)} position groups, "
         f"{len(cfg.kpis.team_kpis)} team KPIs, {len(cfg.team_aliases.aliases)} clubs with aliases."
     )
+
+
+@app.command()
+def api(
+    host: str = typer.Option("127.0.0.1", help="Bind address (local only)."),
+    port: int = typer.Option(8000, help="Port."),
+    reload: bool = typer.Option(False, help="Auto-reload on code changes."),
+) -> None:
+    """Serve the read-only FastAPI app (docs at /docs)."""
+    import uvicorn
+
+    uvicorn.run("scout.api.main:app", host=host, port=port, reload=reload)
+
+
+@app.command("export-openapi")
+def export_openapi(
+    out: Annotated[Path, typer.Option(help="Output path.")] = DEFAULT_OPENAPI_PATH,
+) -> None:
+    """Write the OpenAPI schema used to generate the web client's types."""
+    from scout.api.main import create_app
+
+    schema = create_app().openapi()
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(schema, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    typer.echo(f"Wrote {out}")
 
 
 if __name__ == "__main__":  # pragma: no cover
