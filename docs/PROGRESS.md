@@ -9,7 +9,7 @@ Current milestone: M0
 - M0-03 web/ scaffold (Vite + React + TS, ESLint, Prettier, Vitest)
 
 ## Task queue (current milestone)
-- [ ] M0-01 Apply ADR-0001 edits to PRD, bump to v1.1 + changelog — PRD diff matches ADR list
+- [x] M0-01 Apply ADR-0001 edits to PRD, bump to v1.1 + changelog — PRD diff matches ADR list
 - [ ] M0-02 Python skeleton: pyproject (uv), src/scout package, errors.py, config.py (pydantic-settings + YAML), Typer CLI with `--help`, conftest network guard — `uv run scout --help`, pytest, ruff, mypy pass
 - [ ] M0-03 config/*.yaml stubs (settings, kpis, fit_weights, positions, team_aliases) loaded + validated by config.py — unit tests pass
 - [ ] M0-04 web/ scaffold: Vite + React + TS strict, ESLint, Prettier, Vitest + RTL, Tailwind — lint/typecheck/test/build pass

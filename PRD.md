@@ -5,10 +5,14 @@
 | | |
 |---|---|
 | Owner | Yengnong Xiong |
-| Status | Draft v1.0 |
+| Status | Draft v1.1 |
 | Last updated | 2026-10-03 |
 | Build agent | Claude Code (see `CLAUDE.md`) |
 | Deployment | Local only (not publicly deployed) |
+
+**Changelog**
+- v1.1 (2026-10-03): Applied ADR-0001 — React + TypeScript SPA replaces Streamlit (§10, §10.1, §12, §13, §14, §16, §18, §19).
+- v1.0 (2026-10-03): Initial draft.
 
 ## 1. Summary
 
@@ -242,14 +246,14 @@ flowchart LR
   ENG --> REP["Report generator<br/>template / local LLM + grounding"]
   ENG --> API[FastAPI REST]
   REP --> API
-  API --> UI[Streamlit dashboard]
+  API --> UI["React + TypeScript SPA<br/>(Vite)"]
 ```
 
 Key design decisions:
 - **Batch, not real-time:** ingestion and builds run via CLI. The API and UI only read the warehouse, so the app is fast and works offline.
 - **Adapter pattern:** each source sits behind one `SourceAdapter` interface. When a source dies (as FBref's advanced data did), only one module changes.
 - **Medallion layers (bronze/silver/gold):** raw data is always replayable and transforms are reproducible.
-- **API-first:** the UI talks to the API over HTTP, so a React front end could replace Streamlit without touching the engine.
+- **API-first:** the React app talks to the API over HTTP through a client generated from the API's OpenAPI schema, so front end and back end evolve independently and stay type-safe end to end.
 - **Config over code:** thresholds, weights, rate limits and mappings live in YAML.
 
 ### 10.1 Tech stack (all free / open source)
@@ -265,7 +269,9 @@ Key design decisions:
 | Entity resolution | rapidfuzz, unidecode + hand-written union-find |
 | HTTP | httpx + tenacity (retries) |
 | API | FastAPI + uvicorn |
-| UI | Streamlit + Plotly |
+| Front end | React + TypeScript (strict), Vite, React Router, TanStack Query, TanStack Table, Recharts, Tailwind CSS |
+| API types | openapi-typescript + openapi-fetch, generated from FastAPI's OpenAPI schema |
+| Front-end quality | Vitest, React Testing Library, MSW, ESLint, Prettier; Playwright smoke test (stretch) |
 | Reports | Jinja2; optional Ollama (local LLM) |
 | CLI | Typer |
 | Quality | pytest, pytest-cov, ruff, mypy, pre-commit, GitHub Actions CI |
@@ -306,17 +312,30 @@ Analytical SQL lives in `.sql` files (CTEs + window functions) and is unit-teste
 
 Pydantic response models, one consistent error schema, OpenAPI docs at `/docs`, in-process LRU cache for hot endpoints.
 
-## 13. Dashboard
+The OpenAPI schema is exported with `scout export-openapi` to `web/openapi.json`. In development the Vite dev server proxies `/api` to FastAPI; CORS allows only `http://localhost:5173`.
 
-Pages: Club Diagnosis (home) · Shortlist · Player · Compare · Methodology & Data.
+## 13. Dashboard (React + TypeScript SPA)
+
+| Route | Page | Contents |
+|---|---|---|
+| `/` | Club Diagnosis | Club search (aliases), season mode, benchmark; top needs; position-group heat strip; weak links; depth/age/contract risks |
+| `/clubs/:teamId/needs/:needId` | Shortlist | Ranked candidates, filters (max value, age, minutes, exclude clubs), fit-component bars, Moneyball view toggle |
+| `/players/:playerId` | Player | Header facts, percentile bars vs position peers, availability, similar players, role archetype, scouting report with copy button |
+| `/compare?a=&b=` | Compare | Candidate vs incumbent, side-by-side bars with deltas |
+| `/methodology` | Methodology & Data | Sources, freshness, KPI definitions, weights, proxies, limitations |
+
+Behaviour:
+- Filters, season mode and benchmark live in the URL, so every view is bookmarkable and the back button works.
+- Server state is handled by TanStack Query (caching, retries). No global state library unless clearly needed.
+- Every view has loading, empty ("Not available" / "Run `scout ingest`") and error states.
 
 Design principles:
 - Minimal and calm: light theme, one accent colour, at most ~3 charts per view.
-- Horizontal percentile bars instead of radar charts.
+- Horizontal percentile bars instead of radars.
 - Consistent rounding: 1 decimal for per-90, € m for values.
 - Every chart footer shows "Source · as of"; proxy badges where relevant.
-- Empty states say "Not available" or "Run `scout ingest`" instead of showing placeholders.
-- No public deployment.
+- Keyboard accessible, AA contrast, colour never the only signal.
+- Designed for laptop screens; mobile is not a target.
 
 ## 14. Non-functional requirements
 - Local-only. The UI and API never call external sources at request time.
@@ -324,6 +343,7 @@ Design principles:
 - `scout build` (no network): < 10 min.
 - Polite ingestion: configurable per-source rate limits (Transfermarkt default ≤ 1 request / 3 s), caching with TTL, retries with backoff.
 - Reproducible: pinned dependencies, seeded ML, model metadata.
+- Front end: production build loads in < 2 s locally; route changes with cached data < 300 ms.
 - Observability: structured logs; `scout doctor` reports freshness, coverage and validation status.
 
 ## 15. Success metrics
@@ -343,7 +363,7 @@ Design principles:
 
 | # | Milestone | Acceptance criteria |
 |---|---|---|
-| M0 | Foundations: repo skeleton, `pyproject.toml`, uv, ruff/mypy/pytest, CI, config system, Typer CLI skeleton, `docs/PROGRESS.md`, ADR template | `uv run pytest` and CI green; `scout --help` works |
+| M0 | Foundations: repo skeleton, `pyproject.toml`, uv, ruff/mypy/pytest, CI, config system, Typer CLI skeleton, `docs/PROGRESS.md`, ADR template, plus a `web/` scaffold (Vite + React + TypeScript, ESLint, Prettier, Vitest) so CI covers both stacks from day one | `uv run pytest` and CI green; `scout --help` works |
 | M1 | Ingestion (Tier 1): FPL, Understat, FotMob possession, Transfermarkt (scraper + snapshot + overrides), vaastav history, StatsBomb loader; raw snapshot store; rate limiter; retries | Each adapter has offline contract tests with fixtures; `scout ingest --source fpl` writes a timestamped snapshot when run locally |
 | M2 | Warehouse: SQLAlchemy models, Alembic migration, loaders, entity resolution, pandera validation, freshness table, `scout doctor` | End-to-end build from fixtures; mapping coverage report; a validation failure stops the build |
 | M3 | Feature layer: per-90, blending, shrinkage, possession adjustment, percentiles (SQL + pandas), KPI config | Hand-calculated unit tests for every formula; SQL percentiles match pandas |
@@ -351,7 +371,7 @@ Design principles:
 | M5 | Recommendation engine + ML (fit score, upgrade gate, similarity, GMM roles, value model) | `scout train` writes models + `docs/EVALUATION.md`; value model compared to baseline; results reproducible |
 | M6 | Reports: fact sheet, templates, optional Ollama, grounding validator | Golden tests for template output; a test injecting a fake number proves the validator rejects it |
 | M7 | API | All endpoints tested with TestClient; OpenAPI docs render |
-| M8 | Dashboard | All P0 stories demoable on real local data; UI uses the API only |
+| M8 | Dashboard (React + TypeScript) | All P0 stories demoable on real local data; client generated from OpenAPI; page tests in loading/empty/error/success states; `npm run lint`, `typecheck`, `test` and `build` pass in CI |
 | M9 | Evaluation & polish | README with screenshots, architecture diagram, methodology, limitations, and a "How it was made" section; fresh clone → documented steps → working dashboard |
 
 **Stretch:**
@@ -387,12 +407,13 @@ Design principles:
 | DSA | Heap top-k, KD-tree (benchmarked), LRU cache, token bucket, union-find, trie, Levenshtein DP |
 | ML / stats | GMM clustering, similarity search, gradient boosting with time-split evaluation and quantile bands, empirical-Bayes shrinkage |
 | PM | This PRD, personas, prioritised stories, success metrics, ADRs, risk register, evaluation/backtest |
+| Front end | React + TypeScript SPA, typed client generated from OpenAPI, TanStack Query caching, component tests |
 | Engineering hygiene | Tests, CI, typing, linting, reproducibility, documentation |
 
 ## 19. Open questions
-1. Front end: keep Streamlit (fast, Python-only) or build React + TypeScript on the same API later?
-2. Should goalkeepers be in the MVP despite limited free metrics?
-3. Default benchmark: top 6 of last season, or adapt by club (e.g., top 6 for big clubs, league median for others)?
+1. ~~Front end: keep Streamlit (fast, Python-only) or build React + TypeScript on the same API later?~~ **Resolved** by ADR-0001: React + TypeScript.
+2. ~~Should goalkeepers be in the MVP despite limited free metrics?~~ **Resolved** (CLAUDE.md locked decisions): not in the MVP; stretch S2.
+3. ~~Default benchmark: top 6 of last season, or adapt by club?~~ **Resolved** (CLAUDE.md locked decisions): top 6 of last season's table, with toggles for league / top 4 / custom.
 4. Expand candidates to Europe's top 5 leagues later (S6)?
 
 ## 20. Glossary
