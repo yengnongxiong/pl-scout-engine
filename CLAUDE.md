@@ -34,7 +34,9 @@ This repo is built by unattended Claude Code sessions started by an hourly sched
    - `npm ci` inside `web/` once it exists.
 5. **Work loop:**
    - Take the first unchecked task in the "Task queue." If the queue is empty, break the current milestone (PRD §16) into tasks of roughly 20–40 minutes each, write them to the queue, and commit.
-   - Implement it, run all checks (see Definition of done), commit with a conventional message, then `git pull --rebase` and push.
+   - Implement it and run every check you can locally (see Definition of done).
+   - **Preflight before pushing code.** A failing CI run on `main` emails the owner, so `main` must only receive changes that already passed. When the sandbox can't run the full checks itself (for example, packages can't be installed), run `scripts/preflight_patch.sh` (line 1 = base SHA, line 2 = patch). Then trigger `.github/workflows/preflight.yml` on `main` (workflow_dispatch, inputs `base_sha`, `patch`, `label`) and read its log for `PREFLIGHT PASSED` / `PREFLIGHT FAILED`. That workflow always finishes green, so experiments never send email. Fix and re-run preflight until it passes; keep each patch under ~60k characters by splitting large tasks.
+   - Commit with a conventional message, then `git pull --rebase` and push. If `main` moved, re-run preflight on the new base when the change touches the same code. Docs-only changes (e.g. `docs/PROGRESS.md`) need no preflight.
    - Before every push, confirm `Active session:` in `docs/PROGRESS.md` still shows **your** ID. If it doesn't, another session has taken over: discard your local changes and end the session.
 6. **Timebox:** measure elapsed time from your start timestamp with `date -u`. After 40 minutes, don't start a new task. Be fully wrapped up by 55 minutes.
 7. **Wrap up:**
@@ -46,6 +48,7 @@ This repo is built by unattended Claude Code sessions started by an hourly sched
 - Commit only green states: tests, lint and type checks pass. If a task can't be finished, commit any self-contained passing part, write exact next steps in the task's note, and leave it unchecked.
 - If the same task fails in 2 sessions, move it to "Blocked" with what you tried and why, then continue with the next independent task. Never loop on one problem.
 - Never weaken or delete tests, lower coverage thresholds, add blanket `# type: ignore` / `eslint-disable`, or skip CI checks to get green.
+- Never use `main`'s CI as a test runner: push code to `main` only after it passed locally or in Preflight. `ci.yml` stays the strict gate.
 - Order of work: M0 → M9. Then stretch in this order: S7, S2, S4, S5, S3. Then set `Status: COMPLETE`.
 - **M0 includes applying ADR-0001 to `PRD.md`:** make the listed edits, bump the PRD to v1.1, and add a changelog line.
 - The final deliverable must include `uv run scout demo`: one command that runs ingest (if no data), build and train, then starts the API and the web app. The README must explain it.

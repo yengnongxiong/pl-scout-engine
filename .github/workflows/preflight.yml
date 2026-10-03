@@ -1,0 +1,69 @@
+# Preflight: run the full CI checks on a proposed change *before* it reaches main.
+#
+# The cloud build sessions can't install packages locally (PyPI/npm egress is blocked),
+# so they send their pending diff here as a gzip+base64 patch and only push to main once
+# this reports PREFLIGHT PASSED. The run itself always succeeds (results are in the log
+# and job summary), so a failing experiment never emails the owner; ci.yml on main stays
+# the strict gate. Usage: scripts/preflight_patch.sh prints the patch input.
+name: Preflight
+run-name: "Preflight ${{ inputs.label }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_sha:
+        description: "Commit on main the patch applies to"
+        required: true
+      patch:
+        description: "git diff --binary of the change, gzip-compressed and base64-encoded"
+        required: true
+      label:
+        description: "Short label to find this run"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.base_sha }}
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - name: Apply patch and run checks
+        env:
+          PATCH: ${{ inputs.patch }}
+          BASE_SHA: ${{ inputs.base_sha }}
+        run: |
+          set +e
+          report() { echo "$1" | tee -a "$GITHUB_STEP_SUMMARY"; }
+          if ! printf '%s' "$PATCH" | base64 -d | gunzip > /tmp/change.patch; then
+            report "PREFLIGHT FAILED: patch input is not valid gzip+base64"; exit 0
+          fi
+          if ! git apply --index /tmp/change.patch; then
+            report "PREFLIGHT FAILED: patch does not apply to $BASE_SHA"; exit 0
+          fi
+          git status --short
+          if ! uv sync --all-extras; then
+            report "PREFLIGHT FAILED: dependency install"; exit 0
+          fi
+          echo "::group::ruff check"; uv run ruff check .; ruff_rc=$?; echo "::endgroup::"
+          echo "::group::ruff format"; uv run ruff format --check .; fmt_rc=$?; echo "::endgroup::"
+          echo "::group::mypy"; uv run mypy src; mypy_rc=$?; echo "::endgroup::"
+          echo "::group::pytest"; uv run pytest -q --cov=scout --cov-report=term; test_rc=$?; echo "::endgroup::"
+          echo "::group::cli smoke"
+          uv run scout --help > /dev/null && uv run scout config-check \
+            && uv run scout export-openapi --out "$RUNNER_TEMP/openapi.json"
+          cli_rc=$?; echo "::endgroup::"
+          report "ruff=$ruff_rc format=$fmt_rc mypy=$mypy_rc pytest=$test_rc cli=$cli_rc"
+          if [ $((ruff_rc + fmt_rc + mypy_rc + test_rc + cli_rc)) -eq 0 ]; then
+            report "PREFLIGHT PASSED"
+          else
+            report "PREFLIGHT FAILED"
+          fi
+          exit 0
