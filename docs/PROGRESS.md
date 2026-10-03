@@ -23,5 +23,6 @@ Current milestone: M0
 ## Questions for Yengnong (non-blocking; default chosen)
 
 ## Decisions log (minor)
+- 2026-10-03: Commits are authored as Yengnong Xiong (GitHub noreply email) per owner request; Claude stays as Co-Authored-By. Set in CLAUDE.md session protocol step 4.
 
 ## Session log (keep the last 15 entries; summarize older ones in one line)

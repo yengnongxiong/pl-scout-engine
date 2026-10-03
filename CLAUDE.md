@@ -28,6 +28,7 @@ This repo is built by unattended Claude Code sessions started by an hourly sched
    - If `Active session:` holds a timestamp less than 75 minutes old, another session is running: end immediately without changes.
 3. **Claim the session:** generate a session ID (`date -u +%Y%m%dT%H%MZ` plus 4 random hex characters). Set `Active session: <ID> started <UTC ISO time>` and write a short "Plan for this session" (next 1–3 tasks) in `docs/PROGRESS.md`. Commit `docs(progress): start session <ID>` and push. If the push is rejected, `git pull --rebase` and go back to step 2.
 4. **Set up the toolchain:**
+   - Commit as the owner so commits count on their GitHub contribution chart: `git config user.name "Yengnong Xiong" && git config user.email "207461518+yengnongxiong@users.noreply.github.com"` (do this before the step-3 commit when possible).
    - If `uv` is missing, `pip install uv` (add `--break-system-packages` if pip refuses).
    - `uv sync --all-extras`
    - `npm ci` inside `web/` once it exists.
