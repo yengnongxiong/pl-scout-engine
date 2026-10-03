@@ -2,9 +2,10 @@ import json
 from datetime import UTC, date, datetime
 from pathlib import Path
 
+import pandas as pd
 import pytest
 
-from scout.config import PROJECT_ROOT, EntityResolutionConfig, load_config
+from scout.config import PROJECT_ROOT, load_config
 from scout.errors import DataValidationError
 from scout.ingest.base import SnapshotStore
 from scout.ingest.fpl import BOOTSTRAP, FIXTURES, FplAdapter, element_summary_name
@@ -90,8 +91,9 @@ def test_resolve_accepts_confident_matches_and_reviews_the_rest() -> None:
 
 
 def test_ambiguous_candidates_go_to_review() -> None:
-    cfg = EntityResolutionConfig(accept_score=50, min_margin=60, target_minutes_coverage=0.98)
-    result = resolve(ANCHORS, [rec("understat", "9", "D. Ward", ROVERS)], cfg)
+    anchors = [*ANCHORS, AnchorPlayer(500030, ("Jon Ward", "Ward"), ROVERS, 10.0)]
+    # "Ward" matches both web names exactly: a tie must never be guessed.
+    result = resolve(anchors, [rec("understat", "9", "Ward", ROVERS)], CFG)
     assert not result.links
     assert "ambiguous" in result.review[0].reason
 
@@ -136,7 +138,7 @@ def test_mapping_frame_has_null_for_unlinked() -> None:
     result = resolve(ANCHORS, [rec("understat", "1", "Alex Testman", ROVERS)], CFG)
     frame = result.mapping_frame(ANCHORS).set_index("fpl_code")
     assert frame.loc[500011, "understat_id"] == "1"
-    assert frame.loc[500012, "understat_id"] is None
+    assert pd.isna(frame.loc[500012, "understat_id"])
 
 
 def test_player_overrides_file(tmp_path: Path) -> None:
