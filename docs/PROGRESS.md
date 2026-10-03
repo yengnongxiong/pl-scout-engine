@@ -1,11 +1,10 @@
 # Progress
 Status: IN_PROGRESS            <!-- IN_PROGRESS or COMPLETE -->
-Active session: 20261003T1947Z-9149 started 2026-10-03T19:47:47Z
+Active session: none
 Current milestone: M3 (M0 web items blocked on npm)
 
 ## Plan for this session
-- M1-05 Understat adapter (soccerdata-backed fetch, CSV snapshots, schema-validated parse)
-- M1-06 FotMob possession adapter
+(none: no session active)
 
 ## Task queue (current milestone)
 - [x] M0-01 Apply ADR-0001 edits to PRD, bump to v1.1 + changelog — PRD diff matches ADR list
@@ -51,6 +50,12 @@ Current milestone: M3 (M0 web items blocked on npm)
 - M0-01, M0-02, M0-03 (2026-10-03); Python halves of M0-05/M0-06.
 - M1-01 to M1-04 (2026-10-03).
 
+## Done
+- M0-01, M0-02, M0-03 (2026-10-03); Python halves of M0-05/M0-06.
+- M1-01 to M1-08 (2026-10-03): all ingestion adapters plus `scout ingest`.
+- M2-01 to M2-07 (2026-10-03): warehouse, entity resolution, validation, `scout build`, `scout doctor`.
+- M3-01 to M3-04 (2026-10-03): per-90/blend/shrink/possession maths, player-season and possession-adjusted SQL, percentiles.
+
 ## Blocked
 - **Package registries blocked in the cloud sandbox** (2026-10-03): pypi.org and registry.npmjs.org return `403 host_not_allowed` from the egress proxy, so `uv sync` / `npm ci` can't run. Python checks ran locally against preinstalled packages (ruff, pytest and mypy all pass apart from the missing typer/types-PyYAML imports). GitHub Actions CI is the authoritative check. M0-04/M0-05 (web scaffold, `package-lock.json`, FastAPI + OpenAPI) need npm/PyPI and wait until the owner allows those hosts. `uv.lock` isn't committed yet for the same reason; generate it once PyPI is reachable.
 
@@ -70,4 +75,5 @@ Current milestone: M3 (M0 web items blocked on npm)
 - 2026-10-03: Commits are authored as Yengnong Xiong (GitHub noreply email) per owner request; Claude stays as Co-Authored-By. Set in CLAUDE.md session protocol step 4.
 
 ## Session log (keep the last 15 entries; summarize older ones in one line)
+- 20261003T1947Z-9149 (19:47-20:22 UTC): Finished M1 (Understat, FotMob, Transfermarkt live + datasets fallback + overrides, StatsBomb, `scout ingest` runner) and M2 (union-find, Levenshtein, SQLAlchemy models + Alembic 0001, pandera validation, entity resolution, dimension/fact loaders, vaastav history, `scout build`, `scout doctor`), plus M3-01 to M3-04. Lessons: pandas 3 turns missing strings into NaN (assert with pd.isna); pandas-stubs rejects tuple-unpacking groupby keys (use records); SQLAlchemy text() binds ':name' even inside SQL comments. Blocker unchanged: PyPI/npm egress blocked, so CI is the check (main green at f6aa1b6). Next: M3-05 materialise player_season_features (design notes in the queue).
 - 20261003T1917Z-2292 (19:17-19:42 UTC): First session. Created PROGRESS; applied ADR-0001 to the PRD (v1.1); Python skeleton (uv/pyproject, validated YAML config, Typer CLI, error hierarchy, network-guard conftest); FastAPI `/health` + error schema + `export-openapi`; CI python job; DSA token bucket + LRU cache; ingest base (snapshot store, polite client, SourceAdapter); FPL and vaastav adapters with synthetic fixtures. Commits now authored as the owner (CLAUDE.md step 4). Blocker: PyPI/npm egress blocked, so local checks were partial and GitHub Actions was the check (2 red pushes, each fixed within minutes; main is green at fa36d17). Next: M1-05 Understat adapter (or M0-04 web scaffold first if npm is reachable).
