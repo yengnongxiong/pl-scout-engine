@@ -1,10 +1,11 @@
 # Progress
 Status: IN_PROGRESS            <!-- IN_PROGRESS or COMPLETE -->
-Active session: none
+Active session: 20261003T1947Z-9149 started 2026-10-03T19:47:47Z
 Current milestone: M0
 
 ## Plan for this session
-(none: no session active)
+- M1-05 Understat adapter (soccerdata-backed fetch, CSV snapshots, schema-validated parse)
+- M1-06 FotMob possession adapter
 
 ## Task queue (current milestone)
 - [x] M0-01 Apply ADR-0001 edits to PRD, bump to v1.1 + changelog — PRD diff matches ADR list
