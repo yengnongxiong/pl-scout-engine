@@ -28,3 +28,15 @@ def run_sql(engine: Engine, name: str, params: dict[str, object] | None = None) 
 def player_season_totals(engine: Engine) -> pd.DataFrame:
     """Per player x season x club x source totals (``player_season.sql``)."""
     return run_sql(engine, "player_season")
+
+
+def defensive_padj_totals(
+    engine: Engine, *, even_share: float, clip_min: float, clip_max: float
+) -> pd.DataFrame:
+    """Possession-adjusted tackles, recoveries and CBI (``defensive_padj.sql``)."""
+    params: dict[str, object] = {
+        "even_share": even_share,
+        "clip_min": clip_min,
+        "clip_max": clip_max,
+    }
+    return run_sql(engine, "defensive_padj", params)
