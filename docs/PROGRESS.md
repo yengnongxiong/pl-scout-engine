@@ -34,7 +34,7 @@ Current milestone: M2 (M0 web items blocked on npm)
 - [x] M2-01 `dsa/union_find.py` + `dsa/levenshtein.py` (DP; agrees with rapidfuzz) with complexity docstrings and reference tests
 - [x] M2-02 `db/models.py` SQLAlchemy 2.0 star schema (PRD §11) + `db/session.py` + Alembic initial migration — create_all and `alembic upgrade head` on SQLite in tests
 - [x] M2-03 `transform/validate.py` pandera schemas per staged table + validation report; `transform/clean.py` name normalisation
-- [ ] M2-04 `transform/entity_resolution.py`: club blocking, unidecode, fuzzy match, DOB confirm, overrides CSV, union-find merge, unresolved → entity_map_review — coverage report
+- [x] M2-04 `transform/entity_resolution.py`: club blocking, unidecode, fuzzy match, DOB confirm, overrides CSV, union-find merge, unresolved → entity_map_review — coverage report
 - [ ] M2-05 `db/load.py` loaders (dims/facts, idempotent upserts) + `source_snapshot` freshness rows
 - [ ] M2-06 `scout build` raw → validated → warehouse with `--allow-invalid` (logged); fixture end-to-end integration test; a validation failure stops the build
 - [ ] M2-07 `scout doctor`: freshness, coverage, validation status, missing FPL fields

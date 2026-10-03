@@ -106,6 +106,14 @@ class IngestConfig(_Strict):
         return self
 
 
+class EntityResolutionConfig(_Strict):
+    """Thresholds for cross-source player matching (CLAUDE.md "Known gotchas")."""
+
+    accept_score: float = Field(ge=0.0, le=100.0)
+    min_margin: float = Field(ge=0.0, le=100.0)
+    target_minutes_coverage: float = Field(ge=0.0, le=1.0)
+
+
 class ValidationConfig(_Strict):
     """Thresholds for staged-table validation (CLAUDE.md rule 12)."""
 
@@ -147,6 +155,7 @@ class EngineSettings(_Strict):
     methodology: MethodologyConfig
     diagnosis: DiagnosisConfig
     ingest: IngestConfig
+    entity_resolution: EntityResolutionConfig
     validation: ValidationConfig
     ml: MLConfig
     reports: ReportsConfig

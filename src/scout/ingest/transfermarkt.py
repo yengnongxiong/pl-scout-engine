@@ -243,8 +243,12 @@ class TransfermarktAdapter(SourceAdapter):
         """One row per squad player with value, TM as-of date, position, DOB and contract."""
         values: dict[str, tuple[TmMarketValue, RawSnapshot]] = {}
         squads: list[tuple[TmClubPlayers, RawSnapshot]] = []
+        club_names: dict[str, str] = {}
         for snap in snapshots:
-            if snap.name.startswith("market-value-"):
+            if snap.name.startswith("club-search-"):
+                for hit in _validate(TmClubSearch, snap.read_json(), snap.name).results:
+                    club_names.setdefault(hit.id, hit.name)
+            elif snap.name.startswith("market-value-"):
                 mv = _validate(TmMarketValue, snap.read_json(), snap.name)
                 values[mv.id] = (mv, snap)
             elif snap.name.startswith("club-players-"):
@@ -257,6 +261,7 @@ class TransfermarktAdapter(SourceAdapter):
                     {
                         "tm_player_id": player.id,
                         "tm_club_id": squad.id,
+                        "tm_club_name": club_names.get(squad.id),
                         "name": player.name,
                         "tm_position": player.position or None,
                         "birth_date": parse_tm_date(player.dateOfBirth),

@@ -115,6 +115,7 @@ def test_parse_rows_with_tm_as_of_date(tmp_path: Path) -> None:
     assert alex["contract_expiry"] == date(2028, 6, 30)
     assert alex["tm_position"] == "Centre-Back"
     assert alex["tm_club_id"] == "99001"
+    assert alex["tm_club_name"] == "Synthetic Rovers"
     assert bool(alex["is_stale"]) is False
     assert alex["source"] == "transfermarkt"
 

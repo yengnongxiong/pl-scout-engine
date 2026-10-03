@@ -72,6 +72,14 @@ ingest:
     vaastav: 1.0
     statsbomb: 1.0
 
+entity_resolution:
+  # Name similarity (0-100) needed to accept a cross-source match within a club block.
+  accept_score: 88
+  # Best candidate must beat the runner-up by this much, or the record goes to review.
+  min_margin: 4
+  # Coverage target: share of minutes mapped across sources (PRD §15).
+  target_minutes_coverage: 0.98
+
 validation:
   # Upper bound for minutes in one match (90 + generous stoppage time).
   max_match_minutes: 130
