@@ -18,3 +18,25 @@ peak_age:
   AM: [24, 28]
   W: [23, 27]
   ST: [24, 29]
+
+# Reliability (0-100) = weighted mean of minutes volume and current availability.
+reliability:
+  # Effective (blended) minutes at which minutes volume counts as fully reliable.
+  full_minutes: 2500
+  volume_weight: 0.6
+  availability_weight: 0.4
+  # FPL status -> availability (0-1): a available, d doubtful, i injured, s suspended,
+  # u unavailable (left the club), n not available (e.g. loan terms). FPL's
+  # chance_of_playing (0-100), when given, takes precedence for that player.
+  status_availability:
+    a: 1.0
+    d: 0.5
+    i: 0.0
+    s: 0.0
+    u: 0.0
+    n: 0.0
+
+# AgeProfile: 100 inside the group's peak_age window, minus this many points per year
+# outside it (floored at 0).
+age_profile:
+  penalty_per_year: 15

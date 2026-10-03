@@ -243,6 +243,31 @@ class KpiCatalogue(_Strict):
         return self
 
 
+class ReliabilityConfig(_Strict):
+    """Reliability component of FitScore: minutes volume + current availability (PRD §8.9)."""
+
+    full_minutes: float = Field(gt=0.0)
+    volume_weight: float = Field(ge=0.0)
+    availability_weight: float = Field(ge=0.0)
+    # FPL status code -> availability in [0, 1].
+    status_availability: dict[str, float]
+
+    @model_validator(mode="after")
+    def _valid(self) -> ReliabilityConfig:
+        if self.volume_weight + self.availability_weight <= 0:
+            raise ValueError("reliability weights must not both be zero")
+        bad = {k: v for k, v in self.status_availability.items() if not 0.0 <= v <= 1.0}
+        if bad:
+            raise ValueError(f"status availability must be within [0, 1]: {bad}")
+        return self
+
+
+class AgeProfileConfig(_Strict):
+    """AgeProfile component of FitScore (PRD §8.9)."""
+
+    penalty_per_year: float = Field(gt=0.0)
+
+
 class FitWeights(_Strict):
     """Contents of ``config/fit_weights.yaml`` (PRD §8.9)."""
 
@@ -251,6 +276,8 @@ class FitWeights(_Strict):
     ]
     upgrade_gate_min_delta: float = Field(ge=0.0)
     peak_age: dict[PositionGroup, tuple[int, int]]
+    reliability: ReliabilityConfig
+    age_profile: AgeProfileConfig
 
     @model_validator(mode="after")
     def _valid(self) -> FitWeights:

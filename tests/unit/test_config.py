@@ -68,6 +68,23 @@ def test_fit_weights_must_sum_to_one(config_copy: Path) -> None:
         load_config(config_copy)
 
 
+def test_reliability_config_validated(config_copy: Path) -> None:
+    _edit(
+        config_copy / "fit_weights.yaml",
+        lambda d: d["reliability"]["status_availability"].update(a=1.5),
+    )
+    with pytest.raises(ConfigError, match="within"):
+        load_config(config_copy)
+    _edit(
+        config_copy / "fit_weights.yaml",
+        lambda d: d["reliability"].update(
+            volume_weight=0, availability_weight=0, status_availability={"a": 1.0}
+        ),
+    )
+    with pytest.raises(ConfigError, match="both be zero"):
+        load_config(config_copy)
+
+
 def test_inverted_possession_clip_rejected(config_copy: Path) -> None:
     _edit(
         config_copy / "settings.yaml",
