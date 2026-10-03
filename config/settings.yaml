@@ -31,6 +31,18 @@ ingest:
   user_agent: "pl-scout-engine/0.1 (personal, non-commercial research project)"
   cache_ttl_hours: 12
   max_retries: 3
+  # Exponential backoff between retries (seconds).
+  backoff_initial_seconds: 2.0
+  backoff_max_seconds: 30.0
+  timeout_seconds: 30.0
+  # Responses smaller than this, or containing any marker, are anti-bot/interstitial pages
+  # and count as failures (CLAUDE.md rule 11; Transfermarkt can return 200/202 with no data).
+  min_body_bytes: 64
+  interstitial_markers:
+    - "captcha"
+    - "cf-browser-verification"
+    - "Access Denied"
+    - "Just a moment..."
   # Requests per second per source (token bucket). Transfermarkt ≤ 1 request / 3 s (PRD §14).
   rate_limits:
     fpl: 1.0

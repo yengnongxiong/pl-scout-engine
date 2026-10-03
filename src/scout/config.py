@@ -82,6 +82,11 @@ class IngestConfig(_Strict):
     user_agent: str = Field(min_length=1)
     cache_ttl_hours: float = Field(gt=0.0)
     max_retries: int = Field(ge=0)
+    backoff_initial_seconds: float = Field(ge=0.0)
+    backoff_max_seconds: float = Field(ge=0.0)
+    timeout_seconds: float = Field(gt=0.0)
+    min_body_bytes: int = Field(ge=0)
+    interstitial_markers: list[str]
     rate_limits: dict[Source, float]
 
     @model_validator(mode="after")
