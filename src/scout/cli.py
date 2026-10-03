@@ -8,7 +8,7 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Literal
 
 import typer
 
@@ -116,6 +116,66 @@ def build(
     for table, rows in sorted(report.written.items()):
         skipped = report.skipped.get(table, 0)
         typer.echo(f"  {table}: {rows} rows" + (f" ({skipped} skipped)" if skipped else ""))
+
+
+BENCHMARKS: dict[str, Literal["top6", "top4", "league"]] = {
+    "top6": "top6",
+    "top4": "top4",
+    "league": "league",
+}
+
+
+@app.command()
+def diagnose(
+    team: Annotated[str, typer.Argument(help="Club name, alias or id.")],
+    benchmark: Annotated[str | None, typer.Option(help="top6 (default), top4 or league.")] = None,
+    mode: Annotated[str, typer.Option(help="Season mode: blended or current.")] = "blended",
+    top: Annotated[int, typer.Option(help="Number of needs to show.")] = 3,
+) -> None:
+    """Diagnose a club's biggest needs against a benchmark (PRD §8.8)."""
+    from scout.db.session import make_engine
+    from scout.engines.diagnosis import diagnose as run_diagnosis
+    from scout.engines.diagnosis import find_team
+
+    config = get_config()
+    if benchmark is not None and benchmark not in BENCHMARKS:
+        typer.echo(f"Unknown benchmark {benchmark!r}; choose {', '.join(BENCHMARKS)}", err=True)
+        raise typer.Exit(code=2)
+    engine = make_engine(get_settings().database_url)
+    try:
+        club = find_team(engine, team, config.team_aliases.aliases)
+        result = run_diagnosis(
+            engine,
+            club.team_id,
+            config,
+            benchmark=BENCHMARKS[benchmark] if benchmark else None,
+            season_mode=mode,
+        )
+    except ScoutError as exc:
+        typer.echo(f"Diagnosis failed: {exc.message}", err=True)
+        raise typer.Exit(code=1) from exc
+    finally:
+        engine.dispose()
+    typer.echo(
+        f"{result.team_name} vs {result.benchmark} ({len(result.benchmark_team_ids)} clubs), "
+        f"{result.season_mode} mode"
+    )
+    for need in result.needs[:top]:
+        typer.echo(f"{need.rank}. {need.position_group}  severity {need.severity:.1f}")
+        gaps = sorted(
+            (g for g in need.gaps if g.gap is not None), key=lambda g: g.gap or 0.0, reverse=True
+        )
+        for gap in gaps[:3]:
+            proxy = " (proxy)" if gap.is_proxy else ""
+            typer.echo(
+                f"   {gap.label}{proxy}: club {gap.club_score:.0f} vs benchmark "
+                f"{gap.benchmark_score:.0f} (gap {gap.gap:+.0f})"
+            )
+        for link in need.weak_links:
+            typer.echo(f"   weak link: player {link.player_id} {link.kpi} p{link.percentile:.0f}")
+        for risk in need.risks:
+            typer.echo(f"   risk ({risk.kind}): {risk.detail}")
+        typer.echo(f"   evidence rows: {len(need.evidence)}")
 
 
 @app.command()

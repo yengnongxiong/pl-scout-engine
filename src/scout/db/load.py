@@ -256,9 +256,12 @@ class DimensionLoader:
                 kickoff = rec.get("date")
                 if isinstance(kickoff, datetime) and not pd.isna(kickoff):
                     row.kickoff = kickoff
+                self.session.add(row)
+            # Fill scores the match doesn't have yet (e.g. created from vaastav rows),
+            # so last season's table counts every played match.
+            if row.home_score is None and row.away_score is None:
                 row.home_score = _opt_int(rec.get("goals"))
                 row.away_score = _opt_int(rec.get("goals_against"))
-                self.session.add(row)
             row.understat_game_id = game_id
             self.session.flush()
             out[game_id] = row.match_id

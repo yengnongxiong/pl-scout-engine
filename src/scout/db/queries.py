@@ -50,3 +50,26 @@ def kpi_percentiles(engine: Engine, *, min_minutes: float) -> pd.DataFrame:
 def standings(engine: Engine, season_id: str) -> pd.DataFrame:
     """League table for ``season_id`` from scored matches (``standings.sql``)."""
     return run_sql(engine, "standings", {"season_id": season_id})
+
+
+def club_players(engine: Engine) -> pd.DataFrame:
+    """Current-season club x player minutes with position, DOB and contract."""
+    frame = run_sql(engine, "club_players")
+    for col in ("birth_date", "contract_expiry"):
+        # SQLite returns dates as text; normalise to datetime.date (None stays None).
+        frame[col] = [
+            None if v is None or (isinstance(v, float) and pd.isna(v)) else pd.Timestamp(v).date()
+            for v in frame[col]
+        ]
+    return frame
+
+
+def team_matches_played(engine: Engine) -> dict[int, int]:
+    """Scored current-season matches per club."""
+    frame = run_sql(engine, "team_matches_played")
+    return {int(t): int(n) for t, n in zip(frame["team_id"], frame["matches"], strict=True)}
+
+
+def player_features(engine: Engine, season_mode: str) -> pd.DataFrame:
+    """Materialised ``player_season_features`` rows for one season mode."""
+    return run_sql(engine, "player_features", {"season_mode": season_mode})

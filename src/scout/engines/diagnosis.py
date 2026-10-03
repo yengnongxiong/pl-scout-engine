@@ -16,13 +16,22 @@ left out of the mean rather than treated as average or as zero.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import date
 
 import pandas as pd
+from sqlalchemy import Engine, select
 
-from scout.config import DiagnosisConfig, KpiCatalogue
+from scout.config import AppConfig, DiagnosisConfig, KpiCatalogue
+from scout.db.models import DimSeason, DimTeam
+from scout.db.queries import club_players, player_features, standings, team_matches_played
+from scout.db.session import make_session_factory
+from scout.engines.benchmark import Benchmark, benchmark_clubs
+from scout.errors import NotFoundError
+from scout.features.per90 import MINUTES_PER_MATCH
+from scout.ingest.history import previous_seasons
+from scout.ingest.transfermarkt import normalise_name
 
 
 @dataclass(frozen=True)
@@ -271,3 +280,163 @@ def risk_flags(
                     )
                 )  # fmt: skip
     return out
+
+
+@dataclass(frozen=True)
+class Evidence:
+    """One number behind a need, with its receipt (CLAUDE.md rule 3)."""
+
+    player_id: int
+    player_name: str
+    kpi: str
+    raw_p90: float | None
+    percentile: float | None
+    n_peers: int
+    minutes: float
+    source: str
+    as_of: str | None
+    is_proxy: bool
+    padj_status: str | None
+
+
+@dataclass
+class Need:
+    """A ranked position-group need with gaps, evidence, weak links and risks."""
+
+    rank: int
+    need_id: str
+    position_group: str
+    severity: float
+    gaps: list[KpiGap]
+    evidence: list[Evidence]
+    weak_links: list[WeakLink]
+    risks: list[RiskFlag]
+
+
+@dataclass
+class Diagnosis:
+    """Full diagnosis of one club against a benchmark."""
+
+    team_id: int
+    team_name: str
+    benchmark: str
+    benchmark_team_ids: list[int]
+    season_mode: str
+    needs: list[Need]
+
+
+def find_team(engine: Engine, query: str, aliases: Mapping[str, Sequence[str]]) -> DimTeam:
+    """Resolve a club by id, name or alias among current FPL clubs.
+
+    Raises:
+        NotFoundError: If nothing matches.
+    """
+    with make_session_factory(engine)() as session:
+        teams = list(session.scalars(select(DimTeam).where(DimTeam.fpl_code.is_not(None))))
+    if query.isdigit():
+        for team in teams:
+            if team.team_id == int(query):
+                return team
+    wanted = normalise_name(query)
+    canonical = {
+        normalise_name(spelling): normalise_name(name)
+        for name, alts in aliases.items()
+        for spelling in (name, *alts)
+    }
+    target = canonical.get(wanted, wanted)
+    for team in teams:
+        name = normalise_name(team.name)
+        if name == wanted or canonical.get(name, name) == target:
+            return team
+    raise NotFoundError(f"no current club matches {query!r}", details={"query": query})
+
+
+def diagnose(
+    engine: Engine,
+    team_id: int,
+    config: AppConfig,
+    *,
+    benchmark: Benchmark | None = None,
+    custom: Sequence[int] = (),
+    season_mode: str = "blended",
+    as_of: date | None = None,
+) -> Diagnosis:
+    """Diagnose ``team_id`` from the warehouse (PRD §8.8 steps 1-6)."""
+    diag_cfg = config.settings.diagnosis
+    bench_name: Benchmark = benchmark or diag_cfg.default_benchmark
+    with make_session_factory(engine)() as session:
+        team = session.get(DimTeam, team_id)
+        if team is None:
+            raise NotFoundError(f"no club with id {team_id}")
+        current = session.scalars(select(DimSeason.season_id).where(DimSeason.is_current)).first()
+        if current is None:
+            raise NotFoundError("no current season in the warehouse; run `scout build`")
+        league = [
+            t.team_id for t in session.scalars(select(DimTeam).where(DimTeam.fpl_code.is_not(None)))
+        ]
+        team_name = team.name
+    table = standings(engine, previous_seasons(current, 1)[0])
+    bench_ids = benchmark_clubs(
+        table,
+        bench_name,
+        club_id=team_id,
+        sizes={str(k): v for k, v in diag_cfg.benchmark_sizes.items()},
+        custom=custom,
+        league_clubs=league,
+    )
+    players = club_players(engine)
+    features = player_features(engine, season_mode)
+    pct = features[["player_id", "kpi", "percentile"]]
+    scores = group_scores(players[["team_id", "player_id", "position_group", "minutes"]], pct)
+    assessments = assess_groups(team_id, bench_ids, scores, config.kpis)
+
+    mine = players[players["team_id"] == team_id]
+    available = team_matches_played(engine).get(team_id, 0) * MINUTES_PER_MATCH
+    links = weak_links(mine, pct, available_minutes=available, catalogue=config.kpis, cfg=diag_cfg)
+    roles = role_scores(mine, pct, config.kpis)
+    flags = risk_flags(mine, roles, as_of=as_of or date.today(), cfg=diag_cfg)
+    names = dict(zip(mine["player_id"], mine["canonical_name"], strict=True))
+    minutes_here = dict(zip(mine["player_id"], mine["minutes"], strict=True))
+
+    needs: list[Need] = []
+    for rank, a in enumerate(assessments, start=1):
+        group_players = set(mine.loc[mine["position_group"] == a.position_group, "player_id"])
+        group_kpis = set(group_weights(config.kpis, a.position_group))
+        rows = features[
+            features["player_id"].isin(group_players) & features["kpi"].isin(group_kpis)
+        ]
+        evidence = [
+            Evidence(
+                player_id=int(r["player_id"]),
+                player_name=str(names[r["player_id"]]),
+                kpi=str(r["kpi"]),
+                raw_p90=_opt_float(r["raw_p90"]),
+                percentile=_opt_float(r["percentile"]),
+                n_peers=int(r["n_peers"]),
+                minutes=float(minutes_here[r["player_id"]]),
+                source=str(r["source"]),
+                as_of=None if r["as_of"] is None or pd.isna(r["as_of"]) else str(r["as_of"]),
+                is_proxy=bool(r["is_proxy"]),
+                padj_status=None if pd.isna(r["padj_status"]) else str(r["padj_status"]),
+            )
+            for r in rows.to_dict(orient="records")
+        ]
+        needs.append(
+            Need(
+                rank=rank,
+                need_id=f"{team_id}-{a.position_group}",
+                position_group=a.position_group,
+                severity=a.severity,
+                gaps=a.gaps,
+                evidence=sorted(evidence, key=lambda e: (-e.minutes, e.player_id, e.kpi)),
+                weak_links=[w for w in links if w.position_group == a.position_group],
+                risks=[f for f in flags if f.position_group == a.position_group],
+            )
+        )
+    return Diagnosis(team_id, team_name, bench_name, bench_ids, season_mode, needs)
+
+
+def _opt_float(value: object) -> float | None:
+    if value is None or (isinstance(value, float) and pd.isna(value)):
+        return None
+    return float(str(value)) if not isinstance(value, (int, float)) else float(value)
