@@ -186,7 +186,13 @@ class DimensionLoader:
             code = int(rec["fpl_fixture_code"])
             row = self.session.scalars(
                 select(DimMatch).where(DimMatch.fpl_fixture_code == code)
-            ).first() or self._match(season_id, home, away)
+            ).first()
+            if row is None:
+                # Adopt a match created from another source, but never one that already
+                # belongs to a different FPL fixture.
+                candidate = self._match(season_id, home, away)
+                if candidate is not None and candidate.fpl_fixture_code is None:
+                    row = candidate
             if row is None:
                 row = DimMatch(season_id=season_id, home_team_id=home, away_team_id=away)
                 self.session.add(row)
