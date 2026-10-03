@@ -14,7 +14,20 @@ Current milestone: M0
 - [x] M0-03 config/*.yaml stubs (settings, kpis, fit_weights, positions, team_aliases) loaded + validated by config.py — unit tests pass
 - [ ] M0-04 web/ scaffold: Vite + React + TS strict, ESLint, Prettier, Vitest + RTL, Tailwind — lint/typecheck/test/build pass
 - [ ] M0-05 FastAPI stub (`/health`) + `scout export-openapi` + `npm run gen:api` (openapi-typescript) — generated files committed, no drift
+  - Note: Python half done (FastAPI `/health`, error schema, CORS, `scout api`, `scout export-openapi`; CI-verified). Remaining: commit `web/openapi.json`, `npm run gen:api` with openapi-typescript, `contract` CI job. Needs npm (blocked).
 - [ ] M0-06 CI workflow (python, web, contract jobs) + ADR template + README stub + Makefile + .env.example + .gitignore — workflow file valid; local equivalents pass
+  - Note: CI `python` job, Makefile, .gitignore, .env.example, ADR template and README stub done. Remaining: `web` and `contract` jobs once web/ exists.
+
+
+### M1 (started early: remaining M0 items are blocked on npm; Python-only and independent)
+- [x] M1-01 `dsa/token_bucket.py` + `dsa/lru_cache.py` with complexity docstrings and reference tests — pytest passes
+- [ ] M1-02 `ingest/base.py`: SourceAdapter ABC, raw snapshot store (timestamped, checksum), TTL cache, polite httpx client (User-Agent, token bucket, tenacity retries, interstitial detection) — unit tests with mocked transport
+- [ ] M1-03 FPL adapter: bootstrap-static + element-summary + fixtures parse to validated DataFrames keyed on `code`; season derived from events; trimmed synthetic fixtures; contract + schema-changed tests
+- [ ] M1-04 vaastav history adapter (per-gameweek CSV) with fixture contract tests
+- [ ] M1-05 Understat adapter (player match, team match incl. PPDA/deep) via soccerdata, fixture contract tests
+- [ ] M1-06 FotMob possession adapter, fixture contract tests
+- [ ] M1-07 Transfermarkt adapter (value + TM last-updated, position, DOB, contract) + snapshot fallback labelled stale + overrides; interstitial = failure
+- [ ] M1-08 StatsBomb open-data loader (dev) + `scout ingest --source` CLI wiring with per-session request caps
 
 ## Done
 
@@ -25,6 +38,7 @@ Current milestone: M0
 - Please allow `pypi.org`, `files.pythonhosted.org` and `registry.npmjs.org` (or the Trusted network level) in the routine's environment. Default until then: Python work verified via CI, web work paused.
 
 ## Decisions log (minor)
+- 2026-10-03: Started M1 Python tasks before M0 is fully done, because the remaining M0 items (web scaffold, contract job) are blocked on npm egress. Resume M0-04/05/06 first once npm is reachable.
 - 2026-10-03: `config/kpis.yaml` defines each KPI once under `kpis:` and position groups reference KPI ids with weights (PRD §8.7 shape, deduplicated). Validated: weights sum to 1, proxies need `proxy_for`.
 - 2026-10-03: Dependencies added: typer (CLI), pydantic + pydantic-settings (config/API models), PyYAML (config), fastapi + uvicorn (API, M7), pytest/pytest-cov/ruff/mypy/types-PyYAML/httpx (dev quality and TestClient). All MIT/BSD/Apache.
 - 2026-10-03: Commits are authored as Yengnong Xiong (GitHub noreply email) per owner request; Claude stays as Co-Authored-By. Set in CLAUDE.md session protocol step 4.
