@@ -189,12 +189,10 @@ class UnderstatAdapter(SourceAdapter):
         players = _read_csv(snap, REQUIRED_PLAYER)
         shots = self._shots(snapshots, season)
         pens = shots[shots["situation"] == PENALTY]
-        pen_xg: dict[tuple[int, int], float] = {
-            (int(r["game_id"]), int(r["player_id"])): float(r["xg"])
-            for r in pens.groupby(["game_id", "player_id"], as_index=False)["xg"]
-            .sum()
-            .to_dict(orient="records")
-        }
+        pen_xg: dict[tuple[int, int], float] = {}
+        for r in pens.to_dict(orient="records"):
+            key = (int(r["game_id"]), int(r["player_id"]))
+            pen_xg[key] = pen_xg.get(key, 0.0) + float(r["xg"])
         rows: list[dict[str, object]] = []
         for rec in players.to_dict(orient="records"):
             game_id, player_id = int(rec["game_id"]), int(rec["player_id"])
@@ -233,24 +231,8 @@ class UnderstatAdapter(SourceAdapter):
         snap = self._snap(snapshots, season, "team_match")
         games = _read_csv(snap, REQUIRED_TEAM)
         shots = self._shots(snapshots, season)
-        by_team = shots.assign(
-            set_piece=shots["situation"].isin(SET_PIECE_SITUATIONS),
-            open_play=shots["situation"] == OPEN_PLAY,
-        )
-        set_piece: dict[tuple[int, str], float] = {
-            (int(g), str(t)): float(x)
-            for (g, t), x in by_team[by_team["set_piece"]]
-            .groupby(["game_id", "team"])["xg"]
-            .sum()
-            .items()
-        }
-        open_play: dict[tuple[int, str], float] = {
-            (int(g), str(t)): float(x)
-            for (g, t), x in by_team[by_team["open_play"]]
-            .groupby(["game_id", "team"])["xg"]
-            .sum()
-            .items()
-        }
+        set_piece = _xg_by_game_team(shots[shots["situation"].isin(SET_PIECE_SITUATIONS)])
+        open_play = _xg_by_game_team(shots[shots["situation"] == OPEN_PLAY])
         games_with_shots = {int(g) for g in shots["game_id"].unique()}
         rows: list[dict[str, object]] = []
         for rec in games.to_dict(orient="records"):
@@ -307,8 +289,8 @@ def _shot_sum(
 
 def _xg_by_game_team(shots: pd.DataFrame) -> dict[tuple[int, str], float]:
     """Total shot xG keyed by ``(game_id, team)``."""
-    grouped = shots.groupby(["game_id", "team"], as_index=False)["xg"].sum()
-    return {
-        (int(r["game_id"]), str(r["team"])): float(r["xg"])
-        for r in grouped.to_dict(orient="records")
-    }
+    totals: dict[tuple[int, str], float] = {}
+    for r in shots.to_dict(orient="records"):
+        key = (int(r["game_id"]), str(r["team"]))
+        totals[key] = totals.get(key, 0.0) + float(r["xg"])
+    return totals
