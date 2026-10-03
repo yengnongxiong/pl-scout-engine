@@ -79,6 +79,7 @@ class DiagnosisConfig(_Strict):
 class IngestConfig(_Strict):
     """Scraping etiquette: User-Agent, cache TTL, retries and per-source rate limits."""
 
+    base_urls: dict[Source, str] = Field(default_factory=dict)
     user_agent: str = Field(min_length=1)
     cache_ttl_hours: float = Field(gt=0.0)
     max_retries: int = Field(ge=0)

@@ -28,6 +28,8 @@ diagnosis:
   contract_risk_months: 12
 
 ingest:
+  base_urls:
+    fpl: "https://fantasy.premierleague.com/api/"
   user_agent: "pl-scout-engine/0.1 (personal, non-commercial research project)"
   cache_ttl_hours: 12
   max_retries: 3

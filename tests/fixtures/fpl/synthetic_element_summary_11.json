@@ -1,0 +1,50 @@
+{
+ "fixtures": [],
+ "history_past": [],
+ "history": [
+  {
+   "element": 11,
+   "fixture": 101,
+   "opponent_team": 2,
+   "was_home": true,
+   "kickoff_time": "2026-08-22T14:00:00Z",
+   "round": 1,
+   "minutes": 90,
+   "starts": 1,
+   "goals_scored": 0,
+   "assists": 1,
+   "expected_goals": "0.05",
+   "expected_assists": "0.31",
+   "expected_goals_conceded": "1.20",
+   "tackles": 3,
+   "clearances_blocks_interceptions": 7,
+   "recoveries": 5,
+   "defensive_contribution": 10,
+   "yellow_cards": 1,
+   "red_cards": 0,
+   "total_points": 2
+  },
+  {
+   "element": 11,
+   "fixture": 102,
+   "opponent_team": 2,
+   "was_home": false,
+   "kickoff_time": "2026-08-29T14:00:00Z",
+   "round": 2,
+   "minutes": 90,
+   "starts": 1,
+   "goals_scored": 0,
+   "assists": 0,
+   "expected_goals": "0.00",
+   "expected_assists": "0.02",
+   "expected_goals_conceded": "0.80",
+   "tackles": 2,
+   "clearances_blocks_interceptions": 9,
+   "recoveries": 4,
+   "defensive_contribution": 11,
+   "yellow_cards": 0,
+   "red_cards": 0,
+   "total_points": 2
+  }
+ ]
+}

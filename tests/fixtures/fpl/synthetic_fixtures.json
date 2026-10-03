@@ -1,0 +1,35 @@
+[
+ {
+  "id": 101,
+  "code": 7000101,
+  "event": 1,
+  "kickoff_time": "2026-08-22T14:00:00Z",
+  "team_h": 1,
+  "team_a": 2,
+  "team_h_score": 2,
+  "team_a_score": 1,
+  "finished": true
+ },
+ {
+  "id": 102,
+  "code": 7000102,
+  "event": 2,
+  "kickoff_time": "2026-08-29T14:00:00Z",
+  "team_h": 2,
+  "team_a": 1,
+  "team_h_score": 0,
+  "team_a_score": 0,
+  "finished": true
+ },
+ {
+  "id": 103,
+  "code": 7000103,
+  "event": 38,
+  "kickoff_time": null,
+  "team_h": 1,
+  "team_a": 2,
+  "team_h_score": null,
+  "team_a_score": null,
+  "finished": false
+ }
+]

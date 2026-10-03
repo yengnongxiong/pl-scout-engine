@@ -1,0 +1,106 @@
+{
+ "events": [
+  {
+   "id": 1,
+   "name": "Gameweek 1",
+   "deadline_time": "2026-08-21T17:30:00Z",
+   "finished": true,
+   "is_current": false,
+   "is_next": false
+  },
+  {
+   "id": 2,
+   "name": "Gameweek 2",
+   "deadline_time": "2026-08-28T17:30:00Z",
+   "finished": true,
+   "is_current": true,
+   "is_next": false
+  },
+  {
+   "id": 38,
+   "name": "Gameweek 38",
+   "deadline_time": "2027-05-23T13:30:00Z",
+   "finished": false,
+   "is_current": false,
+   "is_next": false
+  }
+ ],
+ "teams": [
+  {
+   "id": 1,
+   "code": 9001,
+   "name": "Synthetic Rovers",
+   "short_name": "SYR",
+   "strength": 4
+  },
+  {
+   "id": 2,
+   "code": 9002,
+   "name": "Fixture Town",
+   "short_name": "FXT",
+   "strength": 3
+  }
+ ],
+ "element_types": [
+  {
+   "id": 1,
+   "singular_name_short": "GKP"
+  },
+  {
+   "id": 2,
+   "singular_name_short": "DEF"
+  },
+  {
+   "id": 3,
+   "singular_name_short": "MID"
+  },
+  {
+   "id": 4,
+   "singular_name_short": "FWD"
+  }
+ ],
+ "elements": [
+  {
+   "id": 11,
+   "code": 500011,
+   "first_name": "Alex",
+   "second_name": "Testman",
+   "web_name": "Testman",
+   "team": 1,
+   "team_code": 9001,
+   "element_type": 2,
+   "status": "a",
+   "news": "",
+   "chance_of_playing_next_round": null,
+   "minutes": 180
+  },
+  {
+   "id": 12,
+   "code": 500012,
+   "first_name": "Bo",
+   "second_name": "Fakeson",
+   "web_name": "Fakeson",
+   "team": 2,
+   "team_code": 9002,
+   "element_type": 4,
+   "status": "d",
+   "news": "Knock - 75% chance of playing",
+   "chance_of_playing_next_round": 75,
+   "minutes": 95
+  },
+  {
+   "id": 13,
+   "code": 500013,
+   "first_name": "Cy",
+   "second_name": "Benchley",
+   "web_name": "Benchley",
+   "team": 1,
+   "team_code": 9001,
+   "element_type": 3,
+   "status": "a",
+   "news": "",
+   "chance_of_playing_next_round": null,
+   "minutes": 0
+  }
+ ]
+}
