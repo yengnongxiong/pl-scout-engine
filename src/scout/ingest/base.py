@@ -98,6 +98,19 @@ class SnapshotStore:
             return RawSnapshot(source, name, path, fetched_at, hashlib.sha256(payload).hexdigest())
         return None
 
+    def latest_all(self, source: str) -> list[RawSnapshot]:
+        """Newest snapshot of every file name for ``source`` (the latest complete run).
+
+        Each write lands in its own timestamped directory, so a source's latest run is
+        the newest copy of each distinct file name.
+        """
+        source_dir = self.root / source
+        if not source_dir.is_dir():
+            return []
+        names = sorted({p.name for d in source_dir.iterdir() if d.is_dir() for p in d.iterdir()})
+        out = [self.latest(source, name) for name in names]
+        return [snap for snap in out if snap is not None]
+
 
 class _RetryableError(Exception):
     """Internal marker for transient failures that tenacity should retry."""

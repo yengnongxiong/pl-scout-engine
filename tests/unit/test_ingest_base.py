@@ -129,3 +129,16 @@ def test_snapshot_store_round_trip_and_ttl(tmp_path: Path) -> None:
     assert store.latest("fpl", "bootstrap-static.json") is not None
     assert store.latest("fpl", "missing.json") is None
     assert store.latest("understat", "x.json") is None
+
+
+def test_latest_all_returns_newest_copy_of_each_file(tmp_path: Path) -> None:
+    now = [datetime(2026, 10, 1, tzinfo=UTC)]
+    store = SnapshotStore(tmp_path, clock=lambda: now[0])
+    store.write("fpl", "a.json", b"1")
+    now[0] += timedelta(seconds=1)
+    store.write("fpl", "b.json", b"2")
+    now[0] += timedelta(seconds=1)
+    store.write("fpl", "a.json", b"3")
+    latest = {s.name: s.read_bytes() for s in store.latest_all("fpl")}
+    assert latest == {"a.json": b"3", "b.json": b"2"}
+    assert store.latest_all("understat") == []

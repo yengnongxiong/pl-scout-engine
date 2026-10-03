@@ -383,6 +383,7 @@ class TransfermarktDatasetsAdapter(SourceAdapter):
                 {
                     "tm_player_id": pid,
                     "tm_club_id": str(rec["current_club_id"]),
+                    "tm_club_name": _opt_text(rec.get("current_club_name")),
                     "name": str(rec["name"]),
                     "tm_position": None if _is_nan(rec["sub_position"]) else rec["sub_position"],
                     "birth_date": None
@@ -453,3 +454,7 @@ _OVERRIDE_RESULT_COLS = (
 
 def _is_nan(value: object) -> bool:
     return value is None or (isinstance(value, float) and math.isnan(value))
+
+
+def _opt_text(value: object) -> str | None:
+    return None if _is_nan(value) else str(value)

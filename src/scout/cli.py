@@ -14,7 +14,7 @@ import typer
 
 from scout import __version__
 from scout.config import PROJECT_ROOT, get_config, get_settings
-from scout.errors import ConfigError, ScoutError
+from scout.errors import ConfigError, DataValidationError, ScoutError
 
 DEFAULT_OPENAPI_PATH = PROJECT_ROOT / "web" / "openapi.json"
 
@@ -86,6 +86,36 @@ def ingest(
     if not all(r.ok for r in results):
         typer.echo(f"Some sources failed. Valid sources: {', '.join(ALL_SOURCES)}", err=True)
         raise typer.Exit(code=1)
+
+
+@app.command()
+def build(
+    allow_invalid: Annotated[
+        bool,
+        typer.Option("--allow-invalid", help="Load despite validation failures (logged)."),
+    ] = False,
+) -> None:
+    """Build the warehouse from the newest raw snapshots: validate, resolve, load."""
+    from scout.db.build import build_warehouse
+
+    try:
+        report = build_warehouse(get_settings(), get_config(), allow_invalid=allow_invalid)
+    except DataValidationError as exc:
+        typer.echo(f"Build stopped: {exc.message}", err=True)
+        issues = exc.details.get("issues")
+        if isinstance(issues, list):
+            for issue in issues:
+                typer.echo(f"  {issue}", err=True)
+        raise typer.Exit(code=1) from exc
+    except ScoutError as exc:
+        typer.echo(f"Build failed: {exc.message}", err=True)
+        raise typer.Exit(code=1) from exc
+    typer.echo(f"Sources: {', '.join(report.sources)}")
+    typer.echo(report.validation.summary())
+    typer.echo(report.coverage)
+    for table, rows in sorted(report.written.items()):
+        skipped = report.skipped.get(table, 0)
+        typer.echo(f"  {table}: {rows} rows" + (f" ({skipped} skipped)" if skipped else ""))
 
 
 @app.command()
