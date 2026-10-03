@@ -40,3 +40,8 @@ def defensive_padj_totals(
         "clip_max": clip_max,
     }
     return run_sql(engine, "defensive_padj", params)
+
+
+def kpi_percentiles(engine: Engine, *, min_minutes: float) -> pd.DataFrame:
+    """Position-group percentiles over the ``kpi_values`` table (``percentiles.sql``)."""
+    return run_sql(engine, "percentiles", {"min_minutes": min_minutes})
