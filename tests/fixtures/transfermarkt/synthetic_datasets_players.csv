@@ -1,0 +1,4 @@
+player_id,name,date_of_birth,position,sub_position,contract_expiration_date,current_club_id,current_club_name,current_club_domestic_competition_id,market_value_in_eur
+880011,Alex Testman,1998-03-14 00:00:00,Defender,Centre-Back,2028-06-30 00:00:00,99001,Synthetic Rovers,GB1,30000000
+880014,Dee Elsewhere,2001-01-01 00:00:00,Attack,Centre-Forward,,77001,Foreign Club,ES1,9000000
+880015,Eli Novalue,2003-05-05 00:00:00,Midfield,Defensive Midfield,,99001,Synthetic Rovers,GB1,

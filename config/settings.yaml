@@ -32,9 +32,13 @@ ingest:
     fpl: "https://fantasy.premierleague.com/api/"
     # Self-hosted felipeall/transfermarkt-api (run locally; port 8001 avoids the scout API).
     transfermarkt: "http://localhost:8001/"
+    # dcaribou/transfermarkt-datasets public export (stale fallback only; updates paused).
+    transfermarkt_datasets: "https://pub-e682421888d945d684bcae8890b0ec20.r2.dev/data/"
     vaastav: "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/master/data/"
   # FotMob possession shares of a match must sum to 1 within this tolerance.
   possession_sum_tolerance: 0.02
+  # transfermarkt-datasets competition id for the Premier League.
+  tm_datasets_competition_id: GB1
   # Past seasons pulled from the vaastav archive, counted back from the current season.
   history_seasons_back: 3
   user_agent: "pl-scout-engine/0.1 (personal, non-commercial research project)"
@@ -58,6 +62,7 @@ ingest:
     understat: 0.5
     fotmob: 0.5
     transfermarkt: 0.333
+    transfermarkt_datasets: 0.5
     vaastav: 1.0
     statsbomb: 1.0
 

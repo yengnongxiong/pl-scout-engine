@@ -21,7 +21,9 @@ from scout.errors import ConfigError
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 PositionGroup = Literal["CB", "FB", "DM", "CM", "AM", "W", "ST"]
-Source = Literal["fpl", "understat", "fotmob", "transfermarkt", "vaastav", "statsbomb"]
+Source = Literal[
+    "fpl", "understat", "fotmob", "transfermarkt", "transfermarkt_datasets", "vaastav", "statsbomb"
+]
 
 WEIGHT_SUM_TOLERANCE = 1e-6
 
@@ -82,6 +84,7 @@ class IngestConfig(_Strict):
     base_urls: dict[Source, str] = Field(default_factory=dict)
     history_seasons_back: int = Field(default=3, ge=1)
     possession_sum_tolerance: float = Field(default=0.02, ge=0.0, le=1.0)
+    tm_datasets_competition_id: str = "GB1"
     user_agent: str = Field(min_length=1)
     cache_ttl_hours: float = Field(gt=0.0)
     max_retries: int = Field(ge=0)
