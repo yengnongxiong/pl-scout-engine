@@ -85,6 +85,16 @@ def test_reliability_config_validated(config_copy: Path) -> None:
         load_config(config_copy)
 
 
+def test_style_divisor_must_be_another_plain_feature(config_copy: Path) -> None:
+    kpis = config_copy / "kpis.yaml"
+    _edit(kpis, lambda d: d["style_features"]["ppda"].update(divide_by="nope"))
+    with pytest.raises(ConfigError, match="divide_by must name another feature"):
+        load_config(config_copy)
+    _edit(kpis, lambda d: d["style_features"]["ppda"].update(divide_by="deep_per_possession"))
+    with pytest.raises(ConfigError, match="is itself divided"):
+        load_config(config_copy)
+
+
 def test_inverted_possession_clip_rejected(config_copy: Path) -> None:
     _edit(
         config_copy / "settings.yaml",

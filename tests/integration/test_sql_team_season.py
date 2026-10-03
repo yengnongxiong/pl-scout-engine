@@ -12,6 +12,8 @@ from scout.config import PROJECT_ROOT, Settings, TeamMatchColumn, load_config
 from scout.db.build import build_warehouse
 from scout.db.queries import team_season_totals
 from scout.db.session import make_engine
+from scout.engines.fit import style_fit
+from scout.engines.style import team_styles
 from tests.integration.test_build import _seed
 
 CONFIG = load_config(PROJECT_ROOT / "config")
@@ -78,4 +80,30 @@ def test_missing_values_count_in_neither_total_nor_matches(
     assert rovers["xga_total"] == pytest.approx(0.95)  # 0.95 + a real 0.00
     assert rovers["xga_matches"] == 2
     # FotMob rows carry possession only, so no Understat KPI can come from them.
-    assert team_season_totals(engine, "fotmob")["xg_matches"].eq(0).all()
+    fotmob = team_season_totals(engine, "fotmob")
+    assert fotmob["xg_matches"].eq(0).all()
+    fotmob_rovers = fotmob[fotmob["team_id"] == rovers_id].iloc[0]
+    assert (fotmob_rovers["possession_total"], fotmob_rovers["possession_matches"]) == (
+        pytest.approx(0.58 + 0.39),
+        2,
+    )
+
+
+def test_team_styles_from_fixture_warehouse(
+    engine_and_tables: tuple[Engine, pd.DataFrame, pd.DataFrame],
+) -> None:
+    engine, _, _ = engine_and_tables
+    teams = pd.read_sql_table("dim_team", engine)
+    ids = {str(n): int(t) for n, t in zip(teams["name"], teams["team_id"], strict=True)}
+    rovers, town = ids["Synthetic Rovers"], ids["Fixture Town"]
+    styles = team_styles(engine, CONFIG, [rovers, town], current="2026-27", previous="2025-26")
+    # 2025-26 (blended in; no 2026-27 games yet): Rovers possession (0.58 + 0.39) / 2,
+    # PPDA 8.5, deep 7 in one game -> 7 per 90 / 0.485.
+    assert styles[rovers].raw == pytest.approx((0.485, 8.5, 7.0 / 0.485))
+    assert styles[town].raw == pytest.approx((0.515, 11.125, 2.5 / 0.515))
+    # Two clubs: every feature standardises to -1 / +1.
+    assert styles[rovers].z == pytest.approx((-1.0, -1.0, 1.0))
+    assert style_fit(styles[rovers].z, styles[town].z) == pytest.approx(0.0)
+    assert styles[rovers].sources == ("fotmob", "understat") and styles[rovers].as_of
+    # Current-season mode: no 2026-27 team games in the fixtures, so no style data.
+    assert team_styles(engine, CONFIG, [rovers], current="2026-27", previous=None) == {}

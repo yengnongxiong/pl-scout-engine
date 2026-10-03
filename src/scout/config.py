@@ -28,7 +28,7 @@ Source = Literal[
 # Numeric fact_team_match columns a team KPI can be built from (PRD §11).
 TeamMatchColumn = Literal[
     "xg", "xga", "npxg", "npxga", "ppda", "ppda_allowed", "deep", "deep_allowed",
-    "set_piece_xg", "set_piece_xga", "open_play_xga",
+    "set_piece_xg", "set_piece_xga", "open_play_xga", "possession",
 ]  # fmt: skip
 
 WEIGHT_SUM_TOLERANCE = 1e-6
@@ -208,8 +208,8 @@ class GroupKpis(_Strict):
     weights: dict[str, float]
 
 
-class TeamKpiDef(_Strict):
-    """Team-level KPI with the position groups a team need maps to (PRD §8.8 step 7)."""
+class TeamMetricDef(_Strict):
+    """A team season rate built from one ``fact_team_match`` column."""
 
     label: str
     source: Source
@@ -217,8 +217,21 @@ class TeamKpiDef(_Strict):
     # ``per90``: season total per 90 minutes (counting stats, PRD §8.1). ``match_mean``:
     # mean of per-match values, for ratios such as PPDA that cannot be summed.
     aggregate: Literal["per90", "match_mean"]
+
+
+class TeamKpiDef(TeamMetricDef):
+    """Team-level KPI with the position groups a team need maps to (PRD §8.8 step 7)."""
+
     higher_is_better: bool
     responsible_groups: list[PositionGroup] = Field(min_length=1)
+
+
+class StyleFeatureDef(TeamMetricDef):
+    """One dimension of a team's style vector for StyleFit (PRD §8.9)."""
+
+    # Divide by another style feature's raw value (e.g. deep completions per possession
+    # share as a directness proxy).
+    divide_by: str | None = None
 
 
 class KpiCatalogue(_Strict):
@@ -228,6 +241,19 @@ class KpiCatalogue(_Strict):
     kpis: dict[str, KpiDef]
     position_groups: dict[PositionGroup, GroupKpis]
     team_kpis: dict[str, TeamKpiDef]
+    style_features: dict[str, StyleFeatureDef] = Field(min_length=2)
+
+    @model_validator(mode="after")
+    def _style_divisors_valid(self) -> KpiCatalogue:
+        for name, feature in self.style_features.items():
+            divisor = feature.divide_by
+            if divisor is None:
+                continue
+            if divisor == name or divisor not in self.style_features:
+                raise ValueError(f"style feature {name}: divide_by must name another feature")
+            if self.style_features[divisor].divide_by is not None:
+                raise ValueError(f"style feature {name}: divisor {divisor} is itself divided")
+        return self
 
     @model_validator(mode="after")
     def _weights_valid(self) -> KpiCatalogue:

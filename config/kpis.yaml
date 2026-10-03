@@ -205,3 +205,24 @@ team_kpis:
     aggregate: per90
     higher_is_better: false
     responsible_groups: [CB, DM, FB]
+
+# PRD §8.9 StyleFit: dimensions of a team's style vector. Each is a season (or blended)
+# rate like the team KPIs, then standardised across this season's clubs before the cosine,
+# so no feature dominates by scale. `divide_by` divides by another feature's raw value.
+style_features:
+  possession:
+    label: "Possession share"
+    source: fotmob
+    column: possession
+    aggregate: match_mean
+  ppda:
+    label: "PPDA (lower = more intense pressing)"
+    source: understat
+    column: ppda
+    aggregate: match_mean
+  deep_per_possession:
+    label: "Deep completions per 90 per possession share (directness proxy)"
+    source: understat
+    column: deep
+    aggregate: per90
+    divide_by: possession

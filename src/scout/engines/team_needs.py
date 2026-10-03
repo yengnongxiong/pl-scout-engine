@@ -27,7 +27,7 @@ from typing import Any
 import pandas as pd
 from sqlalchemy import Engine
 
-from scout.config import AppConfig, TeamKpiDef
+from scout.config import AppConfig, TeamKpiDef, TeamMetricDef
 from scout.db.queries import team_season_totals
 from scout.features.blend import blend
 from scout.features.per90 import MINUTES_PER_MATCH, per90
@@ -67,9 +67,9 @@ def _opt_float(value: object) -> float | None:
 
 
 def season_rate(
-    row: Mapping[Hashable, Any] | None, kpi: TeamKpiDef
+    row: Mapping[Hashable, Any] | None, kpi: TeamMetricDef
 ) -> tuple[float | None, int, object]:
-    """One season's rate for ``kpi`` from a ``team_season.sql`` row.
+    """One season's rate for a team metric from a ``team_season.sql`` row.
 
     Returns:
         ``(rate, matches with data, as_of)``; the rate is ``None`` when no match has
@@ -95,18 +95,18 @@ def _newest(values: Sequence[Any]) -> str | None:
 
 def team_kpi_values(
     totals: pd.DataFrame,
-    team_kpis: Mapping[str, TeamKpiDef],
+    team_kpis: Mapping[str, TeamMetricDef],
     *,
     current: str,
     previous: str | None,
     lam: float,
     prev_minutes_cap: float,
 ) -> pd.DataFrame:
-    """Season (or blended) rate per club and team KPI.
+    """Season (or blended) rate per club and team metric (team KPI or style feature).
 
     Args:
-        totals: ``team_season.sql`` rows with a ``source`` column.
-        team_kpis: Team KPI definitions (config).
+        totals: ``team_season.sql`` rows with a ``source`` column (``team_totals``).
+        team_kpis: Team metric definitions (config).
         current: Current season id.
         previous: Previous season id to blend in, or ``None`` for current-season mode.
         lam: Blending weight λ (config ``blend_lambda``, PRD §8.2).
@@ -218,6 +218,12 @@ def assess_team(
     return sorted(out, key=lambda n: (-n.gap, n.kpi))
 
 
+def team_totals(engine: Engine, sources: Sequence[str]) -> pd.DataFrame:
+    """``team_season.sql`` rows for each source, tagged with a ``source`` column."""
+    frames = [team_season_totals(engine, s).assign(source=s) for s in sorted(set(sources))]
+    return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
+
+
 def team_level_needs(
     engine: Engine,
     club_id: int,
@@ -240,9 +246,7 @@ def team_level_needs(
         previous: Previous season to blend in (blended mode), or ``None`` (current mode).
     """
     team_kpis = config.kpis.team_kpis
-    sources = sorted({k.source for k in team_kpis.values()})
-    frames = [team_season_totals(engine, s).assign(source=s) for s in sources]
-    totals = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
+    totals = team_totals(engine, [k.source for k in team_kpis.values()])
     if totals.empty:
         return []
     method = config.settings.methodology

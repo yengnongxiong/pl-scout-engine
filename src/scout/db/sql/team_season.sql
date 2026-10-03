@@ -20,6 +20,7 @@ SELECT
     COUNT(f.set_piece_xga) AS set_piece_xga_matches,
     SUM(f.open_play_xga) AS open_play_xga_total,
     COUNT(f.open_play_xga) AS open_play_xga_matches,
+    SUM(f.possession) AS possession_total, COUNT(f.possession) AS possession_matches,
     MAX(f.fetched_at) AS as_of
 FROM fact_team_match AS f
 JOIN dim_match AS m ON m.match_id = f.match_id
