@@ -106,6 +106,12 @@ class IngestConfig(_Strict):
         return self
 
 
+class ValidationConfig(_Strict):
+    """Thresholds for staged-table validation (CLAUDE.md rule 12)."""
+
+    max_match_minutes: int = Field(gt=0)
+
+
 class MLConfig(_Strict):
     """PRD §8.10 ML parameters."""
 
@@ -141,6 +147,7 @@ class EngineSettings(_Strict):
     methodology: MethodologyConfig
     diagnosis: DiagnosisConfig
     ingest: IngestConfig
+    validation: ValidationConfig
     ml: MLConfig
     reports: ReportsConfig
 

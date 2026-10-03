@@ -72,6 +72,10 @@ ingest:
     vaastav: 1.0
     statsbomb: 1.0
 
+validation:
+  # Upper bound for minutes in one match (90 + generous stoppage time).
+  max_match_minutes: 130
+
 ml:
   seed: 42
   gmm_k_min: 6
