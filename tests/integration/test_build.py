@@ -147,3 +147,32 @@ def test_cli_build_reports_validation_stop(tmp_path: Path, monkeypatch: pytest.M
     ok = CliRunner().invoke(cli.app, ["build", "--allow-invalid"])
     assert ok.exit_code == 0, ok.output
     assert "fact_player_match:fpl: 4 rows" in ok.output
+    assert "player_season_features:" in ok.output
+
+
+def test_pipeline_materialises_features(tmp_path: Path) -> None:
+    from scout.db.models import PlayerSeasonFeature
+    from scout.pipeline import build_all
+
+    settings = _settings(tmp_path)
+    _seed(settings.data_dir)
+    report = build_all(settings, CONFIG)
+    n_kpis = len(CONFIG.kpis.kpis)
+    # Alex (CB), Bo (ST), Cy (CM) x 2 season modes x every KPI.
+    assert report.written["player_season_features"] == 3 * 2 * n_kpis
+    assert _count(settings, PlayerSeasonFeature) == 3 * 2 * n_kpis
+    engine = make_engine(settings.database_url)
+    with make_session_factory(engine)() as session:
+        row = session.scalars(
+            select(PlayerSeasonFeature).where(
+                PlayerSeasonFeature.kpi == "npxg_p90",
+                PlayerSeasonFeature.season_mode == "blended",
+                PlayerSeasonFeature.position_group == "ST",
+            )
+        ).one()
+        # Bo: only last season's Understat rows (2025-26) exist, so blended uses them.
+        assert row.value is not None and row.used_previous_season
+        assert row.as_of is not None and row.source == "understat"
+    engine.dispose()
+    build_all(settings, CONFIG)  # rebuild replaces, never duplicates
+    assert _count(settings, PlayerSeasonFeature) == 3 * 2 * n_kpis

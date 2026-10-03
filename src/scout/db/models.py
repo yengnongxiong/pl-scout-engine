@@ -218,3 +218,34 @@ class EntityMapReview(Base):
     best_candidate: Mapped[int | None] = mapped_column(ForeignKey("dim_player.player_id"))
     score: Mapped[float | None] = mapped_column(Float)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class PlayerSeasonFeature(Base):
+    """Materialised per-player KPI values (PRD §11 ``player_season_features``).
+
+    One row per player x season mode (``blended`` / ``current``) x KPI: the raw current
+    per-90, the blended value, the shrunk value used for ranking, its percentile among
+    position-group peers with ``n_peers``, minutes, proxy and possession-adjustment
+    flags, and the newest source timestamp behind it.
+    """
+
+    __tablename__ = "player_season_features"
+    __table_args__ = (UniqueConstraint("player_id", "season_mode", "kpi"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    player_id: Mapped[int] = mapped_column(ForeignKey("dim_player.player_id"), index=True)
+    season_mode: Mapped[str] = mapped_column(String(10))
+    position_group: Mapped[str] = mapped_column(String(3))
+    kpi: Mapped[str] = mapped_column(String(40))
+    source: Mapped[str] = mapped_column(String(30))
+    raw_p90: Mapped[float | None] = mapped_column(Float)
+    value: Mapped[float | None] = mapped_column(Float)
+    shrunk: Mapped[float | None] = mapped_column(Float)
+    percentile: Mapped[float | None] = mapped_column(Float)
+    n_peers: Mapped[int] = mapped_column(Integer)
+    minutes: Mapped[float] = mapped_column(Float)
+    effective_minutes: Mapped[float] = mapped_column(Float)
+    used_previous_season: Mapped[bool] = mapped_column(Boolean)
+    is_proxy: Mapped[bool] = mapped_column(Boolean)
+    padj_status: Mapped[str | None] = mapped_column(String(12))
+    as_of: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

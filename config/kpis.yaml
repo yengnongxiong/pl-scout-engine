@@ -4,6 +4,10 @@
 # `possession_adjusted: true` KPIs use PRD §8.4 when possession exists, else flagged "unadjusted".
 # `shrinkage_k` (optional) overrides methodology.default_shrinkage_k (PRD §8.3).
 
+# PRD §7.2: defensive activity = tackles + recoveries, plus clearances/blocks/interceptions
+# for these position groups.
+def_activity_includes_cbi_groups: [CB, FB]
+
 kpis:
   def_activity_padj_p90:
     label: "Defensive activity, possession-adjusted (per 90)"

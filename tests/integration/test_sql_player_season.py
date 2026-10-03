@@ -31,6 +31,7 @@ def pandas_twin(facts: pd.DataFrame, matches: pd.DataFrame) -> pd.DataFrame:
     out = grouped.size().rename("matches").to_frame()
     for col in ["minutes", "start_flag", *STATS]:
         out[col] = grouped[col].sum(min_count=1)
+    out["fetched_at"] = grouped["fetched_at"].max()
     return out.rename(columns={"start_flag": "starts"}).reset_index()
 
 
@@ -49,7 +50,9 @@ def engine_and_tables(tmp_path: Path) -> Iterator[tuple[Engine, pd.DataFrame, pd
 def _numeric(df: pd.DataFrame) -> pd.DataFrame:
     out = df.sort_values(KEYS).reset_index(drop=True)
     for col in out.columns:
-        if col not in ("season_id", "source"):
+        if col == "fetched_at":
+            out[col] = pd.to_datetime(out[col], utc=True)
+        elif col not in ("season_id", "source"):
             out[col] = pd.to_numeric(out[col]).astype(float)
     return out
 

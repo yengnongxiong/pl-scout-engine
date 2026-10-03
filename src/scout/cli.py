@@ -96,10 +96,10 @@ def build(
     ] = False,
 ) -> None:
     """Build the warehouse from the newest raw snapshots: validate, resolve, load."""
-    from scout.db.build import build_warehouse
+    from scout.pipeline import build_all
 
     try:
-        report = build_warehouse(get_settings(), get_config(), allow_invalid=allow_invalid)
+        report = build_all(get_settings(), get_config(), allow_invalid=allow_invalid)
     except DataValidationError as exc:
         typer.echo(f"Build stopped: {exc.message}", err=True)
         issues = exc.details.get("issues")

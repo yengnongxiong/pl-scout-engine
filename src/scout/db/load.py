@@ -31,6 +31,7 @@ from scout.db.models import (
     FactPlayerMatch,
     FactPlayerStatus,
     FactTeamMatch,
+    PlayerSeasonFeature,
     SourceSnapshot,
 )
 from scout.ingest.base import RawSnapshot
@@ -651,3 +652,13 @@ _UNDERSTAT_TM_COLS = (
     "set_piece_xga",
     "open_play_xga",
 )
+
+
+def replace_player_season_features(session: Session, frame: pd.DataFrame) -> int:
+    """Replace the materialised feature table; returns rows written."""
+    session.execute(delete(PlayerSeasonFeature))
+    columns = [c.name for c in PlayerSeasonFeature.__table__.columns if c.name != "id"]
+    rows = [{c: _clean(rec.get(c)) for c in columns} for rec in frame.to_dict(orient="records")]
+    if rows:
+        session.execute(insert(PlayerSeasonFeature), rows)
+    return len(rows)

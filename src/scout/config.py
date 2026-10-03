@@ -213,6 +213,7 @@ class TeamKpiDef(_Strict):
 class KpiCatalogue(_Strict):
     """Contents of ``config/kpis.yaml``."""
 
+    def_activity_includes_cbi_groups: list[PositionGroup] = Field(default_factory=list)
     kpis: dict[str, KpiDef]
     position_groups: dict[PositionGroup, GroupKpis]
     team_kpis: dict[str, TeamKpiDef]
