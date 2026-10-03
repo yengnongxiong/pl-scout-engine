@@ -52,14 +52,25 @@ jobs:
           if ! uv sync --all-extras; then
             report "PREFLIGHT FAILED: dependency install"; exit 0
           fi
-          echo "::group::ruff check"; uv run ruff check .; ruff_rc=$?; echo "::endgroup::"
-          echo "::group::ruff format"; uv run ruff format --check .; fmt_rc=$?; echo "::endgroup::"
-          echo "::group::mypy"; uv run mypy src; mypy_rc=$?; echo "::endgroup::"
-          echo "::group::pytest"; uv run pytest -q --cov=scout --cov-report=term; test_rc=$?; echo "::endgroup::"
-          echo "::group::cli smoke"
-          uv run scout --help > /dev/null && uv run scout config-check \
-            && uv run scout export-openapi --out "$RUNNER_TEMP/openapi.json"
-          cli_rc=$?; echo "::endgroup::"
+          run_check() {  # name, command...; output kept for the failure digest
+            local name=$1; shift
+            echo "::group::$name"
+            "$@" > "/tmp/$name.log" 2>&1; local rc=$?
+            cat "/tmp/$name.log"; echo "::endgroup::"
+            return $rc
+          }
+          run_check ruff uv run ruff check .; ruff_rc=$?
+          run_check format uv run ruff format --check .; fmt_rc=$?
+          run_check mypy uv run mypy src; mypy_rc=$?
+          run_check pytest uv run pytest -q --cov=scout --cov-report=term; test_rc=$?
+          run_check cli bash -c 'uv run scout --help > /dev/null && uv run scout config-check \
+            && uv run scout export-openapi --out "$RUNNER_TEMP/openapi.json"'; cli_rc=$?
+          for pair in "ruff:$ruff_rc" "format:$fmt_rc" "mypy:$mypy_rc" "pytest:$test_rc" "cli:$cli_rc"; do
+            if [ "${pair#*:}" != "0" ]; then
+              echo "===== FAILED: ${pair%%:*} (error lines) ====="
+              grep -v '^\s*$' "/tmp/${pair%%:*}.log" | grep -E 'error|Error|FAILED|ERROR|assert|failed' | tail -n 40
+            fi
+          done
           report "ruff=$ruff_rc format=$fmt_rc mypy=$mypy_rc pytest=$test_rc cli=$cli_rc"
           if [ $((ruff_rc + fmt_rc + mypy_rc + test_rc + cli_rc)) -eq 0 ]; then
             report "PREFLIGHT PASSED"
