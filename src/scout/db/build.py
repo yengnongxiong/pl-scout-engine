@@ -125,10 +125,14 @@ def build_warehouse(
         report.sources.append("transfermarkt")
     ds_snaps = store.latest_all("transfermarkt_datasets")
     tm_stale: pd.DataFrame | None = None
+    tm_history: pd.DataFrame | None = None
     if ds_snaps:
         competition = config.settings.ingest.tm_datasets_competition_id
-        tm_stale = TransfermarktDatasetsAdapter("", competition).parse(ds_snaps)
-        tm_frames.append(tm_stale)
+        datasets = TransfermarktDatasetsAdapter("", competition)
+        # Player details (names, positions, DOB) feed entity resolution; the full
+        # valuation history is what gets stored (stale fallback + value-model labels).
+        tm_stale, tm_history = datasets.parse(ds_snaps), datasets.parse_history(ds_snaps)
+        tm_frames.append(tm_history)
         report.sources.append("transfermarkt_datasets")
     if tm_frames:
         frames["tm_market_value"] = pd.concat(tm_frames, ignore_index=True)
@@ -217,7 +221,7 @@ def build_warehouse(
             facts.team_possession_fotmob(possession, game_keys, name_to_team)
             facts.snapshots(fm_snaps, "ok", len(possession))
         tm_players = _source_ids(mapping, "transfermarkt_id", player_ids, str)
-        values = [f for f in (tm_live, tm_stale) if f is not None and not f.empty]
+        values = [f for f in (tm_live, tm_history) if f is not None and not f.empty]
         overrides_file = overrides_dir / "market_value_overrides.csv"
         if overrides_file.exists():
             values.append(load_market_value_overrides(overrides_file))

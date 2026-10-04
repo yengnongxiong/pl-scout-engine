@@ -401,6 +401,44 @@ class TransfermarktDatasetsAdapter(SourceAdapter):
             )
         return pd.DataFrame(rows)
 
+    def parse_history(self, snapshots: Sequence[RawSnapshot]) -> pd.DataFrame:
+        """Every valuation point of the Premier League players in the export, marked stale.
+
+        The value model (PRD §8.10 step 3) learns from the valuation nearest each past
+        season's end, so the whole history is kept, one row per Transfermarkt as-of date.
+        Points without a parseable date or value are dropped (no receipt, no row).
+        """
+        players_snap = self._find(snapshots, DATASETS_PLAYERS)
+        values_snap = self._find(snapshots, DATASETS_VALUATIONS)
+        players = _read_gz_csv(players_snap, _DATASETS_PLAYER_COLS)
+        valuations = _read_gz_csv(values_snap, _DATASETS_VALUATION_COLS)
+        pl = players[players["current_club_domestic_competition_id"] == self.competition_id]
+        wanted = {str(p) for p in pl["player_id"]}
+        points: dict[tuple[str, date], int] = {}
+        for rec in valuations.to_dict(orient="records"):
+            pid = str(rec["player_id"])
+            when = parse_tm_date(rec["date"])
+            raw = rec["market_value_in_eur"]
+            value = None if _is_nan(raw) else parse_market_value(raw)
+            if pid in wanted and when is not None and value is not None:
+                points[(pid, when)] = value  # a repeated date keeps the last row
+        rows = [
+            {
+                "tm_player_id": pid,
+                "value_eur": value,
+                "tm_last_updated": when,
+                "is_stale": True,
+                "source": DATASETS_SOURCE,
+                "fetched_at": values_snap.fetched_at,
+            }
+            for (pid, when), value in sorted(points.items())
+        ]
+        return pd.DataFrame(
+            rows,
+            columns=["tm_player_id", "value_eur", "tm_last_updated", "is_stale", "source",
+                     "fetched_at"],
+        )  # fmt: skip
+
 
 OVERRIDE_SOURCE = "override"
 _OVERRIDE_COLS = ("tm_player_id", "value_eur", "tm_last_updated", "reason", "date")

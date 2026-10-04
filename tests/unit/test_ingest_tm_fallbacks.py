@@ -59,6 +59,17 @@ def test_player_without_valuation_has_null_value(
     assert pd.isna(eli["contract_expiry"])
 
 
+def test_history_keeps_every_valuation_point_for_pl_players(
+    adapter: TransfermarktDatasetsAdapter, tmp_path: Path
+) -> None:
+    df = adapter.parse_history(_snapshots(tmp_path, _gz("players"), _gz("player_valuations")))
+    # Alex's two points; the ES1 player is excluded; Eli has no valuation at all.
+    assert list(df["tm_player_id"]) == ["880011", "880011"]
+    assert list(df["tm_last_updated"]) == [date(2025, 6, 1), date(2026, 5, 20)]
+    assert list(df["value_eur"]) == [25_000_000, 30_000_000]
+    assert df["is_stale"].all() and set(df["source"]) == {"transfermarkt_datasets"}
+
+
 def test_datasets_schema_changed(adapter: TransfermarktDatasetsAdapter, tmp_path: Path) -> None:
     bad = gzip.compress(b"player_id,when,market_value_in_eur\n1,2026-01-01,5\n")
     with pytest.raises(DataValidationError, match="schema changed"):

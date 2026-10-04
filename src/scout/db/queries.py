@@ -91,3 +91,16 @@ def player_profiles(engine: Engine) -> pd.DataFrame:
 def latest_market_values(engine: Engine) -> pd.DataFrame:
     """Newest Transfermarkt estimated market value per player and source."""
     return _as_dates(run_sql(engine, "market_values"), ("tm_last_updated",))
+
+
+def market_value_history(engine: Engine) -> pd.DataFrame:
+    """Every stored valuation with its Transfermarkt as-of date, all sources."""
+    return _as_dates(run_sql(engine, "market_value_history"), ("tm_last_updated",))
+
+
+def season_bounds(engine: Engine) -> pd.DataFrame:
+    """First and last kickoff (UTC timestamps) and match count per season."""
+    frame = run_sql(engine, "season_bounds")
+    for col in ("first_kickoff", "last_kickoff"):
+        frame[col] = pd.to_datetime(frame[col], utc=True)
+    return frame
