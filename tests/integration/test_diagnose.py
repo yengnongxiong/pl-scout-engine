@@ -198,3 +198,20 @@ def test_similarity_needs_a_peer_group(built: Settings, monkeypatch: pytest.Monk
     monkeypatch.setattr(cli, "get_config", _config)
     out = CliRunner().invoke(cli.app, ["similar", str(ids["Bo Fakeson"])])
     assert out.exit_code == 1 and "Similarity failed" in out.output
+
+
+def test_cli_train_reports_models_it_could_not_train(
+    built: Settings, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(cli, "get_settings", lambda: built)
+    monkeypatch.setattr(cli, "get_config", _config)
+    out = tmp_path / "EVALUATION.md"
+    result = CliRunner().invoke(cli.app, ["train", "--out", str(out)])
+    assert result.exit_code == 0, result.output
+    # Three fixture players and one unlabelled past season: nothing to train on.
+    assert "Role archetypes: not trained" in result.output
+    assert "Value model: not trained (no labelled past player-seasons" in result.output
+    assert f"Wrote {out}" in result.output
+    text = out.read_text()
+    assert text.startswith("# Evaluation") and "Not available" in text
+    assert (built.data_dir / "models").is_dir()

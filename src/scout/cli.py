@@ -17,6 +17,7 @@ from scout.config import PROJECT_ROOT, get_config, get_settings
 from scout.errors import ConfigError, DataValidationError, ScoutError
 
 DEFAULT_OPENAPI_PATH = PROJECT_ROOT / "web" / "openapi.json"
+DEFAULT_EVALUATION_PATH = PROJECT_ROOT / "docs" / "EVALUATION.md"
 
 app = typer.Typer(
     name="scout",
@@ -314,6 +315,61 @@ def similar(
         typer.echo(
             f"{rank}. {names.get(hit.player_id, hit.player_id)}  cosine {hit.similarity:.2f}"
         )
+
+
+def _git_sha() -> str:
+    """Short commit hash of the working tree (``unknown`` outside a git checkout)."""
+    import subprocess
+
+    try:
+        done = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            cwd=PROJECT_ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=10,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return "unknown"
+    return done.stdout.strip() or "unknown"
+
+
+@app.command()
+def train(
+    out: Annotated[Path, typer.Option(help="Evaluation report path.")] = DEFAULT_EVALUATION_PATH,
+) -> None:
+    """Fit role archetypes and the value model, save them, write docs/EVALUATION.md."""
+    from datetime import UTC, datetime
+
+    from scout.db.session import make_engine
+    from scout.ml.evaluation import render_evaluation
+    from scout.ml.train import save_artefacts, train_all
+
+    settings = get_settings()
+    engine = make_engine(settings.database_url)
+    try:
+        result = train_all(
+            engine,
+            get_config(),
+            trained_at=datetime.now(UTC).isoformat(timespec="seconds"),
+            git_sha=_git_sha(),
+        )
+    except (ScoutError, ValueError) as exc:
+        typer.echo(f"Training failed: {getattr(exc, 'message', exc)}", err=True)
+        raise typer.Exit(code=1) from exc
+    finally:
+        engine.dispose()
+    written = save_artefacts(result, settings.data_dir / "models")
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(render_evaluation(result), encoding="utf-8")
+    for label, skipped in (
+        ("Role archetypes", result.roles_skipped),
+        ("Value model", result.value_skipped),
+    ):
+        typer.echo(f"{label}: " + ("trained" if skipped is None else f"not trained ({skipped})"))
+    for path in [*written, out]:
+        typer.echo(f"Wrote {path}")
 
 
 @app.command()
