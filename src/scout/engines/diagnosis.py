@@ -333,6 +333,32 @@ class Diagnosis:
     team_needs: list[TeamNeed] = field(default_factory=list)
 
 
+@dataclass(frozen=True)
+class SeasonContext:
+    """Current and previous season ids and this season's clubs (id -> name)."""
+
+    current: str
+    previous: str
+    team_names: dict[int, str]
+
+
+def season_context(engine: Engine) -> SeasonContext:
+    """Read the current season and its clubs from the warehouse.
+
+    Raises:
+        NotFoundError: If no season is marked current (``scout build`` has not run).
+    """
+    with make_session_factory(engine)() as session:
+        current = session.scalars(select(DimSeason.season_id).where(DimSeason.is_current)).first()
+        if current is None:
+            raise NotFoundError("no current season in the warehouse; run `scout build`")
+        teams = {
+            t.team_id: t.name
+            for t in session.scalars(select(DimTeam).where(DimTeam.fpl_code.is_not(None)))
+        }
+    return SeasonContext(current, previous_seasons(current, 1)[0], teams)
+
+
 def find_team(engine: Engine, query: str, aliases: Mapping[str, Sequence[str]]) -> DimTeam:
     """Resolve a club by id, name or alias among current FPL clubs.
 
@@ -376,14 +402,9 @@ def diagnose(
         team = session.get(DimTeam, team_id)
         if team is None:
             raise NotFoundError(f"no club with id {team_id}")
-        current = session.scalars(select(DimSeason.season_id).where(DimSeason.is_current)).first()
-        if current is None:
-            raise NotFoundError("no current season in the warehouse; run `scout build`")
-        league = [
-            t.team_id for t in session.scalars(select(DimTeam).where(DimTeam.fpl_code.is_not(None)))
-        ]
         team_name = team.name
-    previous = previous_seasons(current, 1)[0]
+    ctx = season_context(engine)
+    current, previous, league = ctx.current, ctx.previous, list(ctx.team_names)
     table = standings(engine, previous)
     bench_ids = benchmark_clubs(
         table,

@@ -7,6 +7,7 @@ from scout import cli
 from scout.config import PROJECT_ROOT, AppConfig, Settings, load_config
 from scout.db.session import make_engine
 from scout.engines.diagnosis import diagnose, find_team
+from scout.engines.recommend import Filters, recommend
 from scout.errors import NotFoundError
 from scout.pipeline import build_all
 from tests.integration.test_build import _seed
@@ -106,3 +107,74 @@ def test_cli_diagnose(built: Settings, monkeypatch: pytest.MonkeyPatch) -> None:
     assert bad.exit_code == 1
     wrong = CliRunner().invoke(cli.app, ["diagnose", "Synthetic Rovers", "--benchmark", "top9"])
     assert wrong.exit_code == 2
+
+
+def test_recommend_shortlist_with_breakdown_and_receipts(built: Settings) -> None:
+    engine = make_engine(built.database_url)
+    config = _config()
+    rovers = find_team(engine, "Synthetic Rovers", config.team_aliases.aliases)
+    town = find_team(engine, "Fixture Town", config.team_aliases.aliases)
+    shortlist = recommend(engine, rovers.team_id, config, position_group="ST")
+    top_need = recommend(engine, rovers.team_id, config)
+    budget = recommend(
+        engine, rovers.team_id, config, position_group="ST", filters=Filters(max_value_eur=10)
+    )
+    no_town = recommend(
+        engine,
+        rovers.team_id,
+        config,
+        position_group="ST",
+        filters=Filters(exclude_team_ids=(town.team_id,)),
+    )
+    with pytest.raises(NotFoundError):
+        recommend(engine, rovers.team_id, config, position_group="GK")
+    engine.dispose()
+    assert top_need.position_group == diagnose_top_group(built, rovers.team_id)
+    # Rovers have no striker, so there is no incumbent and every candidate clears the gate.
+    assert shortlist.incumbent is None
+    assert [c.player_name for c in shortlist.candidates] == ["Bo Fakeson"]
+    bo = shortlist.candidates[0]
+    assert (bo.rank, bo.team_name, bo.gate, bo.fpl_status) == (
+        1,
+        "Fixture Town",
+        "no_incumbent",
+        "d",
+    )
+    assert bo.market_value is None  # no Transfermarkt valuation: "Not available", not 0
+    # The FitScore is the weighted sum of the components it used (weights renormalised).
+    used = bo.fit.weights_used
+    assert sum(used.values()) == pytest.approx(1.0)
+    assert bo.fit.total == pytest.approx(
+        sum(w * (bo.fit.components[n] or 0) for n, w in used.items())
+    )
+    # Reliability: doubtful with FPL's 75% chance of playing.
+    volume = min(1.0, (bo.effective_minutes or 0) / 2500)
+    assert bo.fit.components["reliability"] == pytest.approx(100 * (0.6 * volume + 0.4 * 0.75))
+    # Last season's style vectors are mirror images (two clubs, z = +/-1): StyleFit 0.
+    assert bo.fit.components["style_fit"] == pytest.approx(0.0)
+    assert all(e.source and e.as_of for e in bo.evidence if e.percentile is not None)
+    assert budget.candidates == [] and budget.excluded == {"no market value": 1}
+    assert no_town.candidates == [] and no_town.excluded == {"excluded club": 1}
+
+
+def diagnose_top_group(settings: Settings, team_id: int) -> str:
+    engine = make_engine(settings.database_url)
+    group = diagnose(engine, team_id, _config()).needs[0].position_group
+    engine.dispose()
+    return group
+
+
+def test_cli_recommend(built: Settings, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(cli, "get_settings", lambda: built)
+    monkeypatch.setattr(cli, "get_config", _config)
+    ok = CliRunner().invoke(cli.app, ["recommend", "Synthetic Rovers", "--need", "ST"])
+    assert ok.exit_code == 0, ok.output
+    assert "Synthetic Rovers: ST need" in ok.output and "no incumbent" in ok.output
+    assert "1. Bo Fakeson (Fixture Town)" in ok.output and "FitScore" in ok.output
+    assert "Transfermarkt estimated market value: Not available" in ok.output
+    capped = CliRunner().invoke(
+        cli.app, ["recommend", "Synthetic Rovers", "--need", "ST", "--max-value", "5"]
+    )
+    assert capped.exit_code == 0 and "Filtered out: no market value 1" in capped.output
+    bad = CliRunner().invoke(cli.app, ["recommend", "Synthetic Rovers", "--need", "GK"])
+    assert bad.exit_code == 1

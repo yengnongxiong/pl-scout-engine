@@ -31,6 +31,18 @@ diagnosis:
   age_risk_min_weighted_age: 30
   contract_risk_months: 12
 
+recommend:
+  # PRD §8.9
+  default_limit: 10
+  # FPL statuses never shortlisted: u = unavailable (left the club), n = not available
+  # (e.g. loan terms).
+  excluded_statuses: [u, n]
+  # Transfermarkt estimated market value: manual override (with reason), then the live
+  # value, then the stale transfermarkt-datasets snapshot (labelled stale).
+  market_value_precedence: [override, transfermarkt, transfermarkt_datasets]
+  # Candidates that fail the upgrade gate ("sideways move") are hidden unless asked for.
+  hide_sideways_by_default: true
+
 ingest:
   base_urls:
     fpl: "https://fantasy.premierleague.com/api/"

@@ -189,6 +189,101 @@ def diagnose(
         )
 
 
+EUR_PER_MILLION = 1_000_000
+
+
+@app.command()
+def recommend(
+    team: Annotated[str, typer.Argument(help="Club name, alias or id.")],
+    need: Annotated[str | None, typer.Option(help="Position group; default: top need.")] = None,
+    max_value: Annotated[
+        float | None,
+        typer.Option(help="Max Transfermarkt estimated market value, EUR millions."),
+    ] = None,
+    min_age: Annotated[float | None, typer.Option(help="Minimum age.")] = None,
+    max_age: Annotated[float | None, typer.Option(help="Maximum age.")] = None,
+    min_minutes: Annotated[float | None, typer.Option(help="Minimum effective minutes.")] = None,
+    exclude: Annotated[
+        list[str] | None, typer.Option(help="Club to leave out (repeatable).")
+    ] = None,
+    include_sideways: Annotated[
+        bool, typer.Option(help="Also show candidates that fail the upgrade gate.")
+    ] = False,
+    limit: Annotated[int | None, typer.Option(help="Number of candidates.")] = None,
+    benchmark: Annotated[str | None, typer.Option(help="top6 (default), top4 or league.")] = None,
+    mode: Annotated[str, typer.Option(help="Season mode: blended or current.")] = "blended",
+) -> None:
+    """Shortlist PL players who fix a club's need, with FitScore breakdowns (PRD §8.9)."""
+    from scout.db.session import make_engine
+    from scout.engines.diagnosis import find_team
+    from scout.engines.recommend import Filters
+    from scout.engines.recommend import recommend as run_recommend
+
+    config = get_config()
+    if benchmark is not None and benchmark not in BENCHMARKS:
+        typer.echo(f"Unknown benchmark {benchmark!r}; choose {', '.join(BENCHMARKS)}", err=True)
+        raise typer.Exit(code=2)
+    engine = make_engine(get_settings().database_url)
+    try:
+        club = find_team(engine, team, config.team_aliases.aliases)
+        excluded = tuple(
+            find_team(engine, name, config.team_aliases.aliases).team_id for name in exclude or []
+        )
+        filters = Filters(
+            max_value_eur=None if max_value is None else int(max_value * EUR_PER_MILLION),
+            min_age=min_age,
+            max_age=max_age,
+            min_minutes=min_minutes,
+            exclude_team_ids=excluded,
+            include_sideways=include_sideways or None,
+            limit=limit,
+        )
+        shortlist = run_recommend(
+            engine,
+            club.team_id,
+            config,
+            position_group=need,
+            filters=filters,
+            benchmark=BENCHMARKS[benchmark] if benchmark else None,
+            season_mode=mode,
+        )
+    except ScoutError as exc:
+        typer.echo(f"Recommendation failed: {exc.message}", err=True)
+        raise typer.Exit(code=1) from exc
+    finally:
+        engine.dispose()
+    inc = shortlist.incumbent
+    typer.echo(
+        f"{shortlist.team_name}: {shortlist.position_group} need ({shortlist.season_mode} mode); "
+        + (f"incumbent {inc.player_name} ({inc.minutes:.0f} min)" if inc else "no incumbent")
+    )
+    for c in shortlist.candidates:
+        age = "age not available" if c.age is None else f"age {c.age:.1f}"
+        typer.echo(
+            f"{c.rank}. {c.player_name} ({c.team_name}), {age}, {c.minutes:.0f} min, "
+            f"FPL status {c.fpl_status or 'not available'}; FitScore {c.fit.total:.1f}, "
+            f"gate {c.gate}"
+        )
+        parts = [
+            f"{name} {value:.0f} (weight {c.fit.weights_used[name]:.2f})"
+            for name, value in c.fit.components.items()
+            if value is not None and name in c.fit.weights_used
+        ]
+        typer.echo("   " + "; ".join(parts))
+        mv = c.market_value
+        typer.echo(
+            "   Transfermarkt estimated market value: "
+            + (
+                f"EUR {mv.value_eur / EUR_PER_MILLION:.1f}m (TM as of {mv.tm_last_updated}, "
+                f"{mv.source}{', stale' if mv.is_stale else ''})"
+                if mv
+                else "Not available"
+            )
+        )
+    if shortlist.excluded:
+        typer.echo("Filtered out: " + ", ".join(f"{k} {v}" for k, v in shortlist.excluded.items()))
+
+
 @app.command()
 def doctor() -> None:
     """Report freshness, coverage, validation status and FPL schema health."""

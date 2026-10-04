@@ -85,6 +85,20 @@ class DiagnosisConfig(_Strict):
     contract_risk_months: int = Field(gt=0)
 
 
+class RecommendConfig(_Strict):
+    """PRD §8.9 shortlist defaults and hard filters."""
+
+    default_limit: int = Field(gt=0)
+    # FPL status codes never shortlisted (e.g. u = left the club).
+    excluded_statuses: list[str] = Field(default_factory=list)
+    # Transfermarkt estimated market value sources, most preferred first.
+    market_value_precedence: list[
+        Literal["override", "transfermarkt", "transfermarkt_datasets"]
+    ] = Field(min_length=1)
+    # Show candidates that fail the upgrade gate only when asked (PRD §8.9).
+    hide_sideways_by_default: bool = True
+
+
 class IngestConfig(_Strict):
     """Scraping etiquette: User-Agent, cache TTL, retries and per-source rate limits."""
 
@@ -175,6 +189,7 @@ class EngineSettings(_Strict):
 
     methodology: MethodologyConfig
     diagnosis: DiagnosisConfig
+    recommend: RecommendConfig
     ingest: IngestConfig
     entity_resolution: EntityResolutionConfig
     doctor: DoctorConfig
