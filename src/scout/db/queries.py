@@ -54,14 +54,7 @@ def standings(engine: Engine, season_id: str) -> pd.DataFrame:
 
 def club_players(engine: Engine) -> pd.DataFrame:
     """Current-season club x player minutes with position, DOB and contract."""
-    frame = run_sql(engine, "club_players")
-    for col in ("birth_date", "contract_expiry"):
-        # SQLite returns dates as text; normalise to datetime.date (None stays None).
-        frame[col] = [
-            None if v is None or (isinstance(v, float) and pd.isna(v)) else pd.Timestamp(v).date()
-            for v in frame[col]
-        ]
-    return frame
+    return _as_dates(run_sql(engine, "club_players"), ("birth_date", "contract_expiry"))
 
 
 def team_matches_played(engine: Engine) -> dict[int, int]:
@@ -78,3 +71,23 @@ def player_features(engine: Engine, season_mode: str) -> pd.DataFrame:
 def team_season_totals(engine: Engine, source: str) -> pd.DataFrame:
     """Team x season totals and per-column match counts (``team_season.sql``)."""
     return run_sql(engine, "team_season", {"source": source})
+
+
+def _as_dates(frame: pd.DataFrame, columns: tuple[str, ...]) -> pd.DataFrame:
+    """SQLite returns dates as text; normalise to ``datetime.date`` (None stays None)."""
+    for col in columns:
+        frame[col] = [
+            None if v is None or (isinstance(v, float) and pd.isna(v)) else pd.Timestamp(v).date()
+            for v in frame[col]
+        ]
+    return frame
+
+
+def player_profiles(engine: Engine) -> pd.DataFrame:
+    """Current club, position, DOB and newest FPL availability (``player_profiles.sql``)."""
+    return _as_dates(run_sql(engine, "player_profiles"), ("birth_date", "contract_expiry"))
+
+
+def latest_market_values(engine: Engine) -> pd.DataFrame:
+    """Newest Transfermarkt estimated market value per player and source."""
+    return _as_dates(run_sql(engine, "market_values"), ("tm_last_updated",))
