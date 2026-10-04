@@ -1,10 +1,11 @@
 # Progress
 Status: IN_PROGRESS            <!-- IN_PROGRESS or COMPLETE -->
-Active session: none
-Current milestone: M5 (M0 web items blocked on npm)
+Active session: 20261004T0125Z-8108 started 2026-10-04T01:25:41Z
+Current milestone: M5 (M0 web items: npm now reachable)
 
 ## Plan for this session
-- (next session) M5-07a historical valuations + value-model training set
+- M5-07a historical Transfermarkt valuations + value-model training set (split into a1: history loading + season-bound SQL, a2: training frame)
+- M5-07b value model vs baseline with q10/q90 band, then M5-07c scoring if time allows
 
 ## Task queue (current milestone)
 - [x] M0-01 Apply ADR-0001 edits to PRD, bump to v1.1 + changelog — PRD diff matches ADR list
