@@ -161,6 +161,9 @@ class MLConfig(_Strict):
     seed: int
     gmm_k_min: int = Field(gt=0)
     gmm_k_max: int = Field(gt=0)
+    # Similar-player search: brute force (default; fastest at ~600 players, see
+    # scripts/bench_knn.py) or the hand-written k-d tree.
+    similarity_method: Literal["brute", "kdtree"] = "brute"
 
 
 class ReportBands(_Strict):

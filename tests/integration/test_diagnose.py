@@ -9,6 +9,7 @@ from scout.db.session import make_engine
 from scout.engines.diagnosis import diagnose, find_team
 from scout.engines.recommend import Filters, recommend
 from scout.errors import NotFoundError
+from scout.ml.similarity import find_similar
 from scout.pipeline import build_all
 from tests.integration.test_build import _seed
 
@@ -178,3 +179,22 @@ def test_cli_recommend(built: Settings, monkeypatch: pytest.MonkeyPatch) -> None
     assert capped.exit_code == 0 and "Filtered out: no market value 1" in capped.output
     bad = CliRunner().invoke(cli.app, ["recommend", "Synthetic Rovers", "--need", "GK"])
     assert bad.exit_code == 1
+
+
+def test_similarity_needs_a_peer_group(built: Settings, monkeypatch: pytest.MonkeyPatch) -> None:
+    from scout.db.queries import player_profiles
+
+    engine = make_engine(built.database_url)
+    ids = {
+        str(n): int(p) for n, p in player_profiles(engine)[["canonical_name", "player_id"]].values
+    }
+    # Bo is the fixture's only striker: no spread to standardise against, so no profile.
+    with pytest.raises(NotFoundError, match="complete KPI profile"):
+        find_similar(engine, ids["Bo Fakeson"], _config())
+    with pytest.raises(NotFoundError, match="no features"):
+        find_similar(engine, 999_999, _config())
+    engine.dispose()
+    monkeypatch.setattr(cli, "get_settings", lambda: built)
+    monkeypatch.setattr(cli, "get_config", _config)
+    out = CliRunner().invoke(cli.app, ["similar", str(ids["Bo Fakeson"])])
+    assert out.exit_code == 1 and "Similarity failed" in out.output

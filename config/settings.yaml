@@ -113,6 +113,8 @@ ml:
   seed: 42
   gmm_k_min: 6
   gmm_k_max: 12
+  # brute | kdtree (scripts/bench_knn.py shows brute force wins at ~600 players)
+  similarity_method: brute
 
 reports:
   # PRD §9 percentile bands (lower bounds, inclusive)

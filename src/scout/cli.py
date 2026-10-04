@@ -285,6 +285,38 @@ def recommend(
 
 
 @app.command()
+def similar(
+    player_id: Annotated[int, typer.Argument(help="Player id (dim_player).")],
+    k: Annotated[int, typer.Option(help="Number of similar players.")] = 10,
+    mode: Annotated[str, typer.Option(help="Season mode: blended or current.")] = "blended",
+) -> None:
+    """Players most similar to one player within their position group (PRD §8.10)."""
+    from sqlalchemy import select
+
+    from scout.db.models import DimPlayer
+    from scout.db.session import make_engine, make_session_factory
+    from scout.ml.similarity import find_similar
+
+    engine = make_engine(get_settings().database_url)
+    try:
+        hits = find_similar(engine, player_id, get_config(), k=k, season_mode=mode)
+        with make_session_factory(engine)() as session:
+            names = dict(
+                session.execute(select(DimPlayer.player_id, DimPlayer.canonical_name)).tuples()
+            )
+    except ScoutError as exc:
+        typer.echo(f"Similarity failed: {exc.message}", err=True)
+        raise typer.Exit(code=1) from exc
+    finally:
+        engine.dispose()
+    typer.echo(f"Players most similar to {names.get(player_id, player_id)} ({mode} mode):")
+    for rank, hit in enumerate(hits, start=1):
+        typer.echo(
+            f"{rank}. {names.get(hit.player_id, hit.player_id)}  cosine {hit.similarity:.2f}"
+        )
+
+
+@app.command()
 def doctor() -> None:
     """Report freshness, coverage, validation status and FPL schema health."""
     from scout.db.doctor import run_doctor
