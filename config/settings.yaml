@@ -119,6 +119,21 @@ ml:
   # "high Build-up involvement, high Recoveries, possession-adjusted": "Deep playmaker".
   role_renames: {}
 
+value_model:
+  # PRD §8.10 step 3. Label = the Transfermarkt estimated market value nearest the season's
+  # last kickoff: Transfermarkt revalues the league around the end of each season.
+  label_window_days_before: 120
+  label_window_days_after: 75
+  # Fewer minutes than this (~5 full matches) says too little to learn a value from.
+  min_minutes: 450
+  # FPL/vaastav fields that exist across past seasons (per 90; missing stays missing).
+  per90_stats: [goals, assists, xg, xa, def_contribution]
+  # Baseline buckets: <=21, 22-24, 25-27, 28-30, 31+.
+  age_bucket_edges: [21, 24, 27, 30]
+  quantiles: [0.1, 0.9]
+  max_iter: 300
+  learning_rate: 0.05
+
 reports:
   # PRD §9 percentile bands (lower bounds, inclusive)
   bands:

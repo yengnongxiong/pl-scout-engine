@@ -82,3 +82,28 @@ def test_season_bounds_match_pandas_twin(warehouse: tuple[Engine, dict[str, pd.D
     for col in ("first_kickoff", "last_kickoff"):
         assert list(sql[col]) == list(pd.to_datetime(twin[col], utc=True))
     assert len(sql) >= 2  # current season (FPL) and last season (vaastav)
+
+
+def test_training_frame_labels_past_seasons(
+    warehouse: tuple[Engine, dict[str, pd.DataFrame]],
+) -> None:
+    from scout.ml.value_data import training_frame
+
+    engine, _ = warehouse
+    vm = CONFIG.settings.value_model.model_copy(update={"min_minutes": 0})
+    config = CONFIG.model_copy(
+        update={"settings": CONFIG.settings.model_copy(update={"value_model": vm})}
+    )
+    frame = training_frame(engine, config)
+    bounds = season_bounds(engine)
+    end = bounds.set_index("season_id").loc["2025-26", "last_kickoff"].date()
+    # Only Alex has a valuation history; his 2025-26 season ends in August 2025 and the
+    # nearest point in the window is the 2025-06-01 stale datasets value.
+    assert list(frame["season_id"]) == ["2025-26"] and len(frame) == 1
+    alex = frame.iloc[0]
+    assert (alex["value_eur"], alex["value_source"]) == (25_000_000, "transfermarkt_datasets")
+    assert alex["value_date"] == date(2025, 6, 1)
+    assert alex["age"] == pytest.approx((end - date(1998, 3, 14)).days / 365.25)
+    assert alex["position_group"] == "CB" and alex["minutes"] > 0
+    # The default minutes floor drops a one-match season.
+    assert training_frame(engine, CONFIG).empty

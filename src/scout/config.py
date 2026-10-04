@@ -168,6 +168,34 @@ class MLConfig(_Strict):
     role_renames: dict[str, str] = Field(default_factory=dict)
 
 
+class ValueModelConfig(_Strict):
+    """PRD §8.10 step 3: stats-implied market value model."""
+
+    # Training label: the Transfermarkt estimated market value nearest each season's last
+    # kickoff, within this many days before / after it.
+    label_window_days_before: int = Field(ge=0)
+    label_window_days_after: int = Field(ge=0)
+    # Player-seasons below this many minutes are too noisy to learn a value from.
+    min_minutes: float = Field(ge=0.0)
+    # Counting stats turned into per-90 features (player_season.sql columns).
+    per90_stats: list[str] = Field(min_length=1)
+    # Baseline: median log value per position group x age bucket (upper bounds, years).
+    age_bucket_edges: list[float] = Field(min_length=1)
+    # Lower / upper quantile models for the uncertainty band.
+    quantiles: tuple[float, float]
+    max_iter: int = Field(gt=0)
+    learning_rate: float = Field(gt=0.0)
+
+    @model_validator(mode="after")
+    def _valid(self) -> ValueModelConfig:
+        low, high = self.quantiles
+        if not 0.0 < low < 0.5 < high < 1.0:
+            raise ValueError(f"quantiles must straddle the median: {self.quantiles}")
+        if self.age_bucket_edges != sorted(self.age_bucket_edges):
+            raise ValueError("age_bucket_edges must be ascending")
+        return self
+
+
 class ReportBands(_Strict):
     """PRD §9 percentile band lower bounds."""
 
@@ -200,6 +228,7 @@ class EngineSettings(_Strict):
     doctor: DoctorConfig
     validation: ValidationConfig
     ml: MLConfig
+    value_model: ValueModelConfig
     reports: ReportsConfig
 
 
