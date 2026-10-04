@@ -142,3 +142,19 @@ def test_scoring_frame_uses_current_value_and_blended_rates(
     assert alex["xg_p90"] == pytest.approx(expected_xg)
     # The default minutes floor (blended) leaves a two-match player unscored.
     assert scoring_frame(engine, CONFIG).empty
+
+
+def test_train_records_why_models_were_skipped(
+    warehouse: tuple[Engine, dict[str, pd.DataFrame]], tmp_path: Path
+) -> None:
+    from scout.ml.train import save_artefacts, train_all
+
+    engine, _ = warehouse
+    result = train_all(engine, _min_minutes(0), trained_at="2026-10-04T00:00:00+00:00", git_sha="x")
+    # build_warehouse alone materialises no features, and one labelled season allows no
+    # time-based split: nothing is trained on too little data, and the reason is kept.
+    assert result.roles is None and "no player features" in str(result.roles_skipped)
+    assert result.value is None and "at least 2 seasons" in str(result.value_skipped)
+    assert result.scores.empty and result.similarity == []
+    assert result.features_as_of is None
+    assert save_artefacts(result, tmp_path / "models") == []

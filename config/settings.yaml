@@ -115,6 +115,8 @@ ml:
   gmm_k_max: 12
   # brute | kdtree (scripts/bench_knn.py shows brute force wins at ~600 players)
   similarity_method: brute
+  # Neighbours shown for each similarity sanity example in docs/EVALUATION.md.
+  similarity_examples_k: 3
   # Optional names for automatically labelled role archetypes, e.g.
   # "high Build-up involvement, high Recoveries, possession-adjusted": "Deep playmaker".
   role_renames: {}
