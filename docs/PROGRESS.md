@@ -1,11 +1,10 @@
 # Progress
 Status: IN_PROGRESS            <!-- IN_PROGRESS or COMPLETE -->
-Active session: 20261003T2337Z-49bb started 2026-10-03T23:37:32Z
+Active session: none
 Current milestone: M5 (M0 web items blocked on npm)
 
 ## Plan for this session
-- M4-05 team-level needs (Understat team KPIs per 90, league percentiles, benchmark gap, mapped to responsible groups)
-- Then start M5 (recommendation engine) if time allows
+- (next session) M5-07a historical valuations + value-model training set
 
 ## Task queue (current milestone)
 - [x] M0-01 Apply ADR-0001 edits to PRD, bump to v1.1 + changelog — PRD diff matches ADR list
@@ -66,7 +65,10 @@ Current milestone: M5 (M0 web items blocked on npm)
 - [x] M5-04b `engines/recommend.py` candidate pool (need's group, other clubs, hard filters: max TM value, age range, min minutes, availability, exclude clubs), market-value precedence from config, incumbent = club's minutes leader in the group, upgrade gate tag, heap top-k ranking, receipts (TM value + TM as-of, minutes, source); `scout recommend TEAM --need GROUP` — fixture integration test
 - [x] M5-05 deps numpy + scikit-learn; `ml/similarity.py` cosine on standardised KPI-weighted vectors, top-k via heap_topk; `dsa/kdtree.py` + reference test; `scripts/bench_knn.py`
 - [x] M5-06 `ml/roles.py` GMM on standardised per-90 vectors (≥ roles_min_minutes), k by BIC in [gmm_k_min, gmm_k_max], seeded; auto-labels from distinguishing features + rename map; silhouette + ARI stability across seeds
-- [ ] M5-07 `ml/value_model.py` HistGradientBoosting on log(TM value), time-based split, baseline median by position x age bucket, q10/q90 band, Undervalued/Fair/Premium label; artefacts + metadata JSON (window, features, metrics, git SHA)
+- [ ] M5-07a Historical valuations: load the full transfermarkt-datasets `player_valuations` history (not just the latest) into `fact_market_value` (source `transfermarkt_datasets`, `is_stale=True`, one row per TM as-of date) for resolved players; `db/sql/value_training.sql` = past player-seasons (vaastav FPL rows, `history_seasons_back` seasons) joined to the valuation nearest each season's end (window in config) + pandas twin
+  - Note: entity resolution currently keeps only current PL players from the datasets export; past-season players need resolving too (club blocking by that season's FPL team). Understat history only covers current + previous season, so model features must come from FPL/vaastav fields available every season (minutes, goals, assists, FPL expected_goals/assists where present, clean sheets), plus age, position group, minutes share, team points per game, contract years when known.
+- [ ] M5-07b `ml/value_model.py`: HistGradientBoostingRegressor on log(value), time-based split (train <= N-2, test N-1), baseline = median log value by position group x age bucket, MAE on log scale + median absolute % error vs baseline, q10/q90 quantile models, Undervalued / Fair / Premium thresholds in config; seeded
+- [ ] M5-07c Score current players (blended features) against their current Transfermarkt estimated market value; label + band with receipts; caveat text "stats-implied value, not a fee prediction"
 - [ ] M5-08 `scout train` writes models + metadata + `docs/EVALUATION.md` (value model vs baseline, GMM diagnostics, similarity examples) — fixture run in tests
 
 ## Done
@@ -75,6 +77,7 @@ Current milestone: M5 (M0 web items blocked on npm)
 - M2-01 to M2-07 (2026-10-03): warehouse, entity resolution, validation, `scout build`, `scout doctor`.
 - M3-01 to M3-04 (2026-10-03): per-90/blend/shrink/possession maths, player-season and possession-adjusted SQL, percentiles.
 - M3-05, M4-01 to M4-05 (2026-10-03): player_season_features, benchmark clubs, group scores and gaps, weak links, risks, ranked needs with receipts, team-level needs; `scout diagnose`.
+- M5-01 to M5-06 (2026-10-04): heap top-k, FitScore components + upgrade gate, team style vectors, player profiles / market value SQL, `scout recommend` shortlists, similar players + k-d tree + benchmark (`scout similar`), GMM role archetypes.
 
 ## Blocked
 - **Package registries blocked in the cloud sandbox** (2026-10-03): pypi.org and registry.npmjs.org return `403 host_not_allowed` from the egress proxy, so `uv sync` / `npm ci` can't run. Python checks ran locally against preinstalled packages (ruff, pytest and mypy all pass apart from the missing typer/types-PyYAML imports). GitHub Actions CI is the authoritative check. M0-04/M0-05 (web scaffold, `package-lock.json`, FastAPI + OpenAPI) need npm/PyPI and wait until the owner allows those hosts. `uv.lock` isn't committed yet for the same reason; generate it once PyPI is reachable.
@@ -103,6 +106,7 @@ Current milestone: M5 (M0 web items blocked on npm)
 - 2026-10-03: Commits are authored as Yengnong Xiong (GitHub noreply email) per owner request; Claude stays as Co-Authored-By. Set in CLAUDE.md session protocol step 4.
 
 ## Session log (keep the last 15 entries; summarize older ones in one line)
+- 20261003T2337Z-49bb (23:37-00:30 UTC, first chat session, no routine): Finished M4-05 (team-level needs) and M5-01 to M5-06 (heap top-k, FitScore + upgrade gate, StyleFit team style vectors, player profile/market value SQL, `scout recommend`, `scout similar` with k-d tree + scripts/bench_knn.py, GMM roles). Every code commit passed Preflight first; one Preflight caught a too-strict synthetic test (BIC picked k=3 within range), fixed before pushing. Commits authored as Yengnong Xiong, pushed to main, session branch kept in sync. Next: M5-07a (historical TM valuations + training set; design notes in queue). Blocker unchanged: pypi.org / registry.npmjs.org denied by this environment's network policy (web scaffold waits).
 - 20261003T2032Z-df3b (20:32-21:07 UTC): Finished M3-05 (player_season_features materialised by `scout build`) and M4-01 to M4-04 (benchmark clubs, group scores and gaps, weak links, role scores, risk flags, `scout diagnose` with ranked needs and evidence receipts). Process change after the owner reported CI failure emails: added the always-green `Preflight` workflow (workflow_dispatch + gzip/base64 patch via scripts/preflight_patch.sh); every code push this session passed it first, so main's CI was never red. Next: M4-05 team-level needs. Blocker unchanged: npm/PyPI egress blocked locally (web scaffold waits).
 - 20261003T1947Z-9149 (19:47-20:22 UTC): Finished M1 (Understat, FotMob, Transfermarkt live + datasets fallback + overrides, StatsBomb, `scout ingest` runner) and M2 (union-find, Levenshtein, SQLAlchemy models + Alembic 0001, pandera validation, entity resolution, dimension/fact loaders, vaastav history, `scout build`, `scout doctor`), plus M3-01 to M3-04. Lessons: pandas 3 turns missing strings into NaN (assert with pd.isna); pandas-stubs rejects tuple-unpacking groupby keys (use records); SQLAlchemy text() binds ':name' even inside SQL comments. Blocker unchanged: PyPI/npm egress blocked, so CI is the check (main green at f6aa1b6). Next: M3-05 materialise player_season_features (design notes in the queue).
 - 20261003T1917Z-2292 (19:17-19:42 UTC): First session. Created PROGRESS; applied ADR-0001 to the PRD (v1.1); Python skeleton (uv/pyproject, validated YAML config, Typer CLI, error hierarchy, network-guard conftest); FastAPI `/health` + error schema + `export-openapi`; CI python job; DSA token bucket + LRU cache; ingest base (snapshot store, polite client, SourceAdapter); FPL and vaastav adapters with synthetic fixtures. Commits now authored as the owner (CLAUDE.md step 4). Blocker: PyPI/npm egress blocked, so local checks were partial and GitHub Actions was the check (2 red pushes, each fixed within minutes; main is green at fa36d17). Next: M1-05 Understat adapter (or M0-04 web scaffold first if npm is reachable).

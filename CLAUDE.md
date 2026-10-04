@@ -10,6 +10,7 @@ This repo is built by unattended Claude Code sessions started by an hourly sched
 - Never ask for permission, confirmation or clarification, and never end a session with a question. Make the most reasonable decision, record it (ADR for significant ones, otherwise a line in `docs/PROGRESS.md`), and continue.
 - Questions for the owner go under "Questions for Yengnong (non-blocking)" in `docs/PROGRESS.md`, each with the default you chose. Never wait for an answer.
 - A session can be cut off at any moment (usage limits). Push after every completed task so at most one small task is lost.
+- Chat sessions: the owner may also start sessions from Claude Code on the web chats (no routine is active as of 2026-10-04). Follow the same protocol. The harness may assign a `claude/...` session branch: still land every commit on `main` (commits only count on the owner's contribution graph there) and keep that session branch pointing at the same commit. Without an hourly routine the 40/55-minute timebox doesn't apply; stop at a natural checkpoint and run the wrap-up step.
 
 ### Locked decisions (don't revisit)
 - Front end: React + TypeScript SPA in `web/` (ADR-0001). No Streamlit.
