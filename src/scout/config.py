@@ -164,6 +164,8 @@ class MLConfig(_Strict):
     # Similar-player search: brute force (default; fastest at ~600 players, see
     # scripts/bench_knn.py) or the hand-written k-d tree.
     similarity_method: Literal["brute", "kdtree"] = "brute"
+    # Role archetypes: automatic label ("high X, low Y") -> scout-friendly name.
+    role_renames: dict[str, str] = Field(default_factory=dict)
 
 
 class ReportBands(_Strict):
