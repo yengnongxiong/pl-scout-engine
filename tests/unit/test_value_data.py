@@ -7,9 +7,17 @@ import pandas as pd
 import pytest
 
 from scout.config import PROJECT_ROOT, load_config
-from scout.ml.value_data import Valuation, attach_labels, nearest_valuation, player_seasons
+from scout.ml.value_data import (
+    Valuation,
+    attach_labels,
+    blend_rates,
+    nearest_valuation,
+    player_seasons,
+)
 
-CFG = load_config(PROJECT_ROOT / "config").settings.value_model
+BASE = load_config(PROJECT_ROOT / "config").settings
+CFG = BASE.value_model
+METHOD = BASE.methodology.model_copy(update={"blend_lambda": 0.5, "prev_season_minutes_cap": 2000})
 END = date(2026, 5, 24)
 
 
@@ -91,6 +99,36 @@ def test_labels_attach_with_receipts(seasons: pd.DataFrame) -> None:
         "transfermarkt_datasets",
     )
     assert out.loc[2, "value_eur"] is None or pd.isna(out.loc[2, "value_eur"])
+
+
+def _rates(pid: int, minutes: float, as_of: str, **rates: float | None) -> dict[str, object]:
+    row: dict[str, object] = {"player_id": pid, "minutes": minutes, "as_of": as_of}
+    row.update({f"{s}_p90": None for s in CFG.per90_stats})
+    row.update({f"{k}_p90": v for k, v in rates.items()})
+    return row
+
+
+def test_blend_rates_hand_calculated() -> None:
+    cur = pd.DataFrame(
+        [
+            _rates(1, 900, "2026-09-01", goals=0.4, xg=0.3, def_contribution=5.0),
+            _rates(2, 600, "2026-09-01", goals=0.1),
+        ]
+    )
+    prev = pd.DataFrame([_rates(1, 3000, "2026-05-24", goals=0.2, assists=0.1)])
+    out = blend_rates(cur, prev, CFG.per90_stats, METHOD).set_index("player_id")
+    one = out.loc[1]
+    # Last season's 3000 minutes are capped at 2000 and weighted by 0.5: 1000 minutes.
+    assert one["effective_minutes"] == 1900 and bool(one["used_previous_season"])
+    assert one["goals_p90"] == pytest.approx((900 * 0.4 + 1000 * 0.2) / 1900)
+    assert one["assists_p90"] == pytest.approx(0.1)  # known last season only
+    assert one["xg_p90"] == pytest.approx(0.3)  # known this season only
+    assert one["def_contribution_p90"] == pytest.approx(5.0)
+    assert pd.isna(one["xa_p90"])  # known in neither season: stays missing
+    assert one["as_of"] == "2026-09-01"  # newest data behind the row
+    two = out.loc[2]
+    assert two["effective_minutes"] == 600 and not bool(two["used_previous_season"])
+    assert two["goals_p90"] == pytest.approx(0.1)
 
 
 def test_value_model_config_validated() -> None:

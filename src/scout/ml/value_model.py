@@ -39,6 +39,10 @@ from sklearn.ensemble import HistGradientBoostingRegressor
 from scout.config import ValueModelConfig
 
 BandLabel = Literal["Undervalued", "Fair", "Premium"]
+CAVEAT = (
+    "Stats-implied value, not a fee prediction: the model learns the market's own biases "
+    "(PRD §8.10)."
+)
 GROUP_FEATURE = "position_group"
 MIN_SEASONS = 2  # a time-based split needs a training season and a test season
 MIN_DISTINCT = 2  # a feature needs two known values to split on
@@ -228,6 +232,24 @@ def band_label(value_eur: float, low_eur: float, high_eur: float) -> BandLabel:
     if value_eur > high_eur:
         return "Premium"
     return "Fair"
+
+
+def score_players(model: ValueModel, frame: pd.DataFrame) -> pd.DataFrame:
+    """Stats-implied value, band and label next to each player's Transfermarkt value.
+
+    ``frame`` is ``value_data.scoring_frame`` output: model features plus ``value_eur`` and
+    its receipt columns, which are kept as they are.
+    """
+    if frame.empty:
+        return frame.assign(implied_value_eur=[], band_low_eur=[], band_high_eur=[], value_label=[])
+    out = pd.concat([frame, model.predict(frame)], axis=1)
+    out["value_label"] = [
+        band_label(float(v), lo, hi)
+        for v, lo, hi in zip(
+            out["value_eur"], out["band_low_eur"], out["band_high_eur"], strict=True
+        )
+    ]
+    return out
 
 
 def train_value_model(

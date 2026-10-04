@@ -8,12 +8,17 @@ features, plus a label for completed seasons:
 - **minutes** and **minutes share** (minutes / (club matches x 90)), how much the player
   actually played;
 - **per-90 rates** of the counting stats listed in config (a stat missing for a season,
-  such as FPL expected goals before 2022-23, stays missing: never 0, CLAUDE.md rule 2);
+  such as FPL expected goals before 2022-23, stays missing: never 0, CLAUDE.md rule 2),
+  **blended** with the player's previous season exactly as everywhere else (PRD §8.2), so
+  training rows and this season's part-season rows are built the same way;
 - **club points per game** that season, a team-strength proxy.
 
 The label is the Transfermarkt estimated market value nearest the season's last kickoff
 within a configured window (Transfermarkt revalues the league around the end of each
 season), kept with its own as-of date and source as the receipt.
+
+Scoring rows (``scoring_frame``) are this season's players with the same features, age on
+the date of their current Transfermarkt value, and that value's receipt.
 
 Limitation (shown in ``docs/EVALUATION.md``): the warehouse holds only players in this
 season's FPL game, so training rows are past seasons of players still in the league —
@@ -32,11 +37,20 @@ from typing import Any
 import pandas as pd
 from sqlalchemy import Engine, select
 
-from scout.config import AppConfig, ValueModelConfig
+from scout.config import AppConfig, MethodologyConfig, ValueModelConfig
 from scout.db.models import DimPlayer, DimSeason
-from scout.db.queries import market_value_history, player_season_totals, season_bounds, standings
+from scout.db.queries import (
+    latest_market_values,
+    market_value_history,
+    player_season_totals,
+    season_bounds,
+    standings,
+)
 from scout.db.session import make_session_factory
+from scout.engines.recommend import age_on, preferred_market_value
+from scout.features.blend import blend
 from scout.features.per90 import MINUTES_PER_MATCH, per90
+from scout.ingest.history import previous_seasons
 
 logger = logging.getLogger(__name__)
 
@@ -134,6 +148,47 @@ def player_seasons(
     return pd.DataFrame(out)
 
 
+def blend_rates(
+    current: pd.DataFrame,
+    previous: pd.DataFrame,
+    per90_stats: Sequence[str],
+    method: MethodologyConfig,
+) -> pd.DataFrame:
+    """Blend each per-90 rate with the same player's previous season (PRD §8.2).
+
+    ``current`` and ``previous`` are ``player_seasons`` rows for one season each. Minutes
+    share and club points per game stay this season's: they are already shares, not
+    small-sample counts. Adds ``effective_minutes`` (this season's minutes plus λ x last
+    season's, capped) and ``used_previous_season``.
+    """
+    prev = {int(r["player_id"]): r for r in previous.to_dict(orient="records")}
+    lam, cap = method.blend_lambda, method.prev_season_minutes_cap
+    rates: dict[str, list[float | None]] = {stat: [] for stat in per90_stats}
+    effective: list[float] = []
+    used: list[bool] = []
+    as_of: list[str] = []
+    for rec in current.to_dict(orient="records"):
+        p = prev.get(int(rec["player_id"]))
+        m_cur = _num(rec["minutes"]) or 0.0
+        m_prev = (_num(p["minutes"]) or 0.0) if p is not None else 0.0
+        weight_prev = lam * min(m_prev, cap)
+        effective.append(m_cur + weight_prev)
+        used.append(weight_prev > 0)
+        as_of.append(str(rec["as_of"]) if p is None else max(str(rec["as_of"]), str(p["as_of"])))
+        for stat in per90_stats:
+            col = f"{stat}_p90"
+            r_prev = _num(p[col]) if p is not None else None
+            b = blend(_num(rec[col]), m_cur, r_prev, m_prev, lam=lam, prev_minutes_cap=cap)
+            rates[stat].append(b.rate)
+    out = current.copy()
+    for stat, values in rates.items():
+        out[f"{stat}_p90"] = values
+    out["effective_minutes"] = effective
+    out["used_previous_season"] = used
+    out["as_of"] = as_of
+    return out
+
+
 def attach_labels(
     frame: pd.DataFrame, history: pd.DataFrame, cfg: ValueModelConfig
 ) -> pd.DataFrame:
@@ -200,7 +255,7 @@ def training_frame(engine: Engine, config: AppConfig) -> pd.DataFrame:
         str(season): pd.Timestamp(last).date()
         for season, last in zip(bounds["season_id"], bounds["last_kickoff"], strict=True)
     }
-    frame = player_seasons(
+    rows = player_seasons(
         totals,
         players,
         ends,
@@ -209,8 +264,21 @@ def training_frame(engine: Engine, config: AppConfig) -> pd.DataFrame:
         seasons=past,
         per90_stats=cfg.per90_stats,
     )
-    if frame.empty:
-        return frame
+    if rows.empty:
+        return rows
+    method = config.settings.methodology
+    frame = pd.concat(
+        [
+            blend_rates(
+                rows[rows["season_id"] == season],
+                rows[rows["season_id"] == previous_seasons(season, 1)[0]],
+                cfg.per90_stats,
+                method,
+            )
+            for season in past
+        ],
+        ignore_index=True,
+    )
     labelled = attach_labels(frame, market_value_history(engine), cfg)
     keep = labelled["log_value"].notna() & (labelled["minutes"] >= cfg.min_minutes)
     logger.info(
@@ -218,3 +286,62 @@ def training_frame(engine: Engine, config: AppConfig) -> pd.DataFrame:
         extra={"seasons": past, "rows": int(keep.sum()), "unlabelled": int((~keep).sum())},
     )
     return labelled[keep].reset_index(drop=True)
+
+
+def scoring_frame(engine: Engine, config: AppConfig) -> pd.DataFrame:
+    """This season's players with blended features and their current Transfermarkt value.
+
+    The value is the most preferred source's newest one (``market_value_precedence``) and
+    keeps its receipt (``value_date``, ``value_source``, ``value_is_stale``). Age is taken
+    on the value's own date, as training ages are taken next to their label. Only players
+    with a value, a position group and at least ``min_minutes`` effective (blended) minutes
+    are returned; for everyone else the stats-implied value is "Not available".
+    """
+    cfg = config.settings.value_model
+    current, players = _context(engine)
+    previous = previous_seasons(current, 1)[0]
+    totals = player_season_totals(engine)
+    records = _club_records(engine, [current, previous])
+
+    def season_rows(season: str, source: str) -> pd.DataFrame:
+        return player_seasons(
+            totals,
+            players,
+            {},
+            records,
+            source=source,
+            seasons=[season],
+            per90_stats=cfg.per90_stats,
+        )
+
+    rows = season_rows(current, CURRENT_SOURCE)
+    if rows.empty:
+        return rows
+    frame = blend_rates(
+        rows, season_rows(previous, HISTORY_SOURCE), cfg.per90_stats, config.settings.methodology
+    )
+    values: dict[int, list[dict[Hashable, Any]]] = {}
+    for rec in latest_market_values(engine).to_dict(orient="records"):
+        values.setdefault(int(rec["player_id"]), []).append(rec)
+    precedence = config.settings.recommend.market_value_precedence
+    chosen = [
+        preferred_market_value(values.get(int(pid), []), precedence) for pid in frame["player_id"]
+    ]
+    frame["value_eur"] = [None if v is None else v.value_eur for v in chosen]
+    frame["value_date"] = [None if v is None else v.tm_last_updated for v in chosen]
+    frame["value_source"] = [None if v is None else v.source for v in chosen]
+    frame["value_is_stale"] = [None if v is None else v.is_stale for v in chosen]
+    frame["age"] = [
+        None if v is None else age_on(players.get(int(pid), (None, None))[1], v.tm_last_updated)
+        for pid, v in zip(frame["player_id"], chosen, strict=True)
+    ]
+    keep = (
+        frame["value_eur"].notna()
+        & frame["position_group"].notna()
+        & (frame["effective_minutes"] >= cfg.min_minutes)
+    )
+    logger.info(
+        "value scoring frame",
+        extra={"season": current, "rows": int(keep.sum()), "not_scored": int((~keep).sum())},
+    )
+    return frame[keep].reset_index(drop=True)

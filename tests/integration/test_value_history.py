@@ -9,9 +9,9 @@ import pandas as pd
 import pytest
 from sqlalchemy import Engine
 
-from scout.config import PROJECT_ROOT, Settings, load_config
+from scout.config import PROJECT_ROOT, AppConfig, Settings, load_config
 from scout.db.build import build_warehouse
-from scout.db.queries import market_value_history, season_bounds
+from scout.db.queries import market_value_history, player_season_totals, season_bounds
 from scout.db.session import make_engine
 from scout.ingest.base import SnapshotStore
 from scout.ingest.transfermarkt import DATASETS_PLAYERS, DATASETS_SOURCE, DATASETS_VALUATIONS
@@ -19,6 +19,13 @@ from tests.integration.test_build import _seed
 
 CONFIG = load_config(PROJECT_ROOT / "config")
 FIX = PROJECT_ROOT / "tests" / "fixtures" / "transfermarkt"
+
+
+def _min_minutes(n: int) -> AppConfig:
+    vm = CONFIG.settings.value_model.model_copy(update={"min_minutes": n})
+    return CONFIG.model_copy(
+        update={"settings": CONFIG.settings.model_copy(update={"value_model": vm})}
+    )
 
 
 @pytest.fixture
@@ -90,11 +97,7 @@ def test_training_frame_labels_past_seasons(
     from scout.ml.value_data import training_frame
 
     engine, _ = warehouse
-    vm = CONFIG.settings.value_model.model_copy(update={"min_minutes": 0})
-    config = CONFIG.model_copy(
-        update={"settings": CONFIG.settings.model_copy(update={"value_model": vm})}
-    )
-    frame = training_frame(engine, config)
+    frame = training_frame(engine, _min_minutes(0))
     bounds = season_bounds(engine)
     end = bounds.set_index("season_id").loc["2025-26", "last_kickoff"].date()
     # Only Alex has a valuation history; his 2025-26 season ends in August 2025 and the
@@ -107,3 +110,35 @@ def test_training_frame_labels_past_seasons(
     assert alex["position_group"] == "CB" and alex["minutes"] > 0
     # The default minutes floor drops a one-match season.
     assert training_frame(engine, CONFIG).empty
+
+
+def test_scoring_frame_uses_current_value_and_blended_rates(
+    warehouse: tuple[Engine, dict[str, pd.DataFrame]],
+) -> None:
+    from scout.ml.value_data import scoring_frame
+
+    engine, _ = warehouse
+    frame = scoring_frame(engine, _min_minutes(0))
+    # Only Alex has a Transfermarkt value: the live one beats the stale datasets points.
+    assert len(frame) == 1
+    alex = frame.iloc[0]
+    history = market_value_history(engine)
+    live = history[history["source"] == "transfermarkt"].iloc[0]
+    assert alex["value_eur"] == live["value_eur"]
+    assert (alex["value_source"], alex["value_date"]) == ("transfermarkt", date(2026, 6, 10))
+    assert not bool(alex["value_is_stale"])
+    assert alex["age"] == pytest.approx((date(2026, 6, 10) - date(1998, 3, 14)).days / 365.25)
+    # 180 FPL minutes this season, 90 last season (vaastav) weighted by lambda.
+    totals = player_season_totals(engine)
+    mine = totals[totals["player_id"] == alex["player_id"]]
+    cur, prev = mine[mine["source"] == "fpl"], mine[mine["source"] == "vaastav"]
+    assert (cur["minutes"].sum(), prev["minutes"].sum()) == (180, 90)
+    assert (cur["xg"].sum(), prev["xg"].sum()) == (pytest.approx(0.05), pytest.approx(0.04))
+    lam = CONFIG.settings.methodology.blend_lambda
+    weight_prev = lam * min(90, CONFIG.settings.methodology.prev_season_minutes_cap)
+    assert alex["effective_minutes"] == pytest.approx(180 + weight_prev)
+    assert bool(alex["used_previous_season"])
+    expected_xg = (180 * (0.05 * 90 / 180) + weight_prev * (0.04 * 90 / 90)) / (180 + weight_prev)
+    assert alex["xg_p90"] == pytest.approx(expected_xg)
+    # The default minutes floor (blended) leaves a two-match player unscored.
+    assert scoring_frame(engine, CONFIG).empty

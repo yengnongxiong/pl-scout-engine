@@ -1,6 +1,7 @@
 """Value model (PRD §8.10 step 3) on synthetic seasons with a known value structure."""
 
 import math
+from datetime import date
 
 import numpy as np
 import pandas as pd
@@ -8,6 +9,7 @@ import pytest
 
 from scout.config import PROJECT_ROOT, load_config
 from scout.ml.value_model import (
+    CAVEAT,
     Baseline,
     age_bucket,
     band_label,
@@ -16,6 +18,7 @@ from scout.ml.value_model import (
     feature_names,
     informative_columns,
     metadata,
+    score_players,
     train_value_model,
 )
 
@@ -116,6 +119,29 @@ def test_predictions_are_ordered_and_reproducible() -> None:
     pd.testing.assert_frame_equal(a, b)
     assert (a["band_low_eur"] <= a["implied_value_eur"]).all()
     assert (a["implied_value_eur"] <= a["band_high_eur"]).all()
+
+
+def test_scores_keep_receipts_and_label_against_the_band() -> None:
+    frame = synthetic_seasons(seed=2, n=120)
+    model = train_value_model(frame, CFG, GROUPS, seed=3)
+    rows = frame.head(3).reset_index(drop=True)
+    pred = model.predict(rows)
+    rows = rows.assign(
+        value_eur=[
+            pred.loc[0, "band_low_eur"] / 2,
+            pred.loc[1, "implied_value_eur"],
+            pred.loc[2, "band_high_eur"] * 2,
+        ],
+        value_date=[date(2026, 9, 1)] * 3,
+        value_source=["transfermarkt"] * 3,
+    )
+    scored = score_players(model, rows)
+    assert list(scored["value_label"]) == ["Undervalued", "Fair", "Premium"]
+    assert list(scored["value_date"]) == [date(2026, 9, 1)] * 3  # receipt kept
+    pd.testing.assert_frame_equal(scored[list(pred.columns)], pred)
+    empty = score_players(model, rows.iloc[0:0])
+    assert empty.empty and "value_label" in empty.columns
+    assert "not a fee prediction" in CAVEAT
 
 
 def test_band_labels() -> None:
