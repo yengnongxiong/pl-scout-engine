@@ -39,4 +39,5 @@ export const handlers = [
   http.get(apiPath("/compare"), () => HttpResponse.json(data.compare)),
   http.get(apiPath("/meta/freshness"), () => HttpResponse.json(data.freshness)),
   http.get(apiPath("/meta/methodology"), () => HttpResponse.json(data.methodology)),
+  http.get(apiPath("/meta/backtest"), () => HttpResponse.json(data.backtest)),
 ];

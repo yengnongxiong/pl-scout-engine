@@ -221,3 +221,16 @@ def test_similar_players_success(client: TestClient, monkeypatch: pytest.MonkeyP
         0.5,
     )
     assert unknown["team_id"] is None and unknown["player_name"] == "424242"
+
+
+def test_backtest_endpoint(client: TestClient) -> None:
+    body = client.get("/meta/backtest").json()
+    assert (body["as_of_season"], body["signing_season"], body["top_n"]) == (
+        "2025-26",
+        "2026-27",
+        3,
+    )
+    assert body["evaluated"] == 0 and body["precision"] is None
+    assert body["skipped"] == {"no arrivals yet": 2}
+    assert {c["team_name"] for c in body["clubs"]} == {"Synthetic Rovers", "Fixture Town"}
+    assert body["caveat"].startswith("Exploratory")

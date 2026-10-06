@@ -1,6 +1,175 @@
 {
   "components": {
     "schemas": {
+      "ArrivalOut": {
+        "description": "A player who joined a club for this season and has played for it.",
+        "properties": {
+          "minutes": {
+            "title": "Minutes",
+            "type": "number"
+          },
+          "player_id": {
+            "title": "Player Id",
+            "type": "integer"
+          },
+          "player_name": {
+            "title": "Player Name",
+            "type": "string"
+          },
+          "position_group": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Position Group"
+          }
+        },
+        "required": [
+          "player_id",
+          "player_name",
+          "position_group",
+          "minutes"
+        ],
+        "title": "ArrivalOut",
+        "type": "object"
+      },
+      "BacktestResponse": {
+        "description": "Last season's diagnosis vs this season's arrivals (US-16, exploratory).",
+        "properties": {
+          "arrivals_as_of": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Arrivals As Of"
+          },
+          "as_of_season": {
+            "description": "Season the needs were diagnosed at the end of.",
+            "title": "As Of Season",
+            "type": "string"
+          },
+          "baseline_precision": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Same for the n most-signed groups at the other clubs.",
+            "title": "Baseline Precision"
+          },
+          "benchmark": {
+            "title": "Benchmark",
+            "type": "string"
+          },
+          "caveat": {
+            "title": "Caveat",
+            "type": "string"
+          },
+          "clubs": {
+            "items": {
+              "$ref": "#/components/schemas/ClubBacktestOut"
+            },
+            "title": "Clubs",
+            "type": "array"
+          },
+          "evaluated": {
+            "title": "Evaluated",
+            "type": "integer"
+          },
+          "history_as_of": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "History As Of"
+          },
+          "hit_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Share of clubs with at least one hit.",
+            "title": "Hit Rate"
+          },
+          "precision": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Mean precision@n over evaluated clubs.",
+            "title": "Precision"
+          },
+          "random_precision": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Expected precision of random groups.",
+            "title": "Random Precision"
+          },
+          "signing_season": {
+            "description": "Season whose arrivals are the outcome.",
+            "title": "Signing Season",
+            "type": "string"
+          },
+          "skipped": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Skipped",
+            "type": "object"
+          },
+          "top_n": {
+            "title": "Top N",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "as_of_season",
+          "signing_season",
+          "benchmark",
+          "top_n",
+          "precision",
+          "baseline_precision",
+          "random_precision",
+          "hit_rate",
+          "evaluated",
+          "skipped",
+          "clubs",
+          "history_as_of",
+          "arrivals_as_of",
+          "caveat"
+        ],
+        "title": "BacktestResponse",
+        "type": "object"
+      },
       "CandidateOut": {
         "description": "One shortlisted player (US-04).",
         "properties": {
@@ -179,6 +348,93 @@
           "text"
         ],
         "title": "Caveat",
+        "type": "object"
+      },
+      "ClubBacktestOut": {
+        "description": "Predicted needs vs actual arrivals for one club.",
+        "properties": {
+          "arrivals": {
+            "items": {
+              "$ref": "#/components/schemas/ArrivalOut"
+            },
+            "title": "Arrivals",
+            "type": "array"
+          },
+          "baseline_groups": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Baseline Groups",
+            "type": "array"
+          },
+          "baseline_precision": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Baseline Precision"
+          },
+          "hits": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Hits",
+            "type": "array"
+          },
+          "precision": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Precision"
+          },
+          "predicted": {
+            "items": {
+              "$ref": "#/components/schemas/PredictedNeedOut"
+            },
+            "title": "Predicted",
+            "type": "array"
+          },
+          "random_precision": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Random Precision"
+          },
+          "team_id": {
+            "title": "Team Id",
+            "type": "integer"
+          },
+          "team_name": {
+            "title": "Team Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "team_id",
+          "team_name",
+          "predicted",
+          "arrivals",
+          "hits",
+          "precision",
+          "baseline_groups",
+          "baseline_precision",
+          "random_precision"
+        ],
+        "title": "ClubBacktestOut",
         "type": "object"
       },
       "ComparableFact": {
@@ -1938,6 +2194,25 @@
         "title": "PlayerSearchHit",
         "type": "object"
       },
+      "PredictedNeedOut": {
+        "description": "One of a club's top needs at the end of the backtest season.",
+        "properties": {
+          "position_group": {
+            "title": "Position Group",
+            "type": "string"
+          },
+          "severity": {
+            "title": "Severity",
+            "type": "number"
+          }
+        },
+        "required": [
+          "position_group",
+          "severity"
+        ],
+        "title": "PredictedNeedOut",
+        "type": "object"
+      },
       "Receipt": {
         "description": "A source behind the sheet and the newest timestamp used from it.",
         "properties": {
@@ -2722,6 +2997,68 @@
           }
         },
         "summary": "Health",
+        "tags": [
+          "meta"
+        ]
+      }
+    },
+    "/meta/backtest": {
+      "get": {
+        "description": "Did last season's top needs match the position groups clubs then signed? (US-16).",
+        "operationId": "backtest_meta_backtest_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BacktestResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unknown club, player or need."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Invalid request parameters."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The warehouse has not been built yet."
+          }
+        },
+        "summary": "Backtest",
         "tags": [
           "meta"
         ]

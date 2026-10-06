@@ -172,3 +172,10 @@ api:
   similar_k: 10
   similar_max_k: 50
   max_shortlist: 50
+
+backtest:
+  # PRD §8.11 / US-16 (exploratory): last season's top needs per club vs the position groups
+  # of the players who arrived for this season, as precision@top_n.
+  top_n: 3
+  # An arrival counts once they have played at least this many minutes for the new club.
+  arrival_min_minutes: 1

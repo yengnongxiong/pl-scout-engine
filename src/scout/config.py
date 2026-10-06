@@ -255,6 +255,15 @@ class ApiConfig(_Strict):
     max_shortlist: int = Field(default=50, gt=0)
 
 
+class BacktestConfig(_Strict):
+    """PRD §8.11 / US-16: did last season's diagnosis point at the positions clubs signed?"""
+
+    # Needs compared per club (precision@n).
+    top_n: int = Field(default=3, gt=0)
+    # A summer arrival counts once they have played this many minutes for the new club.
+    arrival_min_minutes: float = Field(default=1.0, ge=0.0)
+
+
 class EngineSettings(_Strict):
     """Contents of ``config/settings.yaml``."""
 
@@ -269,6 +278,7 @@ class EngineSettings(_Strict):
     value_model: ValueModelConfig
     reports: ReportsConfig
     api: ApiConfig = Field(default_factory=ApiConfig)
+    backtest: BacktestConfig = Field(default_factory=BacktestConfig)
 
 
 class KpiDef(_Strict):

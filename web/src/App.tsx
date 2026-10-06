@@ -17,6 +17,9 @@ const PlayerPage = lazy(() =>
 const ComparePage = lazy(() =>
   import("./pages/ComparePage").then((m) => ({ default: m.ComparePage })),
 );
+const BacktestPage = lazy(() =>
+  import("./pages/BacktestPage").then((m) => ({ default: m.BacktestPage })),
+);
 const MethodologyPage = lazy(() =>
   import("./pages/MethodologyPage").then((m) => ({ default: m.MethodologyPage })),
 );
@@ -39,6 +42,7 @@ export function App() {
           <Route path="/clubs/:teamId/needs/:needId" element={<ShortlistPage />} />
           <Route path="/players/:playerId" element={<PlayerPage />} />
           <Route path="/compare" element={<ComparePage />} />
+          <Route path="/backtest" element={<BacktestPage />} />
           <Route path="/methodology" element={<MethodologyPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

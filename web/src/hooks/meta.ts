@@ -17,3 +17,11 @@ export function useMethodology() {
     queryFn: async () => unwrap(await api.GET("/meta/methodology")),
   });
 }
+
+/** Last season's top needs vs this season's arrivals (US-16). */
+export function useBacktest() {
+  return useQuery({
+    queryKey: ["meta", "backtest"],
+    queryFn: async () => unwrap(await api.GET("/meta/backtest")),
+  });
+}

@@ -63,6 +63,7 @@ Optional extras:
 | **Shortlist** (`/clubs/:id/needs/:need`) | Who fixes it? Ranked candidates with FitScore breakdowns, upgrade-gate verdicts against the incumbent, filters (Transfermarkt estimated market value, age, minutes, excluded clubs) and a Moneyball view comparing the market's estimate with a stats-implied value. |
 | **Player** (`/players/:id`) | Percentiles vs position peers, availability, value band, role archetype, similar players, and a copy-ready scouting report against any club's need. |
 | **Compare** (`/compare`) | Candidate vs incumbent, side by side, with deltas on the club's need KPIs. |
+| **Backtest** (`/backtest`) | Did last season's top needs match the positions clubs then signed? precision@3 against a most-signed baseline and random picks (exploratory). |
 | **Methodology & data** (`/methodology`) | Source freshness, mapping coverage, KPI definitions and weights, proxies, thresholds, model runs and known limitations. |
 
 | Shortlist with a FitScore breakdown | Moneyball view |
@@ -154,6 +155,7 @@ uv run scout doctor                     # freshness, coverage, validation, FPL s
 uv run scout diagnose "Spurs"           # needs from the terminal
 uv run scout recommend "Spurs" --need CB --max-value 40
 uv run scout report "Player Name" --team "Spurs"
+uv run scout backtest                   # last season's needs vs this season's arrivals
 uv run scout api                        # FastAPI on :8000
 uv run scout export-openapi             # writes web/openapi.json
 

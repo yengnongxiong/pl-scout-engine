@@ -301,3 +301,83 @@ def test_cli_report(built: Settings, monkeypatch: pytest.MonkeyPatch) -> None:
     assert unknown.exit_code == 1 and "Report failed" in unknown.output
     wrong = CliRunner().invoke(cli.app, ["report", "1", "--benchmark", "top9"])
     assert wrong.exit_code == 2
+
+
+def test_backtest_compares_last_seasons_needs_with_arrivals(
+    built: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from datetime import UTC, datetime
+
+    from sqlalchemy import select
+
+    from scout.db.models import DimMatch, DimPlayer, FactPlayerMatch
+    from scout.db.session import make_session_factory
+    from scout.engines import backtest
+    from scout.engines.diagnosis import GroupAssessment
+
+    engine = make_engine(built.database_url)
+    config = _config()
+    rovers = find_team(engine, "Synthetic Rovers", config.team_aliases.aliases)
+    # A new striker plays for Rovers this season: a summer arrival.
+    with make_session_factory(engine).begin() as session:
+        match = session.scalars(select(DimMatch).where(DimMatch.season_id == "2026-27")).first()
+        assert match is not None
+        newcomer = DimPlayer(canonical_name="Nia Newcomer", position_group="ST")
+        session.add(newcomer)
+        session.flush()
+        session.add(
+            FactPlayerMatch(
+                player_id=newcomer.player_id, match_id=match.match_id, team_id=rovers.team_id,
+                minutes=75, source="fpl", fetched_at=datetime(2026, 9, 1, tzinfo=UTC),
+            )
+        )  # fmt: skip
+
+    def needs(club: int, *_args: object) -> list[GroupAssessment]:
+        # Stub the season-end assessment so a club has shortfalls to compare.
+        return [GroupAssessment("ST", 9.0), GroupAssessment("CB", 4.0), GroupAssessment("W", 0.0)]
+
+    monkeypatch.setattr(backtest, "assess_groups", needs)
+    result = backtest.run_backtest(engine, config)
+    engine.dispose()
+    assert (result.as_of_season, result.signing_season, result.benchmark) == (
+        "2025-26",
+        "2026-27",
+        "top6",
+    )
+    assert result.history_as_of is not None and result.arrivals_as_of is not None
+    by_name = {c.team_name: c for c in result.clubs}
+    rov = by_name["Synthetic Rovers"]
+    assert [p.position_group for p in rov.predicted] == ["ST", "CB"]  # severity 0 dropped
+    assert [a.player_name for a in rov.arrivals] == ["Nia Newcomer"]
+    assert rov.hits == ["ST"] and rov.precision == pytest.approx(0.5)
+    assert rov.baseline_groups == [] and rov.baseline_precision is None
+    assert rov.random_precision == pytest.approx(1 / 7)
+    assert result.evaluated == 1 and result.precision == pytest.approx(0.5)
+    assert result.hit_rate == 1.0
+    assert result.skipped == {"no arrivals yet": 1}
+
+
+def test_backtest_needs_last_seasons_history(tmp_path: Path) -> None:
+    from scout.engines.backtest import run_backtest
+    from scout.pipeline import build_all
+
+    settings = Settings(data_dir=tmp_path / "data", database_url=f"sqlite:///{tmp_path / 'w.db'}")
+    _seed(settings.data_dir)
+    for path in (settings.data_dir / "raw" / "vaastav").rglob("*"):
+        if path.name.startswith("2025-26"):
+            path.unlink()
+    build_all(settings, _config())
+    engine = make_engine(settings.database_url)
+    with pytest.raises(NotFoundError, match="no FPL history for 2025-26"):
+        run_backtest(engine, _config())
+    engine.dispose()
+
+
+def test_cli_backtest(built: Settings, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(cli, "get_settings", lambda: built)
+    monkeypatch.setattr(cli, "get_config", _config)
+    ok = CliRunner().invoke(cli.app, ["backtest"])
+    assert ok.exit_code == 0, ok.output
+    assert "Needs at the end of 2025-26" in ok.output and "precision@3 Not available" in ok.output
+    assert "Synthetic Rovers: needs none; arrivals none yet" in ok.output
+    assert "Skipped: no arrivals yet 2" in ok.output

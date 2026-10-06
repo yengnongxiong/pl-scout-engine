@@ -406,3 +406,57 @@ class CompareResponse(_Out):
     b: ComparePlayer
     team: TeamRef | None
     rows: list[CompareRow]
+
+
+# --- backtest -------------------------------------------------------------------------
+
+
+class ArrivalOut(_Out):
+    """A player who joined a club for this season and has played for it."""
+
+    player_id: int
+    player_name: str
+    position_group: str | None
+    minutes: float
+
+
+class PredictedNeedOut(_Out):
+    """One of a club's top needs at the end of the backtest season."""
+
+    position_group: str
+    severity: float
+
+
+class ClubBacktestOut(_Out):
+    """Predicted needs vs actual arrivals for one club."""
+
+    team_id: int
+    team_name: str
+    predicted: list[PredictedNeedOut]
+    arrivals: list[ArrivalOut]
+    hits: list[str]
+    precision: float | None
+    baseline_groups: list[str]
+    baseline_precision: float | None
+    random_precision: float | None
+
+
+class BacktestResponse(_Out):
+    """Last season's diagnosis vs this season's arrivals (US-16, exploratory)."""
+
+    as_of_season: str = Field(description="Season the needs were diagnosed at the end of.")
+    signing_season: str = Field(description="Season whose arrivals are the outcome.")
+    benchmark: str
+    top_n: int
+    precision: float | None = Field(description="Mean precision@n over evaluated clubs.")
+    baseline_precision: float | None = Field(
+        description="Same for the n most-signed groups at the other clubs."
+    )
+    random_precision: float | None = Field(description="Expected precision of random groups.")
+    hit_rate: float | None = Field(description="Share of clubs with at least one hit.")
+    evaluated: int
+    skipped: dict[str, int]
+    clubs: list[ClubBacktestOut]
+    history_as_of: str | None
+    arrivals_as_of: str | None
+    caveat: str

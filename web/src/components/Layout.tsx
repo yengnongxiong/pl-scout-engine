@@ -6,6 +6,7 @@ import { useHealth } from "../hooks/useHealth";
 const NAV = [
   { to: "/", label: "Club diagnosis", end: true },
   { to: "/compare", label: "Compare", end: false },
+  { to: "/backtest", label: "Backtest", end: false },
   { to: "/methodology", label: "Methodology & data", end: false },
 ] as const;
 

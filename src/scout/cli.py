@@ -465,6 +465,44 @@ def demo(
 
 
 @app.command()
+def backtest() -> None:
+    """Last season's top needs vs the positions clubs then signed (PRD §8.11, exploratory)."""
+    from scout.db.session import make_engine
+    from scout.engines.backtest import run_backtest
+
+    engine = make_engine(get_settings().database_url)
+    try:
+        result = run_backtest(engine, get_config())
+    except ScoutError as exc:
+        typer.echo(f"Backtest failed: {exc.message}", err=True)
+        raise typer.Exit(code=1) from exc
+    finally:
+        engine.dispose()
+
+    def pct(value: float | None) -> str:
+        return "Not available" if value is None else f"{value:.0%}"
+
+    typer.echo(
+        f"Needs at the end of {result.as_of_season} (benchmark {result.benchmark}) vs "
+        f"arrivals in {result.signing_season}: {result.evaluated} clubs evaluated"
+    )
+    typer.echo(
+        f"precision@{result.top_n} {pct(result.precision)} | most-signed baseline "
+        f"{pct(result.baseline_precision)} | random {pct(result.random_precision)} | "
+        f"clubs with a hit {pct(result.hit_rate)}"
+    )
+    for club in result.clubs:
+        needs = ", ".join(p.position_group for p in club.predicted) or "none"
+        signed = (
+            ", ".join(f"{a.player_name} ({a.position_group or '?'})" for a in club.arrivals)
+            or "none yet"
+        )
+        typer.echo(f"  {club.team_name}: needs {needs}; arrivals {signed}; hits {len(club.hits)}")
+    if result.skipped:
+        typer.echo("Skipped: " + ", ".join(f"{k} {v}" for k, v in result.skipped.items()))
+
+
+@app.command()
 def doctor() -> None:
     """Report freshness, coverage, validation status and FPL schema health."""
     from scout.db.doctor import run_doctor

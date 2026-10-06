@@ -44,6 +44,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/meta/backtest": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Backtest
+     * @description Did last season's top needs match the position groups clubs then signed? (US-16).
+     */
+    get: operations["backtest_meta_backtest_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/meta/freshness": {
     parameters: {
       query?: never;
@@ -252,6 +272,74 @@ export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
     /**
+     * ArrivalOut
+     * @description A player who joined a club for this season and has played for it.
+     */
+    ArrivalOut: {
+      /** Minutes */
+      minutes: number;
+      /** Player Id */
+      player_id: number;
+      /** Player Name */
+      player_name: string;
+      /** Position Group */
+      position_group: string | null;
+    };
+    /**
+     * BacktestResponse
+     * @description Last season's diagnosis vs this season's arrivals (US-16, exploratory).
+     */
+    BacktestResponse: {
+      /** Arrivals As Of */
+      arrivals_as_of: string | null;
+      /**
+       * As Of Season
+       * @description Season the needs were diagnosed at the end of.
+       */
+      as_of_season: string;
+      /**
+       * Baseline Precision
+       * @description Same for the n most-signed groups at the other clubs.
+       */
+      baseline_precision: number | null;
+      /** Benchmark */
+      benchmark: string;
+      /** Caveat */
+      caveat: string;
+      /** Clubs */
+      clubs: components["schemas"]["ClubBacktestOut"][];
+      /** Evaluated */
+      evaluated: number;
+      /** History As Of */
+      history_as_of: string | null;
+      /**
+       * Hit Rate
+       * @description Share of clubs with at least one hit.
+       */
+      hit_rate: number | null;
+      /**
+       * Precision
+       * @description Mean precision@n over evaluated clubs.
+       */
+      precision: number | null;
+      /**
+       * Random Precision
+       * @description Expected precision of random groups.
+       */
+      random_precision: number | null;
+      /**
+       * Signing Season
+       * @description Season whose arrivals are the outcome.
+       */
+      signing_season: string;
+      /** Skipped */
+      skipped: {
+        [key: string]: number;
+      };
+      /** Top N */
+      top_n: number;
+    };
+    /**
      * CandidateOut
      * @description One shortlisted player (US-04).
      */
@@ -313,6 +401,30 @@ export interface components {
         | "same_club";
       /** Text */
       text: string;
+    };
+    /**
+     * ClubBacktestOut
+     * @description Predicted needs vs actual arrivals for one club.
+     */
+    ClubBacktestOut: {
+      /** Arrivals */
+      arrivals: components["schemas"]["ArrivalOut"][];
+      /** Baseline Groups */
+      baseline_groups: string[];
+      /** Baseline Precision */
+      baseline_precision: number | null;
+      /** Hits */
+      hits: string[];
+      /** Precision */
+      precision: number | null;
+      /** Predicted */
+      predicted: components["schemas"]["PredictedNeedOut"][];
+      /** Random Precision */
+      random_precision: number | null;
+      /** Team Id */
+      team_id: number;
+      /** Team Name */
+      team_name: string;
     };
     /**
      * ComparableFact
@@ -985,6 +1097,16 @@ export interface components {
       team_name: string;
     };
     /**
+     * PredictedNeedOut
+     * @description One of a club's top needs at the end of the backtest season.
+     */
+    PredictedNeedOut: {
+      /** Position Group */
+      position_group: string;
+      /** Severity */
+      severity: number;
+    };
+    /**
      * Receipt
      * @description A source behind the sheet and the newest timestamp used from it.
      */
@@ -1342,6 +1464,62 @@ export interface operations {
       };
       /** @description Internal Server Error */
       500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  backtest_meta_backtest_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BacktestResponse"];
+        };
+      };
+      /** @description Unknown club, player or need. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Invalid request parameters. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description The warehouse has not been built yet. */
+      503: {
         headers: {
           [name: string]: unknown;
         };

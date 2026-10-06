@@ -48,6 +48,7 @@ async function synthetic(page) {
     [/\/api\/compare/, data.compare],
     [/\/api\/meta\/freshness/, data.freshness],
     [/\/api\/meta\/methodology/, data.methodology],
+    [/\/api\/meta\/backtest/, data.backtest],
   ];
   await page.route("**/api/**", (route) => {
     const url = new URL(route.request().url());
@@ -118,6 +119,7 @@ try {
     "compare",
     "Percentiles side by side",
   );
+  await shoot(page, "/backtest", "backtest", "By club");
   await shoot(page, "/methodology", "methodology", "Known limitations");
 } finally {
   await browser.close();

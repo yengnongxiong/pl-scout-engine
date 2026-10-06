@@ -547,3 +547,48 @@ export const methodology: Schemas["MethodologyResponse"] = {
   ],
   limitations: ["Player-level pressing is a proxy."],
 };
+
+export const backtest: Schemas["BacktestResponse"] = {
+  as_of_season: "2025-26",
+  signing_season: "2026-27",
+  benchmark: "top6",
+  top_n: 3,
+  precision: 0.5,
+  baseline_precision: 0.25,
+  random_precision: 0.21,
+  hit_rate: 1,
+  evaluated: 1,
+  skipped: { "promoted (no diagnosis)": 3 },
+  clubs: [
+    {
+      team_id: 1,
+      team_name: "Synthetic Rovers",
+      predicted: [
+        { position_group: "ST", severity: 9 },
+        { position_group: "CB", severity: 4 },
+      ],
+      arrivals: [
+        { player_id: 31, player_name: "Nia Newcomer", position_group: "ST", minutes: 450 },
+      ],
+      hits: ["ST"],
+      precision: 0.5,
+      baseline_groups: ["W", "CB", "ST"],
+      baseline_precision: 0.25,
+      random_precision: 0.21,
+    },
+    {
+      team_id: 2,
+      team_name: "Fixture Town",
+      predicted: [],
+      arrivals: [],
+      hits: [],
+      precision: null,
+      baseline_groups: [],
+      baseline_precision: null,
+      random_precision: null,
+    },
+  ],
+  history_as_of: "2026-06-01T00:00:00",
+  arrivals_as_of: "2026-09-28T10:00:00",
+  caveat: "Exploratory: clubs sign players for many reasons.",
+};

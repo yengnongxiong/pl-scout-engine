@@ -8,16 +8,22 @@ from sqlalchemy import func, select
 from scout.api.deps import ApiState, State
 from scout.api.errors import ERROR_RESPONSES
 from scout.api.schemas import (
+    ArrivalOut,
+    BacktestResponse,
+    ClubBacktestOut,
     FreshnessResponse,
     KpiDefinitionOut,
     MethodologyResponse,
     ModelRunOut,
+    PredictedNeedOut,
     SourceFreshnessOut,
     TeamKpiDefinitionOut,
 )
 from scout.db.doctor import run_doctor
 from scout.db.models import PlayerRole, PlayerValueScore
 from scout.db.session import make_session_factory
+from scout.engines.backtest import run_backtest
+from scout.errors import ConfigError, InvalidRequestError
 from scout.ml.value_model import CAVEAT
 
 router = APIRouter(prefix="/meta", tags=["meta"], responses=ERROR_RESPONSES)
@@ -144,3 +150,63 @@ def methodology(state: State) -> MethodologyResponse:
         models=state.cached(("model_runs",), lambda: _model_runs(state)),
         limitations=LIMITATIONS,
     )
+
+
+BACKTEST_CAVEAT = (
+    "Exploratory: clubs sign players for many reasons (injuries, sales, loans, opportunity), "
+    "so a need that was not filled is not proof the diagnosis was wrong."
+)
+
+
+@router.get("/backtest", response_model=BacktestResponse)
+def backtest(state: State) -> BacktestResponse:
+    """Did last season's top needs match the position groups clubs then signed? (US-16)."""
+    state.season()
+
+    def compute() -> BacktestResponse:
+        try:
+            r = run_backtest(state.engine, state.config)
+        except ConfigError as exc:
+            raise InvalidRequestError(exc.message) from exc
+        return BacktestResponse(
+            as_of_season=r.as_of_season,
+            signing_season=r.signing_season,
+            benchmark=r.benchmark,
+            top_n=r.top_n,
+            precision=r.precision,
+            baseline_precision=r.baseline_precision,
+            random_precision=r.random_precision,
+            hit_rate=r.hit_rate,
+            evaluated=r.evaluated,
+            skipped=r.skipped,
+            clubs=[
+                ClubBacktestOut(
+                    team_id=c.team_id,
+                    team_name=c.team_name,
+                    predicted=[
+                        PredictedNeedOut(position_group=p.position_group, severity=p.severity)
+                        for p in c.predicted
+                    ],
+                    arrivals=[
+                        ArrivalOut(
+                            player_id=a.player_id,
+                            player_name=a.player_name,
+                            position_group=a.position_group,
+                            minutes=a.minutes,
+                        )
+                        for a in c.arrivals
+                    ],
+                    hits=c.hits,
+                    precision=c.precision,
+                    baseline_groups=c.baseline_groups,
+                    baseline_precision=c.baseline_precision,
+                    random_precision=c.random_precision,
+                )
+                for c in r.clubs
+            ],
+            history_as_of=r.history_as_of,
+            arrivals_as_of=r.arrivals_as_of,
+            caveat=BACKTEST_CAVEAT,
+        )
+
+    return state.cached(("backtest",), compute)

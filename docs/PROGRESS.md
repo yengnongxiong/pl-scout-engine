@@ -1,7 +1,7 @@
 # Progress
 Status: IN_PROGRESS            <!-- IN_PROGRESS or COMPLETE -->
 Active session: 20261006T0207Z-4005 started 2026-10-06T02:07:31Z
-Current milestone: Stretch (S7 backtest next)
+Current milestone: Stretch (S2 GK module next)
 
 ## Plan for this session
 - M0-04 web scaffold (Vite + React + TS strict, ESLint, Prettier, Vitest + RTL, Tailwind), M0-05 (`web/openapi.json` + `npm run gen:api`), M0-06 (`web` and `contract` CI jobs); then M6 reports.
@@ -95,7 +95,15 @@ Current milestone: Stretch (S7 backtest next)
 - [x] M9-03 `docs/METHODOLOGY.md`; README (quick start, pages, architecture diagram, methodology, limitations, commands, DSA table, How it was made); `web/scripts/screenshots.mjs` (`npm run screenshots`, synthetic by default, `-- --live` for real data) + `docs/screenshots/`
 - [x] M9-04 Fresh-clone check: clone of `main` into a temp dir, `uv sync --locked`, `npm ci`, ruff/mypy/pytest, web lint/typecheck/test/build, `make contract`, `scout --help` all pass (the demo itself ran against fixture snapshots in M9-02)
 
+### Stretch
+- [x] S7 Backtest (US-16, PRD §8.11): `engines/backtest.py` re-runs the diagnosis as of the end of last season (same feature pipeline with last season as "current"), compares each club's top-n needs with the position groups of this season's arrivals (players with minutes at a club they had no FPL record with last season), precision@n vs a leave-one-club-out most-signed baseline and random expectation; `scout backtest`, `GET /meta/backtest`, `/backtest` page — unit + integration + page tests
+- [ ] S2 GK module (US-14)
+- [ ] S4 Age curves (US-18)
+- [ ] S5 PDF export (US-17)
+- [ ] S3 Postgres via docker-compose
+
 ## Done
+- S7 (2026-10-06): backtest engine, CLI, API and page.
 - M9-01 to M9-04 (2026-10-06): live FPL adapter check, club aliases for promoted clubs, `scout demo`, METHODOLOGY + README + screenshots, fresh-clone check. M9 complete; next: stretch goals in the order S7, S2, S4, S5, S3.
 - M8-01 to M8-03 (2026-10-06): the five PRD §13 pages, typed against the generated client, every page tested in loading/empty/error/success states, lazy-loaded routes and chart. M8 complete (real-data demo happens on the owner's machine with `scout demo`).
 - M7-01 to M7-03 (2026-10-06): every PRD §12 endpoint plus `/meta/methodology`, trie search with fuzzy suggestions, LRU-cached hot endpoints, single error schema everywhere, OpenAPI exported and TS types regenerated. M7 complete.
@@ -118,6 +126,7 @@ Current milestone: Stretch (S7 backtest next)
 - Please run the self-hosted `felipeall/transfermarkt-api` on :8001 (or change `ingest.base_urls.transfermarkt`) before `scout ingest --source transfermarkt`.
 
 ## Decisions log (minor)
+- 2026-10-06: Backtest (S7): the PRD suggests Transfermarkt transfers for "first-team signings"; the warehouse has no transfers table, so arrivals are derived from FPL data already ingested: a player with minutes this season for a club they had no FPL record with last season (signings and loans; academy debutants with no FPL history count too). It needs no new source and only counts players who actually played (first team). The benchmark at season end is that season's own table (the last completed one at the time). Clubs without both a shortfall and an arrival are reported as skipped, never scored.
 - 2026-10-06: README screenshots render the front end's synthetic test data (made-up clubs and players, captioned as such) served to the production build through Playwright route interception, so the README never shows real-looking numbers without a receipt; `npm run screenshots -- --live` re-shoots them from the owner's real dashboard. Dependency: playwright (Apache-2.0, dev only; browsers via `npx playwright install chromium` or `PLAYWRIGHT_CHROMIUM_PATH`).
 - 2026-10-06: Dashboard: percentile bars are plain accessible elements (`role="meter"`, number always printed) rather than chart-library bars; Recharts is used only for the Moneyball scatter (marker shape + colour per label, lazy-loaded so the main bundle stays ~96 kB gzip). Evidence rows now carry `value` (the per-90 the percentile ranks, in the requested season mode) next to `raw_p90` (this season only), so bars never pair a blended percentile with a "Not available" current-season rate. ESLint: `react-hooks/incompatible-library` is off because the project does not run the React Compiler (the rule only reports that the compiler would skip TanStack Table components).
 - 2026-10-06: API (PRD §12): `/players/{id}` returns the report fact sheet (no club) as the player profile, so the page and the report share one source of numbers; `/players/{id}/report` returns the report plus its fact sheet. Added `/meta/methodology` (definitions, weights, thresholds, model runs, limitations) for US-08. The cache key starts with the warehouse version (last build time + database file mtime), so `scout build`/`scout train` invalidate it. Benchmark config problems (e.g. no completed season) surface as 422 `invalid_request` with the engine's message; a missing warehouse is 503 `warehouse_not_ready`. Recommendations also accept `position_group` instead of `need_id`, `exclude_team_ids`, `include_sideways` and `custom` benchmark clubs.
