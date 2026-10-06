@@ -404,39 +404,64 @@ def train(
     out: Annotated[Path, typer.Option(help="Evaluation report path.")] = DEFAULT_EVALUATION_PATH,
 ) -> None:
     """Fit role archetypes and the value model, save them, write docs/EVALUATION.md."""
-    from datetime import UTC, datetime
+    from scout.pipeline import train_and_store
 
-    from scout.db.session import make_engine
-    from scout.ml.evaluation import render_evaluation
-    from scout.ml.train import save_artefacts, store_outputs, train_all
-
-    settings = get_settings()
-    engine = make_engine(settings.database_url)
     try:
-        result = train_all(
-            engine,
-            get_config(),
-            trained_at=datetime.now(UTC).isoformat(timespec="seconds"),
-            git_sha=_git_sha(),
+        outcome = train_and_store(
+            get_settings(), get_config(), evaluation_path=out, git_sha=_git_sha()
         )
-        stored = store_outputs(engine, result)
     except (ScoutError, ValueError) as exc:
         typer.echo(f"Training failed: {getattr(exc, 'message', exc)}", err=True)
         raise typer.Exit(code=1) from exc
-    finally:
-        engine.dispose()
-    written = save_artefacts(result, settings.data_dir / "models")
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(render_evaluation(result), encoding="utf-8")
+    result = outcome.result
     for label, skipped in (
         ("Role archetypes", result.roles_skipped),
         ("Value model", result.value_skipped),
     ):
         typer.echo(f"{label}: " + ("trained" if skipped is None else f"not trained ({skipped})"))
-    for path in [*written, out]:
+    for path in outcome.written:
         typer.echo(f"Wrote {path}")
-    for table, rows in stored.items():
+    for table, rows in outcome.stored.items():
         typer.echo(f"Stored {rows} rows in {table}")
+
+
+@app.command()
+def demo(
+    refresh: Annotated[
+        bool, typer.Option(help="Fetch fresh snapshots even if some exist.")
+    ] = False,
+    skip_build: Annotated[
+        bool, typer.Option(help="Reuse the existing warehouse and models (fast restart).")
+    ] = False,
+    web: Annotated[bool, typer.Option(help="Start the web app (needs Node.js 22+).")] = True,
+    port: Annotated[int, typer.Option(help="API port (the web app proxies to 8000).")] = 8000,
+) -> None:
+    """One command: ingest if there is no data, build, train, then serve the API and web app."""
+    from functools import partial
+
+    from scout.demo import DemoSteps, run_demo, serve_api, start_web
+    from scout.ingest.runner import run_ingest
+    from scout.pipeline import build_all, train_and_store
+
+    settings, config = get_settings(), get_config()
+    steps = DemoSteps(
+        ingest=partial(run_ingest, ["all"], settings, config),
+        build=partial(build_all, settings, config),
+        train=partial(
+            train_and_store,
+            settings,
+            config,
+            evaluation_path=DEFAULT_EVALUATION_PATH,
+            git_sha=_git_sha(),
+        ),
+        start_web=start_web,
+        serve=partial(serve_api, "127.0.0.1", port),
+    )
+    code = run_demo(
+        settings, steps, refresh=refresh, skip_build=skip_build, web=web, echo=typer.echo
+    )
+    if code:
+        raise typer.Exit(code=code)
 
 
 @app.command()
