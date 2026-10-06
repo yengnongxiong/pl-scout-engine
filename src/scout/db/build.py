@@ -241,6 +241,11 @@ def last_build_path(settings: Settings) -> Path:
     return settings.data_dir / "warehouse" / "last_build.json"
 
 
+def last_train_path(settings: Settings) -> Path:
+    """Marker written by ``scout train`` (the API's cache key follows it)."""
+    return settings.data_dir / "warehouse" / "last_train.json"
+
+
 def write_last_build(settings: Settings, report: BuildReport, when: datetime) -> None:
     """Persist a small JSON summary of the build for ``scout doctor``."""
     path = last_build_path(settings)

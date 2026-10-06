@@ -7,12 +7,13 @@ also materialises features lives here, above every layer, together with the trai
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
 from scout.config import AppConfig, Settings
-from scout.db.build import BuildReport, build_warehouse
+from scout.db.build import BuildReport, build_warehouse, last_train_path
 from scout.db.session import make_engine
 from scout.features.materialise import materialise_features
 from scout.ml.evaluation import render_evaluation
@@ -60,6 +61,12 @@ def train_and_store(
     finally:
         engine.dispose()
     written = save_artefacts(result, settings.data_dir / "models")
+    marker = last_train_path(settings)
+    marker.parent.mkdir(parents=True, exist_ok=True)
+    marker.write_text(
+        json.dumps({"trained_at": result.trained_at, "git_sha": result.git_sha, **stored}),
+        encoding="utf-8",
+    )
     evaluation_path.parent.mkdir(parents=True, exist_ok=True)
     evaluation_path.write_text(render_evaluation(result), encoding="utf-8")
     return TrainOutcome(result=result, written=[*written, evaluation_path], stored=stored)

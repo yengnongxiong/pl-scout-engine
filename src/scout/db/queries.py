@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import math
+from datetime import date, datetime
 from importlib import resources
 
 import pandas as pd
@@ -18,11 +20,37 @@ def load_sql(name: str) -> str:
         raise ConfigError(f"no SQL file named {name}.sql") from exc
 
 
+# Receipt timestamps: SQLite returns them as text, Postgres as tz-aware datetimes.
+TIMESTAMP_COLUMNS = frozenset({"fetched_at", "as_of", "status_as_of"})
+
+
+def iso_timestamp(value: object) -> str | None:
+    """A stored timestamp as ISO 8601 in UTC; ``None`` when missing (never "NaT")."""
+    if value is None or (isinstance(value, float) and math.isnan(value)):
+        return None
+    stamp = pd.Timestamp(value) if isinstance(value, (datetime, date)) else pd.Timestamp(str(value))
+    if not isinstance(stamp, pd.Timestamp):  # NaT
+        return None
+    stamp = stamp.tz_localize("UTC") if stamp.tzinfo is None else stamp.tz_convert("UTC")
+    return stamp.isoformat()
+
+
 def run_sql(engine: Engine, name: str, params: dict[str, object] | None = None) -> pd.DataFrame:
-    """Execute a named SQL file and return its rows as a DataFrame."""
+    """Execute a named SQL file and return its rows as a DataFrame.
+
+    Receipt timestamp columns come back as ISO 8601 UTC strings on every backend, so a
+    receipt reads the same whether the warehouse is SQLite or Postgres.
+    """
     with engine.connect() as conn:
         result = conn.execute(text(load_sql(name)), params or {})
-        return pd.DataFrame(result.fetchall(), columns=list(result.keys()))
+        columns = list(result.keys())
+        rows = result.fetchall()
+    frame = pd.DataFrame(rows, columns=columns)
+    for column in TIMESTAMP_COLUMNS.intersection(columns):
+        frame[column] = pd.Series(
+            [iso_timestamp(v) for v in frame[column]], index=frame.index, dtype=object
+        )
+    return frame
 
 
 def player_season_totals(engine: Engine) -> pd.DataFrame:

@@ -19,7 +19,7 @@ from fastapi import Depends, Request
 from sqlalchemy import Engine, inspect
 
 from scout.config import AppConfig, Settings
-from scout.db.build import last_build_path
+from scout.db.build import last_build_path, last_train_path
 from scout.db.session import make_engine
 from scout.dsa.lru_cache import LRUCache
 from scout.engines.diagnosis import SeasonContext, season_context
@@ -69,10 +69,16 @@ class ApiState:
         return str(built_at) if built_at is not None else None
 
     def cache_token(self) -> str:
-        """Changes whenever the warehouse is rebuilt or retrained."""
-        db = self._sqlite_file()
-        mtime = db.stat().st_mtime_ns if db is not None and db.exists() else 0
-        return f"{self.warehouse_version()}|{mtime}"
+        """Changes whenever the warehouse is rebuilt or retrained (SQLite or Postgres)."""
+        stamps = [
+            path.stat().st_mtime_ns if path is not None and path.exists() else 0
+            for path in (
+                self._sqlite_file(),
+                last_build_path(self.settings),
+                last_train_path(self.settings),
+            )
+        ]
+        return f"{self.warehouse_version()}|" + "|".join(str(s) for s in stamps)
 
     def cached[T](self, key: tuple[Hashable, ...], compute: Callable[[], T]) -> T:
         """Return the cached value for ``key`` under the current warehouse version."""

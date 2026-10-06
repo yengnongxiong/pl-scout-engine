@@ -100,3 +100,17 @@ def test_market_values_match_twin(warehouse: tuple[Engine, dict[str, pd.DataFram
     row = sql.iloc[0]
     assert (row["source"], row["value_eur"]) == ("transfermarkt", 32_000_000)
     assert row["tm_last_updated"].date().isoformat() == "2026-06-10"
+
+
+def test_receipt_timestamps_are_iso_utc() -> None:
+    from datetime import UTC, datetime
+
+    import pandas as pd
+
+    from scout.db.queries import iso_timestamp
+
+    assert iso_timestamp("2026-09-01 00:00:00.000000") == "2026-09-01T00:00:00+00:00"
+    assert iso_timestamp(datetime(2026, 9, 1, 2, 30, tzinfo=UTC)) == "2026-09-01T02:30:00+00:00"
+    assert iso_timestamp(pd.Timestamp("2026-09-01T03:00:00+02:00")) == "2026-09-01T01:00:00+00:00"
+    assert iso_timestamp(None) is None and iso_timestamp(pd.NaT) is None
+    assert iso_timestamp(float("nan")) is None

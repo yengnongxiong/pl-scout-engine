@@ -1,0 +1,25 @@
+# Optional Postgres warehouse (stretch S3). SQLite stays the default; to use Postgres:
+#   docker compose up -d db
+#   export SCOUT_DATABASE_URL=postgresql+psycopg://scout:scout@localhost:5432/scout
+#   uv run scout demo        (or scout build / train / api)
+# Local use only: the port is bound to 127.0.0.1 and the password is a placeholder.
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: scout
+      POSTGRES_PASSWORD: scout
+      POSTGRES_DB: scout
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8"
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - scout-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U scout -d scout"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  scout-pg:

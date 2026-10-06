@@ -27,6 +27,35 @@ jobs:
       - name: CLI smoke
         run: uv run scout --help && uv run scout config-check && uv run scout export-openapi --out "$RUNNER_TEMP/openapi.json"
 
+  postgres:
+    # Stretch S3: the fixture build must give the same answers on Postgres as on SQLite.
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: scout
+          POSTGRES_PASSWORD: scout
+          POSTGRES_DB: scout_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U scout -d scout_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      SCOUT_TEST_POSTGRES_URL: postgresql+psycopg://scout:scout@localhost:5432/scout_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: uv sync --all-extras --locked
+      - name: Postgres parity tests
+        run: uv run pytest tests/integration/test_postgres.py -q
+
   web:
     runs-on: ubuntu-latest
     defaults:

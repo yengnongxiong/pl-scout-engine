@@ -51,6 +51,10 @@ Optional extras:
   export, labelled stale.
 - **Understat and FotMob** go through `soccerdata`, which downloads a small native TLS library
   from GitHub on first use.
+- **Postgres** instead of the default SQLite file: `docker compose up -d db`, then
+  `export SCOUT_DATABASE_URL=postgresql+psycopg://scout:scout@localhost:5432/scout` before
+  `uv run scout demo`. CI runs the same fixture build on both databases and checks that every
+  query, diagnosis, shortlist and API response matches.
 - **Local LLM reports**: set `REPORT_ENGINE=ollama` and `SCOUT_OLLAMA_MODEL=<model>` with
   [Ollama](https://ollama.com) running. Rewrites are only shown if every number and name in them
   passes the grounding validator; otherwise the template report is shown.
@@ -180,7 +184,8 @@ make contract     # export OpenAPI, regenerate TS types, fail on drift
   "schema changed" failures), golden-file report tests, a grounding test that injects fake
   numbers, API tests for every endpoint and error, and page tests in loading, empty, error and
   success states.
-- **CI** (`.github/workflows/ci.yml`): `python`, `web` and `contract` jobs.
+- **CI** (`.github/workflows/ci.yml`): `python`, `postgres` (SQLite/Postgres parity), `web`
+  and `contract` jobs.
 
 ### Hand-written data structures (`src/scout/dsa/`)
 

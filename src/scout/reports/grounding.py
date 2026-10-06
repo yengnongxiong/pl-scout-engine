@@ -28,8 +28,9 @@ from scout.reports.facts import FactSheet, allowed_numbers, allowed_text
 
 logger = logging.getLogger(__name__)
 
-_DATE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
-_SEASON = re.compile(r"\b\d{4}-\d{2}\b")
+# Digit lookarounds rather than \b, so a date inside an ISO timestamp ("...-01T00:00") counts.
+_DATE = re.compile(r"(?<![\d-])\d{4}-\d{2}-\d{2}(?!\d)")
+_SEASON = re.compile(r"(?<![\d-])\d{4}-\d{2}(?![\d-])")
 _MONEY = re.compile(r"€\s?(\d+(?:\.\d+)?)\s?m\b")
 _NUMBER = re.compile("(?<![\\d.,])([+\\-\u2212]?)" r"(\d{1,3}(?:,\d{3})+|\d+)(?:\.(\d+))?")
 _APOSTROPHES = "'\u2019"

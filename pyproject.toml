@@ -38,6 +38,9 @@ dev = [
     "types-PyYAML>=6.0",
     "pandas-stubs>=2.2",
 ]
+postgres = [
+    "psycopg[binary]>=3.2",
+]
 
 [project.scripts]
 scout = "scout.cli:app"

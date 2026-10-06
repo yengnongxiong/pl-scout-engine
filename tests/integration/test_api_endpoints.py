@@ -294,3 +294,17 @@ def test_report_export(client: TestClient) -> None:
     _error(client.get(f"/players/{bo}/report/export", params={"format": "docx"}), 422,
            "invalid_request")  # fmt: skip
     _error(client.get("/players/999999/report/export"), 404, "not_found")
+
+
+def test_cache_follows_build_and_train_markers(built: Settings) -> None:
+    from scout.db.build import last_train_path
+
+    state = create_app(built, _config()).state.scout
+    before = state.cache_token()
+    marker = last_train_path(built)
+    marker.parent.mkdir(parents=True, exist_ok=True)
+    marker.write_text("{}", encoding="utf-8")
+    try:
+        assert state.cache_token() != before  # a retrain invalidates cached ML outputs
+    finally:
+        marker.unlink()
