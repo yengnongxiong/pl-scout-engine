@@ -302,9 +302,12 @@ def similar(
     try:
         hits = find_similar(engine, player_id, get_config(), k=k, season_mode=mode)
         with make_session_factory(engine)() as session:
-            names = dict(
-                session.execute(select(DimPlayer.player_id, DimPlayer.canonical_name)).tuples()
-            )
+            names = {
+                int(pid): str(name)
+                for pid, name in session.execute(
+                    select(DimPlayer.player_id, DimPlayer.canonical_name)
+                ).all()
+            }
     except ScoutError as exc:
         typer.echo(f"Similarity failed: {exc.message}", err=True)
         raise typer.Exit(code=1) from exc
@@ -344,7 +347,7 @@ def train(
 
     from scout.db.session import make_engine
     from scout.ml.evaluation import render_evaluation
-    from scout.ml.train import save_artefacts, train_all
+    from scout.ml.train import save_artefacts, store_outputs, train_all
 
     settings = get_settings()
     engine = make_engine(settings.database_url)
@@ -355,6 +358,7 @@ def train(
             trained_at=datetime.now(UTC).isoformat(timespec="seconds"),
             git_sha=_git_sha(),
         )
+        stored = store_outputs(engine, result)
     except (ScoutError, ValueError) as exc:
         typer.echo(f"Training failed: {getattr(exc, 'message', exc)}", err=True)
         raise typer.Exit(code=1) from exc
@@ -370,6 +374,8 @@ def train(
         typer.echo(f"{label}: " + ("trained" if skipped is None else f"not trained ({skipped})"))
     for path in [*written, out]:
         typer.echo(f"Wrote {path}")
+    for table, rows in stored.items():
+        typer.echo(f"Stored {rows} rows in {table}")
 
 
 @app.command()

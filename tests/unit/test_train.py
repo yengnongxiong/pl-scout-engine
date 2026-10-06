@@ -91,3 +91,45 @@ def test_similarity_examples_start_from_the_busiest_player() -> None:
     assert "Four" not in [name for name, _ in example.neighbours]
     sims = [s for _, s in example.neighbours]
     assert sims == sorted(sims, reverse=True) and all(-1.0 <= s <= 1.0 for s in sims)
+
+
+def test_store_outputs_replaces_roles_and_value_scores() -> None:
+    from datetime import date
+
+    from sqlalchemy import select
+
+    from scout.db.models import Base, DimPlayer, DimSeason, PlayerRole, PlayerValueScore
+    from scout.db.session import make_engine, make_session_factory
+    from scout.ml.train import store_outputs
+
+    roles = _roles()
+    engine = make_engine("sqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    with make_session_factory(engine).begin() as session:
+        session.add(DimSeason(season_id="2026-27", is_current=True))
+        session.add_all(
+            DimPlayer(player_id=pid, canonical_name=f"Synthetic {pid}") for pid in roles.assignments
+        )
+    scores = pd.DataFrame(
+        [
+            {
+                "player_id": 0, "season_id": "2026-27", "value_eur": 12_000_000,
+                "value_source": "transfermarkt", "value_date": date(2026, 9, 1),
+                "value_is_stale": False, "implied_value_eur": 20e6, "band_low_eur": 15e6,
+                "band_high_eur": 30e6, "value_label": "Undervalued",
+            }
+        ]
+    )  # fmt: skip
+    result = _result(roles=roles)
+    result.scores = scores
+    assert store_outputs(engine, result) == {"player_role": 30, "player_value_score": 1}
+    # A second run replaces rows instead of adding to them; untrained models leave none.
+    assert store_outputs(engine, result) == {"player_role": 30, "player_value_score": 1}
+    with make_session_factory(engine)() as session:
+        stored = session.scalars(select(PlayerRole).where(PlayerRole.player_id == 0)).one()
+        assert stored.label == roles.labels[roles.assignments[0]]
+        assert stored.git_sha == "abc1234" and stored.season_mode == "blended"
+        value = session.scalars(select(PlayerValueScore)).one()
+        assert (value.value_label, value.tm_last_updated) == ("Undervalued", date(2026, 9, 1))
+    assert store_outputs(engine, _result()) == {"player_role": 0, "player_value_score": 0}
+    engine.dispose()

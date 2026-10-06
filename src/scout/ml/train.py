@@ -7,6 +7,11 @@ seasons) is skipped with the reason recorded; it is never trained on made-up row
 
 Similarity sanity examples (PRD §8.11): in each position group, the ranked player with
 the most effective minutes and their nearest neighbours.
+
+The outputs the dashboard shows (each player's role archetype, and this season's
+stats-implied value band next to the Transfermarkt estimated market value) are also written
+to the warehouse (``player_role``, ``player_value_score``), so the API reads them like every
+other number, with the run's ``trained_at`` and git SHA as their receipt.
 """
 
 from __future__ import annotations
@@ -14,14 +19,15 @@ from __future__ import annotations
 import json
 import logging
 from dataclasses import dataclass, field
+from datetime import datetime
 from pathlib import Path
 
 import joblib
 import pandas as pd
-from sqlalchemy import Engine, select
+from sqlalchemy import Engine, delete, select
 
 from scout.config import AppConfig
-from scout.db.models import DimPlayer
+from scout.db.models import DimPlayer, PlayerRole, PlayerValueScore
 from scout.db.queries import player_features
 from scout.db.session import make_session_factory
 from scout.ml.roles import RoleModel, train_roles
@@ -65,7 +71,7 @@ class TrainResult:
 
 def _names(engine: Engine) -> dict[int, str]:
     with make_session_factory(engine)() as session:
-        rows = session.execute(select(DimPlayer.player_id, DimPlayer.canonical_name)).tuples()
+        rows = session.execute(select(DimPlayer.player_id, DimPlayer.canonical_name)).all()
         return {int(pid): str(name) for pid, name in rows}
 
 
@@ -190,3 +196,48 @@ def save_artefacts(result: TrainResult, models_dir: Path) -> list[Path]:
         written += [artefact, meta_path]
     result.artefacts = written
     return written
+
+
+def store_outputs(engine: Engine, result: TrainResult) -> dict[str, int]:
+    """Replace the warehouse's role and value-score rows with this run's (one transaction).
+
+    A model that was not trained leaves its table empty: stale outputs from an earlier
+    run never sit next to a newer warehouse build. Returns rows written per table.
+    """
+    trained_at = datetime.fromisoformat(result.trained_at)
+    roles: list[PlayerRole] = []
+    if result.roles is not None:
+        model = result.roles
+        roles = [
+            PlayerRole(
+                player_id=pid,
+                season_mode=SEASON_MODE,
+                cluster=cluster,
+                label=model.labels.get(cluster, str(cluster)),
+                trained_at=trained_at,
+                git_sha=result.git_sha,
+            )
+            for pid, cluster in sorted(model.assignments.items())
+        ]
+    values = [
+        PlayerValueScore(
+            player_id=int(r["player_id"]),
+            season_id=str(r["season_id"]),
+            value_eur=int(r["value_eur"]),
+            value_source=str(r["value_source"]),
+            tm_last_updated=r["value_date"],
+            value_is_stale=bool(r["value_is_stale"]),
+            implied_value_eur=float(r["implied_value_eur"]),
+            band_low_eur=float(r["band_low_eur"]),
+            band_high_eur=float(r["band_high_eur"]),
+            value_label=str(r["value_label"]),
+            trained_at=trained_at,
+            git_sha=result.git_sha,
+        )
+        for r in result.scores.to_dict(orient="records")
+    ]
+    with make_session_factory(engine).begin() as session:
+        session.execute(delete(PlayerRole))
+        session.execute(delete(PlayerValueScore))
+        session.add_all([*roles, *values])
+    return {PlayerRole.__tablename__: len(roles), PlayerValueScore.__tablename__: len(values)}

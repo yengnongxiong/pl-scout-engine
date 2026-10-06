@@ -249,3 +249,48 @@ class PlayerSeasonFeature(Base):
     is_proxy: Mapped[bool] = mapped_column(Boolean)
     padj_status: Mapped[str | None] = mapped_column(String(12))
     as_of: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class PlayerRole(Base):
+    """A player's role archetype from the last ``scout train`` run (PRD §8.10 step 1).
+
+    Written by ``scout train`` so the API reads archetypes from the warehouse like every
+    other number; ``trained_at`` and ``git_sha`` are the receipt of the model behind it.
+    """
+
+    __tablename__ = "player_role"
+    __table_args__ = (UniqueConstraint("player_id", "season_mode"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    player_id: Mapped[int] = mapped_column(ForeignKey("dim_player.player_id"), index=True)
+    season_mode: Mapped[str] = mapped_column(String(10))
+    cluster: Mapped[int] = mapped_column(Integer)
+    label: Mapped[str] = mapped_column(String(200))
+    trained_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    git_sha: Mapped[str] = mapped_column(String(40))
+
+
+class PlayerValueScore(Base):
+    """Stats-implied value next to the Transfermarkt estimated market value (PRD §8.10).
+
+    One row per player x season from the last ``scout train`` run. The Transfermarkt value
+    keeps its own receipt (source, Transfermarkt as-of date, stale flag); the model's band
+    and label carry ``trained_at`` and ``git_sha``.
+    """
+
+    __tablename__ = "player_value_score"
+    __table_args__ = (UniqueConstraint("player_id", "season_id"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    player_id: Mapped[int] = mapped_column(ForeignKey("dim_player.player_id"), index=True)
+    season_id: Mapped[str] = mapped_column(ForeignKey("dim_season.season_id"))
+    value_eur: Mapped[int] = mapped_column(BigInteger)
+    value_source: Mapped[str] = mapped_column(String(30))
+    tm_last_updated: Mapped[date] = mapped_column(Date)
+    value_is_stale: Mapped[bool] = mapped_column(Boolean)
+    implied_value_eur: Mapped[float] = mapped_column(Float)
+    band_low_eur: Mapped[float] = mapped_column(Float)
+    band_high_eur: Mapped[float] = mapped_column(Float)
+    value_label: Mapped[str] = mapped_column(String(12))
+    trained_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    git_sha: Mapped[str] = mapped_column(String(40))
