@@ -43,12 +43,14 @@ async function synthetic(page) {
     [/\/api\/players\/search/, data.playerSearch],
     [/\/api\/players\/\d+\/similar/, data.similar],
     [/\/api\/players\/\d+\/report/, report],
+    [/\/api\/players\/\d+\/age-curve/, data.playerAgeCurve],
     [/\/api\/players\/7$/, data.incumbentSheet],
     [/\/api\/players\/\d+$/, data.factSheet],
     [/\/api\/compare/, data.compare],
     [/\/api\/meta\/freshness/, data.freshness],
     [/\/api\/meta\/methodology/, data.methodology],
     [/\/api\/meta\/backtest/, data.backtest],
+    [/\/api\/meta\/age-curves/, data.ageCurves],
   ];
   await page.route("**/api/**", (route) => {
     const url = new URL(route.request().url());
@@ -120,7 +122,9 @@ try {
     "Percentiles side by side",
   );
   await shoot(page, "/backtest", "backtest", "By club");
-  await shoot(page, "/methodology", "methodology", "Known limitations");
+  await shoot(page, "/methodology", "methodology", "Known limitations", (p) =>
+    p.getByRole("list", { name: "Legend" }).waitFor({ timeout: 15000 }),
+  );
 } finally {
   await browser.close();
   server?.kill();

@@ -37,14 +37,14 @@ export function AgeCurveChart({ curves }: { curves: Curve[] }) {
       >
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey="age" label={{ value: "Age", position: "insideBottom", offset: -10 }} />
-        <YAxis tickFormatter={(v: number) => formatNumber(v, 2)} />
+        <YAxis tickFormatter={(v: number) => formatNumber(v, 3)} />
         <Tooltip formatter={(v) => (typeof v === "number" ? formatNumber(v, 3) : String(v))} />
         {curves.map((c, i) => {
           const style = STYLES[i % STYLES.length] ?? STYLES[0];
           return (
             <Line
               key={c.metric}
-              type="monotone"
+              type="linear"
               dataKey={c.metric}
               name={c.label}
               stroke={style.color}
