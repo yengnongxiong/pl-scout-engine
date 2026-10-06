@@ -1,6 +1,5 @@
 import {
   CartesianGrid,
-  Legend,
   ReferenceLine,
   Scatter,
   ScatterChart,
@@ -16,9 +15,9 @@ type Candidate = Schemas["CandidateOut"];
 
 const EUR_PER_MILLION = 1_000_000;
 const SERIES = [
-  { label: "Undervalued", color: "#047857", shape: "triangle" },
-  { label: "Fair", color: "#475569", shape: "circle" },
-  { label: "Premium", color: "#b45309", shape: "square" },
+  { label: "Undervalued", color: "#047857", shape: "triangle", glyph: "▲" },
+  { label: "Fair", color: "#475569", shape: "circle", glyph: "●" },
+  { label: "Premium", color: "#b45309", shape: "square", glyph: "■" },
 ] as const;
 
 interface Point {
@@ -57,7 +56,7 @@ export function MoneyballChart({ candidates }: { candidates: Candidate[] }) {
   const top = Math.ceil((max / EUR_PER_MILLION) * 1.1);
   return (
     <figure>
-      <ScatterChart width={560} height={300} margin={{ top: 10, right: 20, bottom: 30, left: 10 }}>
+      <ScatterChart width={560} height={320} margin={{ top: 10, right: 20, bottom: 40, left: 30 }}>
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis
           type="number"
@@ -65,7 +64,11 @@ export function MoneyballChart({ candidates }: { candidates: Candidate[] }) {
           name="Transfermarkt estimated market value"
           unit="m"
           domain={[0, top]}
-          label={{ value: "Transfermarkt estimated market value (€m)", position: "bottom" }}
+          label={{
+            value: "Transfermarkt estimated market value (€m)",
+            position: "insideBottom",
+            offset: -25,
+          }}
         />
         <YAxis
           type="number"
@@ -73,7 +76,13 @@ export function MoneyballChart({ candidates }: { candidates: Candidate[] }) {
           name="Stats-implied value"
           unit="m"
           domain={[0, top]}
-          label={{ value: "Stats-implied (€m)", angle: -90, position: "insideLeft" }}
+          label={{
+            value: "Stats-implied value (€m)",
+            angle: -90,
+            position: "insideLeft",
+            offset: -15,
+            style: { textAnchor: "middle" },
+          }}
         />
         <ReferenceLine
           segment={[
@@ -87,7 +96,6 @@ export function MoneyballChart({ candidates }: { candidates: Candidate[] }) {
             typeof value === "number" ? formatEurMillions(value * EUR_PER_MILLION) : String(value)
           }
         />
-        <Legend />
         {SERIES.map((s) => (
           <Scatter
             key={s.label}
@@ -98,7 +106,17 @@ export function MoneyballChart({ candidates }: { candidates: Candidate[] }) {
           />
         ))}
       </ScatterChart>
-      <figcaption className="text-xs text-slate-600">
+      <ul className="mt-1 flex gap-4 text-sm" aria-label="Legend">
+        {SERIES.map((s) => (
+          <li key={s.label} className="flex items-center gap-1.5 text-slate-800">
+            <span aria-hidden="true" style={{ color: s.color }}>
+              {s.glyph}
+            </span>
+            {s.label} ({points(s.label).length})
+          </li>
+        ))}
+      </ul>
+      <figcaption className="mt-1 text-xs text-slate-600">
         Above the diagonal: the stats imply more than the market estimate. Stats-implied value is
         not a fee prediction; the model learns the market&apos;s own biases.
       </figcaption>
