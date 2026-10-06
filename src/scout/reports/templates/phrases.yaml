@@ -1,0 +1,48 @@
+# Phrase banks for template reports (PRD §9 step 2). A seeded choice per report keeps the
+# wording varied without randomness between runs. Phrases are Jinja2 snippets and may use
+# the variables documented next to each bank; they must never contain literal numbers
+# (every number comes from the fact sheet, PRD §9 step 4).
+
+# Percentile bands (config reports.bands): ≥ elite, ≥ strong, ≥ above_average, ≥
+# below_average, else weak.
+band:
+  elite: ["elite for the position", "among the very best in the group", "top-tier"]
+  strong: ["strong", "well above the group norm", "a clear strength"]
+  above_average: ["above average", "better than most peers", "solid"]
+  below_average: ["below average", "short of most peers", "middling"]
+  weak: ["weak", "near the bottom of the group", "a clear shortfall"]
+
+# Verdict. Variables: name, club (the target club), group, inc (incumbent name).
+verdict:
+  strong_fit:
+    - "Strong fit. {{ name }} addresses the {{ group }} need at {{ club }} and clears the upgrade gate."
+    - "Recommended. {{ name }} is a clear upgrade for the {{ group }} need at {{ club }}."
+  upgrade:
+    - "Upgrade. {{ name }} beats {{ inc }} on the KPIs {{ club }} need most."
+    - "Worth a closer look. {{ name }} would improve the {{ group }} need at {{ club }} over {{ inc }}."
+  no_incumbent:
+    - "Fills a gap. {{ club }} have no regular {{ group }} to compare with, so {{ name }} is judged on the need alone."
+  sideways:
+    - "Sideways move. {{ name }} does not beat {{ inc }} on the KPIs {{ club }} need by enough to count as an upgrade."
+    - "Not an upgrade. On the need KPIs {{ name }} is level with or behind {{ inc }}."
+  insufficient_data:
+    - "Not enough data. {{ name }} has no percentile yet on the KPIs behind the need at {{ club }}."
+  same_club:
+    - "{{ name }} already plays for {{ club }}; this report rates them against the {{ group }} need at the club."
+
+# Verdict without a target club, by the player's overall band. Variables: name, group.
+overall:
+  elite: ["{{ name }} rates elite among {{ group }} peers across the position's KPIs."]
+  strong: ["{{ name }} is a strong {{ group }} on the position's weighted KPIs."]
+  above_average: ["{{ name }} rates above average among {{ group }} peers."]
+  below_average: ["{{ name }} rates below average among {{ group }} peers."]
+  weak: ["{{ name }} rates near the bottom of the {{ group }} group on the weighted KPIs."]
+  unknown: ["{{ name }} is not ranked on enough KPIs yet to give an overall rating."]
+
+# Section openers. Variable: name.
+strengths_intro:
+  - "Where {{ name }} stands out:"
+  - "Strengths:"
+concerns_intro:
+  - "Where {{ name }} falls short:"
+  - "Concerns:"

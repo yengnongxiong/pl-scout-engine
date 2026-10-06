@@ -1,0 +1,37 @@
+SCOUTING REPORT: Sam Synthetic
+Fixture Town · ST · age 27.5 · 540 minutes this season
+Transfermarkt estimated market value: €38.0m (Transfermarkt as of 2026-09-15)
+Contract expiry: 2028-06-30 · FPL status: available (FPL, as of 2026-09-28)
+
+VERDICT
+Recommended. Sam Synthetic is a clear upgrade for the ST need at Synthetic Rovers.
+
+WHY SAM SYNTHETIC FITS SYNTHETIC ROVERS
+Synthetic Rovers vs the top6 benchmark, ST need. FitScore 78.4 (NeedFill 88.0, RoleQuality 74.6, Reliability 91.2, StyleFit 63.5, AgeProfile 100.0).
+- Non-penalty xG (per 90): Synthetic Rovers trail the benchmark by 31 percentile points; Sam Synthetic 93rd percentile vs Ivo Placeholder 35th (+58).
+Upgrade gate: NeedFill 88.0 vs Ivo Placeholder 41.0 (610 minutes for Synthetic Rovers); an upgrade needs 15 points more. Result: upgrade.
+
+STRENGTHS
+Strengths:
+- Non-penalty xG (per 90): 0.52, 93rd percentile among 48 ST peers (elite for the position).
+- Shots (per 90): 3.4, 81st percentile among 48 ST peers (strong).
+
+CONCERNS
+Where Sam Synthetic falls short:
+- Expected assists (Understat xA per 90): 0.06, 12th percentile among 48 ST peers (near the bottom of the group).
+
+ROLE AND STYLE
+Role archetype: high Non-penalty xG, high Shots.
+StyleFit with Synthetic Rovers: 63.5 (higher = closer team style).
+
+COMPARABLE PLAYERS
+- Kit Example (Mock City), cosine similarity 0.91
+- Lou Sample (club not available), cosine similarity 0.84
+
+VALUE
+Stats-implied value €52.4m (band €41.0m to €66.0m) against a Transfermarkt estimated market value of €38.0m (Transfermarkt as of 2026-09-15): Undervalued.
+
+DATA NOTES
+Data window: 2026-27 blended with 2025-26 (blended mode); 540 minutes this season, 1,540 minutes effective.
+Sources: fpl (as of 2026-09-28); transfermarkt (as of 2026-09-15); understat (as of 2026-09-28).
+- Proxy metrics (stand-ins for data not freely available): Possession involvement (xGChain per 90).

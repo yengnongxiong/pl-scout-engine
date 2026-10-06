@@ -242,3 +242,62 @@ def test_assess_player_scores_one_player_without_filters(built: Settings) -> Non
     assert own.same_club and own.context.position_group == "CB"
     assert own.context.incumbent is not None
     assert own.context.incumbent.player_name == "Alex Testman"
+
+
+def test_fact_sheet_from_the_warehouse_has_receipts(built: Settings) -> None:
+    from datetime import date
+
+    from scout.db.queries import player_profiles
+    from scout.reports.facts import build_fact_sheet
+    from scout.reports.generate import generate_report, template_vocabulary
+    from scout.reports.grounding import validate
+    from scout.reports.render import render_template_report
+
+    engine = make_engine(built.database_url)
+    config = _config()
+    rovers = find_team(engine, "Synthetic Rovers", config.team_aliases.aliases)
+    ids = {
+        str(n): int(p) for n, p in player_profiles(engine)[["canonical_name", "player_id"]].values
+    }
+    bo = build_fact_sheet(
+        engine, ids["Bo Fakeson"], config, team_id=rovers.team_id, as_of=date(2026, 10, 1)
+    )
+    alex = build_fact_sheet(engine, ids["Alex Testman"], config, as_of=date(2026, 10, 1))
+    with pytest.raises(NotFoundError):
+        build_fact_sheet(engine, 999_999, config)
+    with pytest.raises(NotFoundError):
+        build_fact_sheet(engine, ids["Bo Fakeson"], config, team_id=999_999)
+    engine.dispose()
+    assert (bo.team_name, bo.position_group, bo.current_season) == ("Fixture Town", "ST", "2026-27")
+    assert bo.fit is not None and bo.fit.team_name == "Synthetic Rovers" and not bo.fit.same_club
+    assert bo.fit.gate == "no_incumbent" and bo.fit.incumbent is None
+    assert bo.market_value is None and bo.age is None  # missing stays missing
+    kinds = {c.kind for c in bo.caveats}
+    assert {"small_sample", "no_market_value", "proxy_metric", "no_comparables"} <= kinds
+    assert all(k.source and k.as_of for k in bo.kpis)
+    assert {r.source for r in bo.sources} >= {"fpl", "understat"}
+    # Alex has last season's minutes in the blend and a Transfermarkt value with its date.
+    assert alex.previous_season == "2025-26" and alex.fit is None
+    assert alex.market_value is not None and alex.market_value.source == "transfermarkt"
+    assert "no_previous_season" not in {c.kind for c in alex.caveats}
+    for sheet in (bo, alex):
+        text = render_template_report(sheet, config)
+        assert validate(text, sheet, reference=template_vocabulary()).ok
+        assert generate_report(sheet, built, config).engine == "template"
+
+
+def test_cli_report(built: Settings, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(cli, "get_settings", lambda: built)
+    monkeypatch.setattr(cli, "get_config", _config)
+    ok = CliRunner().invoke(cli.app, ["report", "Bo Fakeson", "--team", "Synthetic Rovers"])
+    assert ok.exit_code == 0, ok.output
+    assert ok.output.startswith("SCOUTING REPORT: Bo Fakeson")
+    assert "WHY BO FAKESON FITS SYNTHETIC ROVERS" in ok.output
+    facts = CliRunner().invoke(cli.app, ["report", "Bo Fakeson", "--facts"])
+    assert facts.exit_code == 0 and '"player_name": "Bo Fakeson"' in facts.output
+    missing = CliRunner().invoke(cli.app, ["report", "Nobody Atall"])
+    assert missing.exit_code == 1 and "0 players match" in missing.output
+    unknown = CliRunner().invoke(cli.app, ["report", "999999"])
+    assert unknown.exit_code == 1 and "Report failed" in unknown.output
+    wrong = CliRunner().invoke(cli.app, ["report", "1", "--benchmark", "top9"])
+    assert wrong.exit_code == 2

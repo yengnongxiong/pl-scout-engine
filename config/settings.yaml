@@ -143,3 +143,19 @@ reports:
     strong: 75
     above_average: 50
     below_average: 25
+  # Strengths / concerns listed per report, and comparable players named.
+  max_listed: 3
+  comparables_k: 3
+  # Fewer effective (blended) minutes than this (10 full matches) adds a small-sample caveat.
+  small_sample_minutes: 900
+  # FitScore at or above this reads as a strong fit in the verdict.
+  strong_fit_score: 70
+  # Grounding validator (PRD §9 step 4): numbers in generated text must match a fact-sheet
+  # number after the rounding the text shows, within this relative tolerance.
+  grounding_tolerance: 1.0e-6
+  # Optional local LLM rewrite (REPORT_ENGINE=ollama, model in SCOUT_OLLAMA_MODEL). Never
+  # required: any failure or grounding violation falls back to the template report.
+  ollama:
+    base_url: "http://localhost:11434/"
+    temperature: 0.2
+    timeout_seconds: 120

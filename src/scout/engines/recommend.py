@@ -200,6 +200,7 @@ class NeedContext:
 
     team_id: int
     team_name: str
+    benchmark: str
     need_id: str
     position_group: str
     season_mode: str
@@ -289,6 +290,7 @@ def need_context(
     return NeedContext(
         team_id=team_id,
         team_name=diagnosis.team_name,
+        benchmark=diagnosis.benchmark,
         need_id=need.need_id,
         position_group=group,
         season_mode=season_mode,

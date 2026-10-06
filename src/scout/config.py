@@ -213,10 +213,30 @@ class ReportBands(_Strict):
         return self
 
 
+class OllamaConfig(_Strict):
+    """Optional local LLM rewrite (PRD §9 step 3). The model name comes from the environment."""
+
+    base_url: str = "http://localhost:11434/"
+    temperature: float = Field(default=0.2, ge=0.0, le=2.0)
+    timeout_seconds: float = Field(default=120.0, gt=0.0)
+
+
 class ReportsConfig(_Strict):
-    """Report generation settings."""
+    """Report generation settings (PRD §9)."""
 
     bands: ReportBands
+    # Strengths / concerns listed per report.
+    max_listed: int = Field(default=3, gt=0)
+    # Comparable players named in a report.
+    comparables_k: int = Field(default=3, gt=0)
+    # Fewer effective (blended) minutes than this adds a small-sample caveat.
+    small_sample_minutes: float = Field(default=900.0, ge=0.0)
+    # FitScore at or above this reads as a strong fit in the verdict.
+    strong_fit_score: float = Field(default=70.0, ge=0.0, le=100.0)
+    # Relative tolerance when matching numbers in generated text to the fact sheet,
+    # on top of the rounding the text itself shows.
+    grounding_tolerance: float = Field(default=1e-6, ge=0.0)
+    ollama: OllamaConfig = Field(default_factory=OllamaConfig)
 
 
 class EngineSettings(_Strict):

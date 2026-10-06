@@ -1,0 +1,75 @@
+SCOUTING REPORT: {{ s.player_name }}
+{{ s.team_name }} · {{ s.position_group }} · age {{ s.age | age }} · {{ s.minutes | minutes }} this season
+Transfermarkt estimated market value: {{ market_value }}
+Contract expiry: {{ s.contract_expiry | iso_date }} · FPL status: {{ status }}
+
+VERDICT
+{{ verdict }}
+{% if fit %}
+
+WHY {{ s.player_name | upper }} FITS {{ fit.team_name | upper }}
+{{ fit.team_name }} vs the {{ fit.benchmark }} benchmark, {{ fit.position_group }} need. FitScore {{ fit.fit_score | score }} (NeedFill {{ fit.components.need_fill | score }}, RoleQuality {{ fit.components.role_quality | score }}, Reliability {{ fit.components.reliability | score }}, StyleFit {{ fit.components.style_fit | score }}, AgeProfile {{ fit.components.age_profile | score }}).
+{% if fit.need_kpis %}
+{% for k in fit.need_kpis %}
+- {{ k.label }}{{ " [proxy]" if k.is_proxy }}: {{ fit.team_name }} trail the benchmark by {{ k.gap | whole }} percentile points; {{ s.player_name }} {{ k.candidate_percentile | ordinal }} percentile{% if fit.incumbent %} vs {{ fit.incumbent.player_name }} {{ k.incumbent_percentile | ordinal }} ({{ k.delta | points }}){% endif %}.
+{% endfor %}
+{% else %}
+{{ fit.team_name }} do not trail the benchmark on any {{ fit.position_group }} KPI, so NeedFill measures overall quality.
+{% endif %}
+{% if fit.same_club %}
+Upgrade gate: not applicable, {{ s.player_name }} already plays for {{ fit.team_name }}.
+{% elif fit.incumbent %}
+Upgrade gate: NeedFill {{ fit.need_fill | score }} vs {{ fit.incumbent.player_name }} {{ fit.incumbent.need_fill | score }} ({{ fit.incumbent.minutes | minutes }} for {{ fit.team_name }}); an upgrade needs {{ fit.gate_min_delta | whole }} points more. Result: {{ fit.gate | replace("_", " ") }}.
+{% else %}
+Upgrade gate: {{ fit.team_name }} have no {{ fit.position_group }} minutes this season. Result: {{ fit.gate | replace("_", " ") }}.
+{% endif %}
+{% endif %}
+
+STRENGTHS
+{% if strengths %}
+{{ strengths_intro }}
+{% for k in strengths %}
+- {{ k.label }}{{ " [proxy]" if k.is_proxy }}: {{ k.value | per90 }}, {{ k.percentile | ordinal }} percentile among {{ k.n_peers | whole }} {{ s.position_group }} peers ({{ band_phrase[k.kpi] }}).
+{% endfor %}
+{% else %}
+No weighted KPI rates strong or elite yet.
+{% endif %}
+
+CONCERNS
+{% if concerns %}
+{{ concerns_intro }}
+{% for k in concerns %}
+- {{ k.label }}{{ " [proxy]" if k.is_proxy }}: {{ k.value | per90 }}, {{ k.percentile | ordinal }} percentile among {{ k.n_peers | whole }} {{ s.position_group }} peers ({{ band_phrase[k.kpi] }}).
+{% endfor %}
+{% else %}
+No weighted KPI rates weak.
+{% endif %}
+
+ROLE AND STYLE
+Role archetype: {{ s.role.label if s.role else "Not available" }}.
+{% if fit %}
+StyleFit with {{ fit.team_name }}: {{ fit.components.style_fit | score }} (higher = closer team style).
+{% endif %}
+
+COMPARABLE PLAYERS
+{% if s.comparables %}
+{% for c in s.comparables %}
+- {{ c.player_name }} ({{ c.team_name or "club not available" }}), cosine similarity {{ c.similarity | cosine }}
+{% endfor %}
+{% else %}
+Not available.
+{% endif %}
+
+VALUE
+{% if s.implied_value %}
+Stats-implied value {{ s.implied_value.implied_value_eur | eur_m }} (band {{ s.implied_value.band_low_eur | eur_m }} to {{ s.implied_value.band_high_eur | eur_m }}) against a Transfermarkt estimated market value of {{ market_value }}: {{ s.implied_value.label }}.
+{% else %}
+Stats-implied value: Not available.
+{% endif %}
+
+DATA NOTES
+Data window: {{ s.current_season }}{% if s.previous_season %} blended with {{ s.previous_season }}{% endif %} ({{ s.season_mode }} mode); {{ s.minutes | minutes }} this season, {{ s.effective_minutes | minutes }} effective.
+Sources: {% for r in s.sources %}{{ r.source }} (as of {{ r.as_of | iso_date }}){{ "; " if not loop.last }}{% endfor %}.
+{% for c in s.caveats %}
+- {{ c.text }}
+{% endfor %}

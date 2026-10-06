@@ -320,6 +320,67 @@ def similar(
         )
 
 
+@app.command()
+def report(
+    player: Annotated[str, typer.Argument(help="Player id or exact name.")],
+    team: Annotated[
+        str | None, typer.Option(help="Club whose need the report addresses (name or id).")
+    ] = None,
+    benchmark: Annotated[str | None, typer.Option(help="top6 (default), top4 or league.")] = None,
+    mode: Annotated[str, typer.Option(help="Season mode: blended or current.")] = "blended",
+    facts: Annotated[bool, typer.Option("--facts", help="Print the fact sheet as JSON.")] = False,
+) -> None:
+    """Scouting report for one player, grounded in its fact sheet (PRD §9)."""
+    from scout.db.queries import player_profiles
+    from scout.db.session import make_engine
+    from scout.engines.diagnosis import find_team
+    from scout.ingest.transfermarkt import normalise_name
+    from scout.reports.facts import build_fact_sheet
+    from scout.reports.generate import generate_report
+
+    settings, config = get_settings(), get_config()
+    if benchmark is not None and benchmark not in BENCHMARKS:
+        typer.echo(f"Unknown benchmark {benchmark!r}; choose {', '.join(BENCHMARKS)}", err=True)
+        raise typer.Exit(code=2)
+    engine = make_engine(settings.database_url)
+    try:
+        if player.isdigit():
+            player_id = int(player)
+        else:
+            profiles = player_profiles(engine)
+            wanted = normalise_name(player)
+            hits = [
+                int(pid)
+                for pid, name in zip(profiles["player_id"], profiles["canonical_name"], strict=True)
+                if normalise_name(str(name)) == wanted
+            ]
+            if len(hits) != 1:
+                typer.echo(f"{len(hits)} players match {player!r}; use the player id", err=True)
+                raise typer.Exit(code=1)
+            player_id = hits[0]
+        team_id = find_team(engine, team, config.team_aliases.aliases).team_id if team else None
+        sheet = build_fact_sheet(
+            engine,
+            player_id,
+            config,
+            team_id=team_id,
+            season_mode=mode,
+            benchmark=BENCHMARKS[benchmark] if benchmark else None,
+        )
+    except ScoutError as exc:
+        typer.echo(f"Report failed: {exc.message}", err=True)
+        raise typer.Exit(code=1) from exc
+    finally:
+        engine.dispose()
+    if facts:
+        typer.echo(sheet.model_dump_json(indent=2))
+        return
+    result = generate_report(sheet, settings, config)
+    typer.echo(result.text, nl=False)
+    if result.fallback_reason:
+        typer.echo(f"(template report shown: {result.fallback_reason})", err=True)
+
+
 def _git_sha() -> str:
     """Short commit hash of the working tree (``unknown`` outside a git checkout)."""
     import subprocess
