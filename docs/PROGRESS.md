@@ -1,7 +1,7 @@
 # Progress
 Status: IN_PROGRESS            <!-- IN_PROGRESS or COMPLETE -->
 Active session: 20261006T0207Z-4005 started 2026-10-06T02:07:31Z
-Current milestone: M6
+Current milestone: M8
 
 ## Plan for this session
 - M0-04 web scaffold (Vite + React + TS strict, ESLint, Prettier, Vitest + RTL, Tailwind), M0-05 (`web/openapi.json` + `npm run gen:api`), M0-06 (`web` and `contract` CI jobs); then M6 reports.
@@ -79,7 +79,13 @@ Current milestone: M6
 - [x] M6-05 `reports/grounding.py`: numbers (with shown rounding and sign), money, dates, season ids and proper nouns checked against the fact sheet — injected fake number/money/date/season/name rejected
 - [x] M6-06 `reports/llm.py` (optional Ollama, localhost only) + `reports/generate.py` (template default, grounded rewrite or fallback with reason) + `scout report PLAYER [--team] [--facts]`
 
+### M7 API
+- [x] M7-01 `dsa/trie.py` (prefix tree, word-suffix indexing; complexity docstring; reference test vs linear scan) + `engines/search.py` (exact/prefix via trie, rapidfuzz WRatio suggestions for typos)
+- [x] M7-02 `api/deps.py` (ApiState: engine, LRU cache keyed by warehouse version, 503 `warehouse_not_ready` before the first build), `api/errors.py` (one error schema for engine, validation and routing errors), `api` config section
+- [x] M7-03 Routers: `/health`, `/meta/freshness`, `/meta/methodology`, `/teams`, `/teams/search`, `/teams/{id}/diagnosis`, `/teams/{id}/recommendations` (filters, need_id, custom benchmark, implied value per candidate), `/players/search`, `/players/{id}`, `/players/{id}/similar`, `/players/{id}/report`, `/compare` — TestClient tests for success, 404, 422, 503 and cache hits; OpenAPI + TS types regenerated
+
 ## Done
+- M7-01 to M7-03 (2026-10-06): every PRD §12 endpoint plus `/meta/methodology`, trie search with fuzzy suggestions, LRU-cached hot endpoints, single error schema everywhere, OpenAPI exported and TS types regenerated. M7 complete.
 - M6-01 to M6-06 (2026-10-06): ML outputs in the warehouse, single-player assessment, fact sheets, template reports with seeded phrase banks, grounding validator, optional Ollama rewrite with fallback, `scout report`. M6 complete.
 - M0-04 to M0-06 (2026-10-06): `web/` scaffold (Vite + React 19 + TS strict, ESLint + jsx-a11y, Prettier, Vitest + RTL + MSW, Tailwind v4), committed `web/openapi.json` + generated `src/api/schema.d.ts` (openapi-typescript) + openapi-fetch client, CI `web` and `contract` jobs, `uv.lock` committed and CI installs with `--locked`. M0 complete.
 - M0-01, M0-02, M0-03 (2026-10-03); Python halves of M0-05/M0-06.
@@ -98,6 +104,7 @@ Current milestone: M6
 - Please run the self-hosted `felipeall/transfermarkt-api` on :8001 (or change `ingest.base_urls.transfermarkt`) before `scout ingest --source transfermarkt`.
 
 ## Decisions log (minor)
+- 2026-10-06: API (PRD §12): `/players/{id}` returns the report fact sheet (no club) as the player profile, so the page and the report share one source of numbers; `/players/{id}/report` returns the report plus its fact sheet. Added `/meta/methodology` (definitions, weights, thresholds, model runs, limitations) for US-08. The cache key starts with the warehouse version (last build time + database file mtime), so `scout build`/`scout train` invalidate it. Benchmark config problems (e.g. no completed season) surface as 422 `invalid_request` with the engine's message; a missing warehouse is 503 `warehouse_not_ready`. Recommendations also accept `position_group` instead of `need_id`, `exclude_team_ids`, `include_sideways` and `custom` benchmark clubs.
 - 2026-10-06: Reports (PRD §9): the fact sheet is a pydantic model so the API can return it as is. Numbers are formatted only through `reports/format.py`; per-90 rates show one decimal, or two below 1 (xG/xA-type rates would otherwise read 0.0-0.5 for almost everyone; the same rule applies in the web app's `formatPer90`). The grounding validator accepts a number when a fact-sheet number rounds to it at the precision shown (signed numbers must match their sign), money in EUR millions, dates and season ids verbatim, and capitalised words found in the sheet, the template/phrase-bank wording or a short list of common English words. The template report is validated too (an ungrounded template raises). Phrase choice is seeded by player, club and `ml.seed`. Dependency: Jinja2 (BSD).
 - 2026-10-06: ML outputs (role archetype per player, this season's stats-implied value band) are written by `scout train` to `player_role` / `player_value_score` (migration 0003), replacing the previous run's rows, so the API reads them from the warehouse with `trained_at` + git SHA as receipt.
 - 2026-10-06: Web toolchain versions: React 19, React Router 8, TanStack Query 5, TanStack Table 8 (v9 changes the API), Recharts 3, Tailwind 4, Vite 8, Vitest 5, MSW 2, openapi-typescript 7 + openapi-fetch. TypeScript stays on 5.9 because typescript-eslint supports < 6.1 and openapi-typescript needs ^5. ESLint stays on 9 because eslint-plugin-jsx-a11y (accessibility lint, required by the code style) doesn't support 10 yet. All MIT/ISC/Apache.

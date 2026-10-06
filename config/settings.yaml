@@ -159,3 +159,16 @@ reports:
     base_url: "http://localhost:11434/"
     temperature: 0.2
     timeout_seconds: 120
+
+api:
+  # PRD §12: in-process LRU cache entries for hot endpoints (diagnosis, shortlists, reports).
+  cache_capacity: 256
+  # Search results per query (default / maximum) and the fuzzy-suggestion cut-off
+  # (rapidfuzz WRatio, 0-100) used when prefixes find too little (US-01).
+  search_limit: 8
+  search_max_limit: 25
+  fuzzy_cutoff: 75
+  # Similar players per request (default / maximum) and the longest shortlist served.
+  similar_k: 10
+  similar_max_k: 50
+  max_shortlist: 50

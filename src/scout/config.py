@@ -239,6 +239,22 @@ class ReportsConfig(_Strict):
     ollama: OllamaConfig = Field(default_factory=OllamaConfig)
 
 
+class ApiConfig(_Strict):
+    """Read-only API settings (PRD §12)."""
+
+    # Entries kept in the in-process LRU cache for hot endpoints (dsa.lru_cache).
+    cache_capacity: int = Field(default=256, gt=0)
+    # Search: results per query and the fuzzy-suggestion cut-off (rapidfuzz WRatio, 0-100).
+    search_limit: int = Field(default=8, gt=0)
+    search_max_limit: int = Field(default=25, gt=0)
+    fuzzy_cutoff: float = Field(default=75.0, ge=0.0, le=100.0)
+    # Similar players per request (default and upper bound).
+    similar_k: int = Field(default=10, gt=0)
+    similar_max_k: int = Field(default=50, gt=0)
+    # Upper bound on shortlist length per request.
+    max_shortlist: int = Field(default=50, gt=0)
+
+
 class EngineSettings(_Strict):
     """Contents of ``config/settings.yaml``."""
 
@@ -252,6 +268,7 @@ class EngineSettings(_Strict):
     ml: MLConfig
     value_model: ValueModelConfig
     reports: ReportsConfig
+    api: ApiConfig = Field(default_factory=ApiConfig)
 
 
 class KpiDef(_Strict):

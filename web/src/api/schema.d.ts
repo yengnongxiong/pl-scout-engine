@@ -4,6 +4,26 @@
  */
 
 export interface paths {
+  "/compare": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Compare
+     * @description KPIs of both players' position groups side by side, with percentile deltas.
+     */
+    get: operations["compare_compare_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/health": {
     parameters: {
       query?: never;
@@ -13,9 +33,212 @@ export interface paths {
     };
     /**
      * Health
-     * @description Report liveness and the warehouse version.
+     * @description Report liveness and when the warehouse was last built.
      */
     get: operations["health_health_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/meta/freshness": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Freshness
+     * @description Per-source last fetch, mapping coverage, staleness flags and validation status.
+     */
+    get: operations["freshness_meta_freshness_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/meta/methodology": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Methodology
+     * @description KPI definitions, weights, proxies, thresholds, model runs and known limitations.
+     */
+    get: operations["methodology_meta_methodology_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/players/search": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Search Players
+     * @description Prefix search over this season's players (any word of the name), fuzzy for typos.
+     */
+    get: operations["search_players_players_search_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/players/{player_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Player Profile
+     * @description Player profile: header facts, percentiles vs position peers, value, role, caveats.
+     *
+     *     Every KPI carries its source and as-of; the Transfermarkt estimated market value
+     *     carries Transfermarkt's own date.
+     */
+    get: operations["player_profile_players__player_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/players/{player_id}/report": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Player Report
+     * @description Grounded scouting report (template, or a validated local-LLM rewrite) and its facts.
+     */
+    get: operations["player_report_players__player_id__report_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/players/{player_id}/similar": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Similar Players
+     * @description Top-k most similar players in the same position group (cosine, US-09).
+     */
+    get: operations["similar_players_players__player_id__similar_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/teams": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Teams
+     * @description Clubs in the current season, alphabetically.
+     */
+    get: operations["list_teams_teams_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/teams/search": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Search Teams
+     * @description Prefix search over club names and aliases, with fuzzy suggestions for typos.
+     */
+    get: operations["search_teams_teams_search_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/teams/{team_id}/diagnosis": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Team Diagnosis
+     * @description Needs, weak links and risks with evidence, every position group ranked (US-02/03).
+     */
+    get: operations["team_diagnosis_teams__team_id__diagnosis_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/teams/{team_id}/recommendations": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Team Recommendations
+     * @description Ranked shortlist for one need with FitScore breakdowns and receipts (US-04/05).
+     */
+    get: operations["team_recommendations_teams__team_id__recommendations_get"];
     put?: never;
     post?: never;
     delete?: never;
@@ -28,6 +251,189 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /**
+     * CandidateOut
+     * @description One shortlisted player (US-04).
+     */
+    CandidateOut: {
+      /** Age */
+      age: number | null;
+      /** Chance Of Playing */
+      chance_of_playing: number | null;
+      /** Effective Minutes */
+      effective_minutes: number | null;
+      /** Evidence */
+      evidence: components["schemas"]["EvidenceOut"][];
+      fit: components["schemas"]["FitOut"];
+      /** Fpl Status */
+      fpl_status: string | null;
+      /**
+       * Gate
+       * @enum {string}
+       */
+      gate: "upgrade" | "sideways" | "no_incumbent" | "insufficient_data";
+      /** @description Stats-implied value band (Moneyball view, US-11); null if not scored. */
+      implied_value: components["schemas"]["ImpliedValueFact"] | null;
+      market_value: components["schemas"]["MarketValueOut"] | null;
+      /** Minutes */
+      minutes: number;
+      /** Player Id */
+      player_id: number;
+      /** Player Name */
+      player_name: string;
+      /** Position Group */
+      position_group: string;
+      /** Rank */
+      rank: number;
+      /** Status As Of */
+      status_as_of: string | null;
+      /** Team Id */
+      team_id: number;
+      /** Team Name */
+      team_name: string;
+    };
+    /**
+     * Caveat
+     * @description A data caveat inserted into the report (PRD §9 step 2).
+     */
+    Caveat: {
+      /**
+       * Kind
+       * @enum {string}
+       */
+      kind:
+        | "small_sample"
+        | "proxy_metric"
+        | "unadjusted_defence"
+        | "stale_value"
+        | "no_market_value"
+        | "no_previous_season"
+        | "value_model"
+        | "no_comparables"
+        | "same_club";
+      /** Text */
+      text: string;
+    };
+    /**
+     * ComparableFact
+     * @description A similar player in the same position group (PRD §8.10 step 2).
+     */
+    ComparableFact: {
+      /** Player Id */
+      player_id: number;
+      /** Player Name */
+      player_name: string;
+      /**
+       * Similarity
+       * @description Cosine similarity, -1 to 1.
+       */
+      similarity: number;
+      /** Team Name */
+      team_name: string | null;
+    };
+    /**
+     * ComparePlayer
+     * @description Header facts of one compared player.
+     */
+    ComparePlayer: {
+      /** Age */
+      age: number | null;
+      /** Effective Minutes */
+      effective_minutes: number | null;
+      market_value: components["schemas"]["MarketValueOut"] | null;
+      /** Minutes */
+      minutes: number;
+      /** Player Id */
+      player_id: number;
+      /** Player Name */
+      player_name: string;
+      /** Position Group */
+      position_group: string;
+      /** Team Id */
+      team_id: number;
+      /** Team Name */
+      team_name: string;
+    };
+    /**
+     * CompareResponse
+     * @description Side-by-side percentiles for two players (US-07).
+     */
+    CompareResponse: {
+      a: components["schemas"]["ComparePlayer"];
+      b: components["schemas"]["ComparePlayer"];
+      /** Rows */
+      rows: components["schemas"]["CompareRow"][];
+      /**
+       * Season Mode
+       * @enum {string}
+       */
+      season_mode: "blended" | "current";
+      team: components["schemas"]["TeamRef"] | null;
+    };
+    /**
+     * CompareRow
+     * @description One KPI for both players.
+     */
+    CompareRow: {
+      a: components["schemas"]["KpiFact"] | null;
+      b: components["schemas"]["KpiFact"] | null;
+      /**
+       * Delta
+       * @description Percentile of a minus percentile of b.
+       */
+      delta: number | null;
+      /**
+       * Is Need
+       * @description A KPI the club trails on (when team_id is given).
+       */
+      is_need: boolean;
+      /** Is Proxy */
+      is_proxy: boolean;
+      /** Kpi */
+      kpi: string;
+      /** Label */
+      label: string;
+    };
+    /**
+     * DeficitOut
+     * @description A KPI the club trails on, weighted for NeedFill (KPI weight x gap).
+     */
+    DeficitOut: {
+      /** Kpi */
+      kpi: string;
+      /** Label */
+      label: string;
+      /** Weight */
+      weight: number;
+    };
+    /**
+     * DiagnosisResponse
+     * @description A club's needs against a benchmark, every group ranked (PRD §8.8).
+     */
+    DiagnosisResponse: {
+      /**
+       * Benchmark
+       * @enum {string}
+       */
+      benchmark: "top6" | "top4" | "league" | "custom";
+      /** Benchmark Teams */
+      benchmark_teams: components["schemas"]["TeamRef"][];
+      /** Current Season */
+      current_season: string;
+      /** Needs */
+      needs: components["schemas"]["NeedOut"][];
+      /**
+       * Season Mode
+       * @enum {string}
+       */
+      season_mode: "blended" | "current";
+      /** Team Id */
+      team_id: number;
+      /** Team Name */
+      team_name: string;
+      /** Team Needs */
+      team_needs: components["schemas"]["TeamNeedOut"][];
+    };
     /**
      * ErrorBody
      * @description Machine-readable error details.
@@ -53,6 +459,196 @@ export interface components {
       error: components["schemas"]["ErrorBody"];
     };
     /**
+     * EvidenceOut
+     * @description One number behind a need, with its receipt.
+     */
+    EvidenceOut: {
+      /** As Of */
+      as_of: string | null;
+      /** Is Proxy */
+      is_proxy: boolean;
+      /** Kpi */
+      kpi: string;
+      /** Label */
+      label: string;
+      /** Minutes */
+      minutes: number;
+      /** N Peers */
+      n_peers: number;
+      /** Padj Status */
+      padj_status: string | null;
+      /** Percentile */
+      percentile: number | null;
+      /** Player Id */
+      player_id: number;
+      /** Player Name */
+      player_name: string;
+      /**
+       * Raw P90
+       * @description This season's per-90 value.
+       */
+      raw_p90: number | null;
+      /** Source */
+      source: string;
+    };
+    /**
+     * FactSheet
+     * @description Everything a report about one player may state (PRD §9).
+     */
+    FactSheet: {
+      /** Age */
+      age: number | null;
+      /**
+       * As Of
+       * Format: date
+       * @description Date ages and contract windows are measured from.
+       */
+      as_of: string;
+      /** Birth Date */
+      birth_date: string | null;
+      /** Caveats */
+      caveats: components["schemas"]["Caveat"][];
+      /** Chance Of Playing */
+      chance_of_playing: number | null;
+      /** Comparables */
+      comparables: components["schemas"]["ComparableFact"][];
+      /**
+       * Concerns
+       * @description KPI ids rated weak.
+       */
+      concerns: string[];
+      /** Contract Expiry */
+      contract_expiry: string | null;
+      /** Current Season */
+      current_season: string;
+      /**
+       * Effective Minutes
+       * @description Blended minutes behind the rates.
+       */
+      effective_minutes: number | null;
+      fit: components["schemas"]["FitFact"] | null;
+      /** Fpl Status */
+      fpl_status: string | null;
+      implied_value: components["schemas"]["ImpliedValueFact"] | null;
+      /** Kpis */
+      kpis: components["schemas"]["KpiFact"][];
+      market_value: components["schemas"]["MarketValueFact"] | null;
+      /**
+       * Minutes
+       * @description This season's FPL minutes.
+       */
+      minutes: number;
+      /** Player Id */
+      player_id: number;
+      /** Player Name */
+      player_name: string;
+      /** Position Group */
+      position_group: string;
+      /**
+       * Previous Season
+       * @description Set when last season is blended in.
+       */
+      previous_season: string | null;
+      role: components["schemas"]["RoleFact"] | null;
+      /** Season Mode */
+      season_mode: string;
+      /** Sources */
+      sources: components["schemas"]["Receipt"][];
+      /** Status As Of */
+      status_as_of: string | null;
+      /**
+       * Strengths
+       * @description KPI ids rated strong or elite.
+       */
+      strengths: string[];
+      /** Team Id */
+      team_id: number;
+      /** Team Name */
+      team_name: string;
+    };
+    /**
+     * FitFact
+     * @description How the player fits one club's need (PRD §8.9).
+     */
+    FitFact: {
+      /** Benchmark */
+      benchmark: string;
+      /** Components */
+      components: {
+        [key: string]: number | null;
+      };
+      /** Fit Score */
+      fit_score: number | null;
+      /** Gate */
+      gate: string;
+      /**
+       * Gate Min Delta
+       * @description NeedFill points needed to beat the incumbent.
+       */
+      gate_min_delta: number;
+      incumbent: components["schemas"]["IncumbentFact"] | null;
+      /** Need Fill */
+      need_fill: number | null;
+      /** Need Kpis */
+      need_kpis: components["schemas"]["NeedKpiFact"][];
+      /** Position Group */
+      position_group: string;
+      /** Same Club */
+      same_club: boolean;
+      /** Team Id */
+      team_id: number;
+      /** Team Name */
+      team_name: string;
+      /** Weights Used */
+      weights_used: {
+        [key: string]: number;
+      };
+    };
+    /**
+     * FitOut
+     * @description FitScore (0-100) with its components and the weights actually used.
+     */
+    FitOut: {
+      /** Components */
+      components: {
+        [key: string]: number | null;
+      };
+      /** Total */
+      total: number | null;
+      /** Weights Used */
+      weights_used: {
+        [key: string]: number;
+      };
+    };
+    /**
+     * FreshnessResponse
+     * @description Per-source freshness, mapping coverage and validation status (US-08).
+     */
+    FreshnessResponse: {
+      /**
+       * Coverage
+       * @description Share of FPL minutes mapped per source.
+       */
+      coverage: {
+        [key: string]: number;
+      };
+      /** Fpl Schema */
+      fpl_schema: string;
+      /**
+       * Review Count
+       * @description Records entity resolution could not map.
+       */
+      review_count: number;
+      /** Sources */
+      sources: components["schemas"]["SourceFreshnessOut"][];
+      /** Validation Summary */
+      validation_summary: string | null;
+      /** Warehouse Version */
+      warehouse_version: string | null;
+      /** Warnings */
+      warnings: string[];
+    };
+    /**
      * HealthResponse
      * @description Liveness plus warehouse version.
      */
@@ -69,9 +665,584 @@ export interface components {
       version: string;
       /**
        * Warehouse Version
-       * @description Warehouse build identifier; null until `scout build` has run.
+       * @description When the warehouse was last built; null until `scout build` has run.
        */
       warehouse_version: string | null;
+    };
+    /**
+     * ImpliedValueFact
+     * @description Stats-implied value band from the value model (PRD §8.10 step 3).
+     */
+    ImpliedValueFact: {
+      /** Band High Eur */
+      band_high_eur: number;
+      /** Band Low Eur */
+      band_low_eur: number;
+      /** Caveat */
+      caveat: string;
+      /** Git Sha */
+      git_sha: string;
+      /** Implied Value Eur */
+      implied_value_eur: number;
+      /**
+       * Label
+       * @description Undervalued, Fair or Premium.
+       */
+      label: string;
+      /** Trained At */
+      trained_at: string;
+    };
+    /**
+     * IncumbentFact
+     * @description The club's minutes leader in the group.
+     */
+    IncumbentFact: {
+      /** Minutes */
+      minutes: number;
+      /** Need Fill */
+      need_fill: number | null;
+      /** Player Id */
+      player_id: number;
+      /** Player Name */
+      player_name: string;
+    };
+    /**
+     * IncumbentOut
+     * @description The club's minutes leader in the group: the bar for the upgrade gate.
+     */
+    IncumbentOut: {
+      /** Minutes */
+      minutes: number;
+      /** Need Fill */
+      need_fill: number | null;
+      /** Player Id */
+      player_id: number;
+      /** Player Name */
+      player_name: string;
+    };
+    /**
+     * KpiDefinitionOut
+     * @description One player KPI definition from ``config/kpis.yaml``.
+     */
+    KpiDefinitionOut: {
+      /** Higher Is Better */
+      higher_is_better: boolean;
+      /** Is Proxy */
+      is_proxy: boolean;
+      /** Kpi */
+      kpi: string;
+      /** Label */
+      label: string;
+      /** Possession Adjusted */
+      possession_adjusted: boolean;
+      /** Proxy For */
+      proxy_for: string | null;
+      /** Source */
+      source: string;
+    };
+    /**
+     * KpiFact
+     * @description One KPI of the player's position group with its receipt.
+     */
+    KpiFact: {
+      /** As Of */
+      as_of: string | null;
+      /** Band */
+      band: ("elite" | "strong" | "above_average" | "below_average" | "weak") | null;
+      /** Is Proxy */
+      is_proxy: boolean;
+      /** Kpi */
+      kpi: string;
+      /** Label */
+      label: string;
+      /** N Peers */
+      n_peers: number;
+      /** Padj Status */
+      padj_status: string | null;
+      /** Percentile */
+      percentile: number | null;
+      /** Proxy For */
+      proxy_for: string | null;
+      /**
+       * Raw P90
+       * @description This season's per-90 value alone.
+       */
+      raw_p90: number | null;
+      /** Source */
+      source: string;
+      /**
+       * Value
+       * @description Per-90 value in this season mode.
+       */
+      value: number | null;
+      /**
+       * Weight
+       * @description Weight of the KPI in the position group (0-1).
+       */
+      weight: number;
+    };
+    /**
+     * KpiGapOut
+     * @description Club vs benchmark on one KPI of a position group (percentile points).
+     */
+    KpiGapOut: {
+      /** Benchmark Score */
+      benchmark_score: number | null;
+      /** Club Score */
+      club_score: number | null;
+      /**
+       * Gap
+       * @description Benchmark minus club; positive = club trails.
+       */
+      gap: number | null;
+      /** Is Proxy */
+      is_proxy: boolean;
+      /** Kpi */
+      kpi: string;
+      /** Label */
+      label: string;
+      /** Weight */
+      weight: number;
+    };
+    /**
+     * MarketValueFact
+     * @description A Transfermarkt estimated market value with Transfermarkt's own as-of date.
+     */
+    MarketValueFact: {
+      /** Is Stale */
+      is_stale: boolean;
+      /**
+       * Source
+       * @description override, transfermarkt or transfermarkt_datasets
+       */
+      source: string;
+      /**
+       * Tm Last Updated
+       * Format: date
+       */
+      tm_last_updated: string;
+      /** Value Eur */
+      value_eur: number;
+    };
+    /**
+     * MarketValueOut
+     * @description Transfermarkt estimated market value with Transfermarkt's own as-of date.
+     */
+    MarketValueOut: {
+      /** Is Stale */
+      is_stale: boolean;
+      /** Source */
+      source: string;
+      /**
+       * Tm Last Updated
+       * Format: date
+       */
+      tm_last_updated: string;
+      /** Value Eur */
+      value_eur: number;
+    };
+    /**
+     * MethodologyResponse
+     * @description Definitions, weights, thresholds and limitations (US-08, PRD §8).
+     */
+    MethodologyResponse: {
+      /** Fit Weights */
+      fit_weights: {
+        [key: string]: number;
+      };
+      /** Kpis */
+      kpis: components["schemas"]["KpiDefinitionOut"][];
+      /** Limitations */
+      limitations: string[];
+      /** Models */
+      models: components["schemas"]["ModelRunOut"][];
+      /**
+       * Parameters
+       * @description Methodology and diagnosis thresholds from config/settings.yaml.
+       */
+      parameters: {
+        [key: string]: number | string;
+      };
+      /** Peak Age */
+      peak_age: {
+        [key: string]: [number, number];
+      };
+      /** Percentile Bands */
+      percentile_bands: {
+        [key: string]: number;
+      };
+      /**
+       * Position Groups
+       * @description Group -> KPI -> weight.
+       */
+      position_groups: {
+        [key: string]: {
+          [key: string]: number;
+        };
+      };
+      /** Team Kpis */
+      team_kpis: components["schemas"]["TeamKpiDefinitionOut"][];
+      /** Upgrade Gate Min Delta */
+      upgrade_gate_min_delta: number;
+      /** Value Model Caveat */
+      value_model_caveat: string;
+    };
+    /**
+     * ModelRunOut
+     * @description When an ML output stored in the warehouse was produced.
+     */
+    ModelRunOut: {
+      /** Git Sha */
+      git_sha: string | null;
+      /** Name */
+      name: string;
+      /** Rows */
+      rows: number;
+      /** Trained At */
+      trained_at: string | null;
+    };
+    /**
+     * NeedKpiFact
+     * @description A KPI where the club trails the benchmark: candidate vs incumbent.
+     */
+    NeedKpiFact: {
+      /** Candidate Percentile */
+      candidate_percentile: number | null;
+      /**
+       * Delta
+       * @description Candidate minus incumbent, percentile points.
+       */
+      delta: number | null;
+      /**
+       * Gap
+       * @description Benchmark minus club, percentile points.
+       */
+      gap: number;
+      /** Incumbent Percentile */
+      incumbent_percentile: number | null;
+      /** Is Proxy */
+      is_proxy: boolean;
+      /** Kpi */
+      kpi: string;
+      /** Label */
+      label: string;
+    };
+    /**
+     * NeedOut
+     * @description A ranked position-group need (US-02).
+     */
+    NeedOut: {
+      /** Evidence */
+      evidence: components["schemas"]["EvidenceOut"][];
+      /** Gaps */
+      gaps: components["schemas"]["KpiGapOut"][];
+      /** Need Id */
+      need_id: string;
+      /** Position Group */
+      position_group: string;
+      /** Rank */
+      rank: number;
+      /** Risks */
+      risks: components["schemas"]["RiskOut"][];
+      /** Severity */
+      severity: number;
+      /**
+       * Team Needs
+       * @description KPI ids of team needs this group shares.
+       */
+      team_needs: string[];
+      /** Weak Links */
+      weak_links: components["schemas"]["WeakLinkOut"][];
+    };
+    /**
+     * PlayerSearchHit
+     * @description A player search result.
+     */
+    PlayerSearchHit: {
+      /**
+       * Kind
+       * @enum {string}
+       */
+      kind: "exact" | "prefix" | "fuzzy";
+      /** Matched */
+      matched: string;
+      /** Name */
+      name: string;
+      /** Player Id */
+      player_id: number;
+      /** Position Group */
+      position_group: string | null;
+      /** Score */
+      score: number;
+      /** Team Id */
+      team_id: number;
+      /** Team Name */
+      team_name: string;
+    };
+    /**
+     * Receipt
+     * @description A source behind the sheet and the newest timestamp used from it.
+     */
+    Receipt: {
+      /** As Of */
+      as_of: string | null;
+      /** Source */
+      source: string;
+    };
+    /**
+     * ReportOut
+     * @description Scouting report text and how it was produced.
+     */
+    ReportOut: {
+      /**
+       * Engine
+       * @enum {string}
+       */
+      engine: "template" | "ollama";
+      /** Fallback Reason */
+      fallback_reason: string | null;
+      /**
+       * Requested Engine
+       * @enum {string}
+       */
+      requested_engine: "template" | "ollama";
+      /** Text */
+      text: string;
+      /** Violations */
+      violations: string[];
+    };
+    /**
+     * ReportResponse
+     * @description A grounded scouting report with the fact sheet behind it (US-06).
+     */
+    ReportResponse: {
+      facts: components["schemas"]["FactSheet"];
+      report: components["schemas"]["ReportOut"];
+    };
+    /**
+     * RiskOut
+     * @description Depth, age or contract risk in a position group.
+     */
+    RiskOut: {
+      /** Detail */
+      detail: string;
+      /** Kind */
+      kind: string;
+      /** Player Id */
+      player_id: number | null;
+      /** Player Name */
+      player_name: string | null;
+      /** Value */
+      value: number | null;
+    };
+    /**
+     * RoleFact
+     * @description Role archetype from the last ``scout train`` run (PRD §8.10 step 1).
+     */
+    RoleFact: {
+      /** Git Sha */
+      git_sha: string;
+      /** Label */
+      label: string;
+      /** Trained At */
+      trained_at: string;
+    };
+    /**
+     * ShortlistResponse
+     * @description Ranked candidates for one need, and how many each filter removed (US-04/05).
+     */
+    ShortlistResponse: {
+      /** Candidates */
+      candidates: components["schemas"]["CandidateOut"][];
+      /** Deficits */
+      deficits: components["schemas"]["DeficitOut"][];
+      /** Excluded */
+      excluded: {
+        [key: string]: number;
+      };
+      incumbent: components["schemas"]["IncumbentOut"] | null;
+      /** Need Id */
+      need_id: string;
+      /** Position Group */
+      position_group: string;
+      /**
+       * Season Mode
+       * @enum {string}
+       */
+      season_mode: "blended" | "current";
+      /** Team Id */
+      team_id: number;
+      /** Team Name */
+      team_name: string;
+    };
+    /**
+     * SimilarPlayerOut
+     * @description A similar player in the same position group.
+     */
+    SimilarPlayerOut: {
+      /** Player Id */
+      player_id: number;
+      /** Player Name */
+      player_name: string;
+      /**
+       * Similarity
+       * @description Cosine similarity, -1 to 1.
+       */
+      similarity: number;
+      /** Team Id */
+      team_id: number | null;
+      /** Team Name */
+      team_name: string | null;
+    };
+    /**
+     * SimilarResponse
+     * @description Top-k similar players (US-09).
+     */
+    SimilarResponse: {
+      /** Player Id */
+      player_id: number;
+      /** Player Name */
+      player_name: string;
+      /** Position Group */
+      position_group: string;
+      /** Results */
+      results: components["schemas"]["SimilarPlayerOut"][];
+      /**
+       * Season Mode
+       * @enum {string}
+       */
+      season_mode: "blended" | "current";
+    };
+    /**
+     * SourceFreshnessOut
+     * @description Newest snapshot of one source.
+     */
+    SourceFreshnessOut: {
+      /** Age Hours */
+      age_hours: number;
+      /**
+       * Last Fetched
+       * Format: date-time
+       */
+      last_fetched: string;
+      /** Source */
+      source: string;
+      /** Stale */
+      stale: boolean;
+    };
+    /**
+     * TeamKpiDefinitionOut
+     * @description One team KPI and the position groups a shortfall maps to.
+     */
+    TeamKpiDefinitionOut: {
+      /** Higher Is Better */
+      higher_is_better: boolean;
+      /** Kpi */
+      kpi: string;
+      /** Label */
+      label: string;
+      /** Responsible Groups */
+      responsible_groups: string[];
+      /** Source */
+      source: string;
+    };
+    /**
+     * TeamNeedOut
+     * @description A team-level KPI shortfall mapped to the groups responsible (PRD §8.8 step 7).
+     */
+    TeamNeedOut: {
+      /** As Of */
+      as_of: string | null;
+      /** Benchmark Percentile */
+      benchmark_percentile: number;
+      /** Benchmark Value */
+      benchmark_value: number;
+      /** Club Percentile */
+      club_percentile: number;
+      /** Club Value */
+      club_value: number;
+      /** Gap */
+      gap: number;
+      /** Higher Is Better */
+      higher_is_better: boolean;
+      /** Kpi */
+      kpi: string;
+      /** Label */
+      label: string;
+      /** Matches */
+      matches: number;
+      /** N Peers */
+      n_peers: number;
+      /** Previous Matches */
+      previous_matches: number;
+      /** Responsible Groups */
+      responsible_groups: string[];
+      /** Source */
+      source: string;
+    };
+    /**
+     * TeamOut
+     * @description A club in the current season.
+     */
+    TeamOut: {
+      /** Aliases */
+      aliases: string[];
+      /** Name */
+      name: string;
+      /** Short Name */
+      short_name: string | null;
+      /** Team Id */
+      team_id: number;
+    };
+    /**
+     * TeamRef
+     * @description A club id with its name.
+     */
+    TeamRef: {
+      /** Name */
+      name: string;
+      /** Team Id */
+      team_id: number;
+    };
+    /**
+     * TeamSearchHit
+     * @description A club search result and how it matched (US-01).
+     */
+    TeamSearchHit: {
+      /**
+       * Kind
+       * @enum {string}
+       */
+      kind: "exact" | "prefix" | "fuzzy";
+      /**
+       * Matched
+       * @description The name or alias that matched.
+       */
+      matched: string;
+      /** Name */
+      name: string;
+      /** Score */
+      score: number;
+      /** Team Id */
+      team_id: number;
+    };
+    /**
+     * WeakLinkOut
+     * @description A regular starter rating poorly on an important KPI (US-03).
+     */
+    WeakLinkOut: {
+      /** Kpi */
+      kpi: string;
+      /** Label */
+      label: string;
+      /** Minutes Share */
+      minutes_share: number;
+      /** Percentile */
+      percentile: number;
+      /** Player Id */
+      player_id: number;
+      /** Player Name */
+      player_name: string;
     };
   };
   responses: never;
@@ -82,6 +1253,70 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+  compare_compare_get: {
+    parameters: {
+      query: {
+        /** @description Player id (usually the candidate). */
+        a: number;
+        /** @description Player id (usually the incumbent). */
+        b: number;
+        /** @description Club whose need marks KPIs. */
+        team_id?: number | null;
+        season_mode?: "blended" | "current";
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CompareResponse"];
+        };
+      };
+      /** @description Unknown club, player or need. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Invalid request parameters. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description The warehouse has not been built yet. */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
   health_health_get: {
     parameters: {
       query?: never;
@@ -102,6 +1337,614 @@ export interface operations {
       };
       /** @description Internal Server Error */
       500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  freshness_meta_freshness_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FreshnessResponse"];
+        };
+      };
+      /** @description Unknown club, player or need. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Invalid request parameters. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description The warehouse has not been built yet. */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  methodology_meta_methodology_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MethodologyResponse"];
+        };
+      };
+      /** @description Unknown club, player or need. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Invalid request parameters. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description The warehouse has not been built yet. */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  search_players_players_search_get: {
+    parameters: {
+      query: {
+        /** @description Player name. */
+        q: string;
+        limit?: number | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PlayerSearchHit"][];
+        };
+      };
+      /** @description Unknown club, player or need. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Invalid request parameters. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description The warehouse has not been built yet. */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  player_profile_players__player_id__get: {
+    parameters: {
+      query?: {
+        season_mode?: "blended" | "current";
+      };
+      header?: never;
+      path: {
+        player_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FactSheet"];
+        };
+      };
+      /** @description Unknown club, player or need. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Invalid request parameters. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description The warehouse has not been built yet. */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  player_report_players__player_id__report_get: {
+    parameters: {
+      query?: {
+        /** @description Club whose need the report addresses. */
+        team_id?: number | null;
+        season_mode?: "blended" | "current";
+        benchmark?: ("top6" | "top4" | "league" | "custom") | null;
+      };
+      header?: never;
+      path: {
+        player_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReportResponse"];
+        };
+      };
+      /** @description Unknown club, player or need. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Invalid request parameters. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description The warehouse has not been built yet. */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  similar_players_players__player_id__similar_get: {
+    parameters: {
+      query?: {
+        k?: number | null;
+        season_mode?: "blended" | "current";
+      };
+      header?: never;
+      path: {
+        player_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SimilarResponse"];
+        };
+      };
+      /** @description Unknown club, player or need. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Invalid request parameters. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description The warehouse has not been built yet. */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  list_teams_teams_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TeamOut"][];
+        };
+      };
+      /** @description Unknown club, player or need. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Invalid request parameters. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description The warehouse has not been built yet. */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  search_teams_teams_search_get: {
+    parameters: {
+      query: {
+        /** @description Name or alias. */
+        q: string;
+        limit?: number | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TeamSearchHit"][];
+        };
+      };
+      /** @description Unknown club, player or need. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Invalid request parameters. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description The warehouse has not been built yet. */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  team_diagnosis_teams__team_id__diagnosis_get: {
+    parameters: {
+      query?: {
+        season_mode?: "blended" | "current";
+        benchmark?: ("top6" | "top4" | "league" | "custom") | null;
+        /** @description Club ids for benchmark=custom. */
+        custom?: number[] | null;
+      };
+      header?: never;
+      path: {
+        team_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DiagnosisResponse"];
+        };
+      };
+      /** @description Unknown club, player or need. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Invalid request parameters. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description The warehouse has not been built yet. */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  team_recommendations_teams__team_id__recommendations_get: {
+    parameters: {
+      query?: {
+        /** @description Need id from the diagnosis. */
+        need_id?: string | null;
+        /** @description Alternative to need_id. */
+        position_group?: string | null;
+        max_value_eur?: number | null;
+        min_age?: number | null;
+        max_age?: number | null;
+        min_minutes?: number | null;
+        exclude_team_ids?: number[] | null;
+        include_sideways?: boolean;
+        limit?: number | null;
+        season_mode?: "blended" | "current";
+        benchmark?: ("top6" | "top4" | "league" | "custom") | null;
+        custom?: number[] | null;
+      };
+      header?: never;
+      path: {
+        team_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ShortlistResponse"];
+        };
+      };
+      /** @description Unknown club, player or need. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Invalid request parameters. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description The warehouse has not been built yet. */
+      503: {
         headers: {
           [name: string]: unknown;
         };

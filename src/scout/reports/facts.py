@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import math
 import re
-from collections.abc import Hashable, Iterable, Mapping
+from collections.abc import Hashable, Iterable, Mapping, Sequence
 from datetime import date
 from typing import Any, Literal
 
@@ -508,6 +508,7 @@ def build_fact_sheet(
     team_id: int | None = None,
     season_mode: str = "blended",
     benchmark: Benchmark | None = None,
+    custom: Sequence[int] = (),
     as_of: date | None = None,
 ) -> FactSheet:
     """Assemble the fact sheet for ``player_id`` from the warehouse.
@@ -519,6 +520,7 @@ def build_fact_sheet(
         team_id: Club whose need the report addresses (adds the fit section).
         season_mode: ``blended`` (default) or ``current``.
         benchmark: Benchmark for the club's diagnosis (config default when ``None``).
+        custom: Club ids for a ``custom`` benchmark.
         as_of: Date ages are measured from (today by default).
 
     Raises:
@@ -573,7 +575,7 @@ def build_fact_sheet(
     if team_id is not None:
         assessment = assess_player(
             engine, team_id, player_id, config,
-            benchmark=benchmark, season_mode=season_mode, as_of=today,
+            benchmark=benchmark, custom=custom, season_mode=season_mode, as_of=today,
         )  # fmt: skip
         fit = fit_fact(assessment, config)
     club = int(profile["current_team_id"])

@@ -45,3 +45,17 @@ class NotFoundError(ScoutError):
 
     code = "not_found"
     http_status = 404
+
+
+class InvalidRequestError(ScoutError):
+    """A request parameter is invalid (bad filter, malformed id, unknown benchmark club)."""
+
+    code = "invalid_request"
+    http_status = 422
+
+
+class WarehouseNotReadyError(ScoutError):
+    """The warehouse has not been built yet (run ``scout ingest`` and ``scout build``)."""
+
+    code = "warehouse_not_ready"
+    http_status = 503

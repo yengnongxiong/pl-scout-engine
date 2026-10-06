@@ -227,6 +227,7 @@ def need_context(
     *,
     position_group: str | None = None,
     benchmark: Benchmark | None = None,
+    custom: Sequence[int] = (),
     season_mode: str = "blended",
     as_of: date | None = None,
 ) -> NeedContext:
@@ -238,7 +239,13 @@ def need_context(
     fit_cfg = config.fit_weights
     today = as_of or date.today()
     diagnosis = diagnose(
-        engine, team_id, config, benchmark=benchmark, season_mode=season_mode, as_of=today
+        engine,
+        team_id,
+        config,
+        benchmark=benchmark,
+        custom=custom,
+        season_mode=season_mode,
+        as_of=today,
     )
     if not diagnosis.needs:
         raise NotFoundError(f"no needs for club {team_id}")
@@ -370,6 +377,7 @@ def recommend(
     position_group: str | None = None,
     filters: Filters | None = None,
     benchmark: Benchmark | None = None,
+    custom: Sequence[int] = (),
     season_mode: str = "blended",
     as_of: date | None = None,
 ) -> Shortlist:
@@ -386,6 +394,7 @@ def recommend(
         config,
         position_group=position_group,
         benchmark=benchmark,
+        custom=custom,
         season_mode=season_mode,
         as_of=as_of,
     )
@@ -451,6 +460,7 @@ def assess_player(
     config: AppConfig,
     *,
     benchmark: Benchmark | None = None,
+    custom: Sequence[int] = (),
     season_mode: str = "blended",
     as_of: date | None = None,
 ) -> Assessment:
@@ -479,6 +489,7 @@ def assess_player(
         config,
         position_group=group,
         benchmark=benchmark,
+        custom=custom,
         season_mode=season_mode,
         as_of=as_of,
     )

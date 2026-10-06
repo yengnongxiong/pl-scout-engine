@@ -1,6 +1,499 @@
 {
   "components": {
     "schemas": {
+      "CandidateOut": {
+        "description": "One shortlisted player (US-04).",
+        "properties": {
+          "age": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Age"
+          },
+          "chance_of_playing": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chance Of Playing"
+          },
+          "effective_minutes": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective Minutes"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceOut"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "fit": {
+            "$ref": "#/components/schemas/FitOut"
+          },
+          "fpl_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fpl Status"
+          },
+          "gate": {
+            "enum": [
+              "upgrade",
+              "sideways",
+              "no_incumbent",
+              "insufficient_data"
+            ],
+            "title": "Gate",
+            "type": "string"
+          },
+          "implied_value": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ImpliedValueFact"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Stats-implied value band (Moneyball view, US-11); null if not scored."
+          },
+          "market_value": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MarketValueOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "minutes": {
+            "title": "Minutes",
+            "type": "number"
+          },
+          "player_id": {
+            "title": "Player Id",
+            "type": "integer"
+          },
+          "player_name": {
+            "title": "Player Name",
+            "type": "string"
+          },
+          "position_group": {
+            "title": "Position Group",
+            "type": "string"
+          },
+          "rank": {
+            "title": "Rank",
+            "type": "integer"
+          },
+          "status_as_of": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status As Of"
+          },
+          "team_id": {
+            "title": "Team Id",
+            "type": "integer"
+          },
+          "team_name": {
+            "title": "Team Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "rank",
+          "player_id",
+          "player_name",
+          "team_id",
+          "team_name",
+          "position_group",
+          "age",
+          "minutes",
+          "effective_minutes",
+          "fpl_status",
+          "chance_of_playing",
+          "status_as_of",
+          "market_value",
+          "implied_value",
+          "fit",
+          "gate",
+          "evidence"
+        ],
+        "title": "CandidateOut",
+        "type": "object"
+      },
+      "Caveat": {
+        "description": "A data caveat inserted into the report (PRD \u00a79 step 2).",
+        "properties": {
+          "kind": {
+            "enum": [
+              "small_sample",
+              "proxy_metric",
+              "unadjusted_defence",
+              "stale_value",
+              "no_market_value",
+              "no_previous_season",
+              "value_model",
+              "no_comparables",
+              "same_club"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "text"
+        ],
+        "title": "Caveat",
+        "type": "object"
+      },
+      "ComparableFact": {
+        "description": "A similar player in the same position group (PRD \u00a78.10 step 2).",
+        "properties": {
+          "player_id": {
+            "title": "Player Id",
+            "type": "integer"
+          },
+          "player_name": {
+            "title": "Player Name",
+            "type": "string"
+          },
+          "similarity": {
+            "description": "Cosine similarity, -1 to 1.",
+            "title": "Similarity",
+            "type": "number"
+          },
+          "team_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Team Name"
+          }
+        },
+        "required": [
+          "player_id",
+          "player_name",
+          "team_name",
+          "similarity"
+        ],
+        "title": "ComparableFact",
+        "type": "object"
+      },
+      "ComparePlayer": {
+        "description": "Header facts of one compared player.",
+        "properties": {
+          "age": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Age"
+          },
+          "effective_minutes": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective Minutes"
+          },
+          "market_value": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MarketValueOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "minutes": {
+            "title": "Minutes",
+            "type": "number"
+          },
+          "player_id": {
+            "title": "Player Id",
+            "type": "integer"
+          },
+          "player_name": {
+            "title": "Player Name",
+            "type": "string"
+          },
+          "position_group": {
+            "title": "Position Group",
+            "type": "string"
+          },
+          "team_id": {
+            "title": "Team Id",
+            "type": "integer"
+          },
+          "team_name": {
+            "title": "Team Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "player_id",
+          "player_name",
+          "team_id",
+          "team_name",
+          "position_group",
+          "age",
+          "minutes",
+          "effective_minutes",
+          "market_value"
+        ],
+        "title": "ComparePlayer",
+        "type": "object"
+      },
+      "CompareResponse": {
+        "description": "Side-by-side percentiles for two players (US-07).",
+        "properties": {
+          "a": {
+            "$ref": "#/components/schemas/ComparePlayer"
+          },
+          "b": {
+            "$ref": "#/components/schemas/ComparePlayer"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/CompareRow"
+            },
+            "title": "Rows",
+            "type": "array"
+          },
+          "season_mode": {
+            "enum": [
+              "blended",
+              "current"
+            ],
+            "title": "Season Mode",
+            "type": "string"
+          },
+          "team": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TeamRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "season_mode",
+          "a",
+          "b",
+          "team",
+          "rows"
+        ],
+        "title": "CompareResponse",
+        "type": "object"
+      },
+      "CompareRow": {
+        "description": "One KPI for both players.",
+        "properties": {
+          "a": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/KpiFact"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "b": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/KpiFact"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "delta": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Percentile of a minus percentile of b.",
+            "title": "Delta"
+          },
+          "is_need": {
+            "description": "A KPI the club trails on (when team_id is given).",
+            "title": "Is Need",
+            "type": "boolean"
+          },
+          "is_proxy": {
+            "title": "Is Proxy",
+            "type": "boolean"
+          },
+          "kpi": {
+            "title": "Kpi",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kpi",
+          "label",
+          "is_proxy",
+          "is_need",
+          "a",
+          "b",
+          "delta"
+        ],
+        "title": "CompareRow",
+        "type": "object"
+      },
+      "DeficitOut": {
+        "description": "A KPI the club trails on, weighted for NeedFill (KPI weight x gap).",
+        "properties": {
+          "kpi": {
+            "title": "Kpi",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "weight": {
+            "title": "Weight",
+            "type": "number"
+          }
+        },
+        "required": [
+          "kpi",
+          "label",
+          "weight"
+        ],
+        "title": "DeficitOut",
+        "type": "object"
+      },
+      "DiagnosisResponse": {
+        "description": "A club's needs against a benchmark, every group ranked (PRD \u00a78.8).",
+        "properties": {
+          "benchmark": {
+            "enum": [
+              "top6",
+              "top4",
+              "league",
+              "custom"
+            ],
+            "title": "Benchmark",
+            "type": "string"
+          },
+          "benchmark_teams": {
+            "items": {
+              "$ref": "#/components/schemas/TeamRef"
+            },
+            "title": "Benchmark Teams",
+            "type": "array"
+          },
+          "current_season": {
+            "title": "Current Season",
+            "type": "string"
+          },
+          "needs": {
+            "items": {
+              "$ref": "#/components/schemas/NeedOut"
+            },
+            "title": "Needs",
+            "type": "array"
+          },
+          "season_mode": {
+            "enum": [
+              "blended",
+              "current"
+            ],
+            "title": "Season Mode",
+            "type": "string"
+          },
+          "team_id": {
+            "title": "Team Id",
+            "type": "integer"
+          },
+          "team_name": {
+            "title": "Team Name",
+            "type": "string"
+          },
+          "team_needs": {
+            "items": {
+              "$ref": "#/components/schemas/TeamNeedOut"
+            },
+            "title": "Team Needs",
+            "type": "array"
+          }
+        },
+        "required": [
+          "team_id",
+          "team_name",
+          "season_mode",
+          "current_season",
+          "benchmark",
+          "benchmark_teams",
+          "needs",
+          "team_needs"
+        ],
+        "title": "DiagnosisResponse",
+        "type": "object"
+      },
       "ErrorBody": {
         "description": "Machine-readable error details.",
         "properties": {
@@ -39,6 +532,579 @@
         "title": "ErrorResponse",
         "type": "object"
       },
+      "EvidenceOut": {
+        "description": "One number behind a need, with its receipt.",
+        "properties": {
+          "as_of": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "As Of"
+          },
+          "is_proxy": {
+            "title": "Is Proxy",
+            "type": "boolean"
+          },
+          "kpi": {
+            "title": "Kpi",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "minutes": {
+            "title": "Minutes",
+            "type": "number"
+          },
+          "n_peers": {
+            "title": "N Peers",
+            "type": "integer"
+          },
+          "padj_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Padj Status"
+          },
+          "percentile": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Percentile"
+          },
+          "player_id": {
+            "title": "Player Id",
+            "type": "integer"
+          },
+          "player_name": {
+            "title": "Player Name",
+            "type": "string"
+          },
+          "raw_p90": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "This season's per-90 value.",
+            "title": "Raw P90"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "player_id",
+          "player_name",
+          "kpi",
+          "label",
+          "raw_p90",
+          "percentile",
+          "n_peers",
+          "minutes",
+          "source",
+          "as_of",
+          "is_proxy",
+          "padj_status"
+        ],
+        "title": "EvidenceOut",
+        "type": "object"
+      },
+      "FactSheet": {
+        "description": "Everything a report about one player may state (PRD \u00a79).",
+        "properties": {
+          "age": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Age"
+          },
+          "as_of": {
+            "description": "Date ages and contract windows are measured from.",
+            "format": "date",
+            "title": "As Of",
+            "type": "string"
+          },
+          "birth_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Birth Date"
+          },
+          "caveats": {
+            "items": {
+              "$ref": "#/components/schemas/Caveat"
+            },
+            "title": "Caveats",
+            "type": "array"
+          },
+          "chance_of_playing": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chance Of Playing"
+          },
+          "comparables": {
+            "items": {
+              "$ref": "#/components/schemas/ComparableFact"
+            },
+            "title": "Comparables",
+            "type": "array"
+          },
+          "concerns": {
+            "description": "KPI ids rated weak.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Concerns",
+            "type": "array"
+          },
+          "contract_expiry": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contract Expiry"
+          },
+          "current_season": {
+            "title": "Current Season",
+            "type": "string"
+          },
+          "effective_minutes": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Blended minutes behind the rates.",
+            "title": "Effective Minutes"
+          },
+          "fit": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FitFact"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "fpl_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fpl Status"
+          },
+          "implied_value": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ImpliedValueFact"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "kpis": {
+            "items": {
+              "$ref": "#/components/schemas/KpiFact"
+            },
+            "title": "Kpis",
+            "type": "array"
+          },
+          "market_value": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MarketValueFact"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "minutes": {
+            "description": "This season's FPL minutes.",
+            "title": "Minutes",
+            "type": "number"
+          },
+          "player_id": {
+            "title": "Player Id",
+            "type": "integer"
+          },
+          "player_name": {
+            "title": "Player Name",
+            "type": "string"
+          },
+          "position_group": {
+            "title": "Position Group",
+            "type": "string"
+          },
+          "previous_season": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Set when last season is blended in.",
+            "title": "Previous Season"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RoleFact"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "season_mode": {
+            "title": "Season Mode",
+            "type": "string"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/Receipt"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
+          "status_as_of": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status As Of"
+          },
+          "strengths": {
+            "description": "KPI ids rated strong or elite.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Strengths",
+            "type": "array"
+          },
+          "team_id": {
+            "title": "Team Id",
+            "type": "integer"
+          },
+          "team_name": {
+            "title": "Team Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "player_id",
+          "player_name",
+          "team_id",
+          "team_name",
+          "position_group",
+          "birth_date",
+          "age",
+          "as_of",
+          "season_mode",
+          "current_season",
+          "previous_season",
+          "minutes",
+          "effective_minutes",
+          "fpl_status",
+          "chance_of_playing",
+          "status_as_of",
+          "contract_expiry",
+          "market_value",
+          "kpis",
+          "strengths",
+          "concerns",
+          "role",
+          "comparables",
+          "implied_value",
+          "fit",
+          "caveats",
+          "sources"
+        ],
+        "title": "FactSheet",
+        "type": "object"
+      },
+      "FitFact": {
+        "description": "How the player fits one club's need (PRD \u00a78.9).",
+        "properties": {
+          "benchmark": {
+            "title": "Benchmark",
+            "type": "string"
+          },
+          "components": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Components",
+            "type": "object"
+          },
+          "fit_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fit Score"
+          },
+          "gate": {
+            "title": "Gate",
+            "type": "string"
+          },
+          "gate_min_delta": {
+            "description": "NeedFill points needed to beat the incumbent.",
+            "title": "Gate Min Delta",
+            "type": "number"
+          },
+          "incumbent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IncumbentFact"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "need_fill": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Need Fill"
+          },
+          "need_kpis": {
+            "items": {
+              "$ref": "#/components/schemas/NeedKpiFact"
+            },
+            "title": "Need Kpis",
+            "type": "array"
+          },
+          "position_group": {
+            "title": "Position Group",
+            "type": "string"
+          },
+          "same_club": {
+            "title": "Same Club",
+            "type": "boolean"
+          },
+          "team_id": {
+            "title": "Team Id",
+            "type": "integer"
+          },
+          "team_name": {
+            "title": "Team Name",
+            "type": "string"
+          },
+          "weights_used": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Weights Used",
+            "type": "object"
+          }
+        },
+        "required": [
+          "team_id",
+          "team_name",
+          "benchmark",
+          "position_group",
+          "same_club",
+          "fit_score",
+          "components",
+          "weights_used",
+          "gate",
+          "gate_min_delta",
+          "need_fill",
+          "incumbent",
+          "need_kpis"
+        ],
+        "title": "FitFact",
+        "type": "object"
+      },
+      "FitOut": {
+        "description": "FitScore (0-100) with its components and the weights actually used.",
+        "properties": {
+          "components": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Components",
+            "type": "object"
+          },
+          "total": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total"
+          },
+          "weights_used": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Weights Used",
+            "type": "object"
+          }
+        },
+        "required": [
+          "total",
+          "components",
+          "weights_used"
+        ],
+        "title": "FitOut",
+        "type": "object"
+      },
+      "FreshnessResponse": {
+        "description": "Per-source freshness, mapping coverage and validation status (US-08).",
+        "properties": {
+          "coverage": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "description": "Share of FPL minutes mapped per source.",
+            "title": "Coverage",
+            "type": "object"
+          },
+          "fpl_schema": {
+            "title": "Fpl Schema",
+            "type": "string"
+          },
+          "review_count": {
+            "description": "Records entity resolution could not map.",
+            "title": "Review Count",
+            "type": "integer"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/SourceFreshnessOut"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
+          "validation_summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Validation Summary"
+          },
+          "warehouse_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Warehouse Version"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "warehouse_version",
+          "validation_summary",
+          "sources",
+          "coverage",
+          "review_count",
+          "fpl_schema",
+          "warnings"
+        ],
+        "title": "FreshnessResponse",
+        "type": "object"
+      },
       "HealthResponse": {
         "description": "Liveness plus warehouse version.",
         "properties": {
@@ -61,7 +1127,7 @@
                 "type": "null"
               }
             ],
-            "description": "Warehouse build identifier; null until `scout build` has run.",
+            "description": "When the warehouse was last built; null until `scout build` has run.",
             "title": "Warehouse Version"
           }
         },
@@ -71,6 +1137,1422 @@
           "warehouse_version"
         ],
         "title": "HealthResponse",
+        "type": "object"
+      },
+      "ImpliedValueFact": {
+        "description": "Stats-implied value band from the value model (PRD \u00a78.10 step 3).",
+        "properties": {
+          "band_high_eur": {
+            "title": "Band High Eur",
+            "type": "number"
+          },
+          "band_low_eur": {
+            "title": "Band Low Eur",
+            "type": "number"
+          },
+          "caveat": {
+            "title": "Caveat",
+            "type": "string"
+          },
+          "git_sha": {
+            "title": "Git Sha",
+            "type": "string"
+          },
+          "implied_value_eur": {
+            "title": "Implied Value Eur",
+            "type": "number"
+          },
+          "label": {
+            "description": "Undervalued, Fair or Premium.",
+            "title": "Label",
+            "type": "string"
+          },
+          "trained_at": {
+            "title": "Trained At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "implied_value_eur",
+          "band_low_eur",
+          "band_high_eur",
+          "label",
+          "trained_at",
+          "git_sha",
+          "caveat"
+        ],
+        "title": "ImpliedValueFact",
+        "type": "object"
+      },
+      "IncumbentFact": {
+        "description": "The club's minutes leader in the group.",
+        "properties": {
+          "minutes": {
+            "title": "Minutes",
+            "type": "number"
+          },
+          "need_fill": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Need Fill"
+          },
+          "player_id": {
+            "title": "Player Id",
+            "type": "integer"
+          },
+          "player_name": {
+            "title": "Player Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "player_id",
+          "player_name",
+          "minutes",
+          "need_fill"
+        ],
+        "title": "IncumbentFact",
+        "type": "object"
+      },
+      "IncumbentOut": {
+        "description": "The club's minutes leader in the group: the bar for the upgrade gate.",
+        "properties": {
+          "minutes": {
+            "title": "Minutes",
+            "type": "number"
+          },
+          "need_fill": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Need Fill"
+          },
+          "player_id": {
+            "title": "Player Id",
+            "type": "integer"
+          },
+          "player_name": {
+            "title": "Player Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "player_id",
+          "player_name",
+          "minutes",
+          "need_fill"
+        ],
+        "title": "IncumbentOut",
+        "type": "object"
+      },
+      "KpiDefinitionOut": {
+        "description": "One player KPI definition from ``config/kpis.yaml``.",
+        "properties": {
+          "higher_is_better": {
+            "title": "Higher Is Better",
+            "type": "boolean"
+          },
+          "is_proxy": {
+            "title": "Is Proxy",
+            "type": "boolean"
+          },
+          "kpi": {
+            "title": "Kpi",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "possession_adjusted": {
+            "title": "Possession Adjusted",
+            "type": "boolean"
+          },
+          "proxy_for": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Proxy For"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kpi",
+          "label",
+          "source",
+          "higher_is_better",
+          "is_proxy",
+          "proxy_for",
+          "possession_adjusted"
+        ],
+        "title": "KpiDefinitionOut",
+        "type": "object"
+      },
+      "KpiFact": {
+        "description": "One KPI of the player's position group with its receipt.",
+        "properties": {
+          "as_of": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "As Of"
+          },
+          "band": {
+            "anyOf": [
+              {
+                "enum": [
+                  "elite",
+                  "strong",
+                  "above_average",
+                  "below_average",
+                  "weak"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Band"
+          },
+          "is_proxy": {
+            "title": "Is Proxy",
+            "type": "boolean"
+          },
+          "kpi": {
+            "title": "Kpi",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "n_peers": {
+            "title": "N Peers",
+            "type": "integer"
+          },
+          "padj_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Padj Status"
+          },
+          "percentile": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Percentile"
+          },
+          "proxy_for": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Proxy For"
+          },
+          "raw_p90": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "This season's per-90 value alone.",
+            "title": "Raw P90"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Per-90 value in this season mode.",
+            "title": "Value"
+          },
+          "weight": {
+            "description": "Weight of the KPI in the position group (0-1).",
+            "title": "Weight",
+            "type": "number"
+          }
+        },
+        "required": [
+          "kpi",
+          "label",
+          "weight",
+          "is_proxy",
+          "proxy_for",
+          "value",
+          "raw_p90",
+          "percentile",
+          "band",
+          "n_peers",
+          "source",
+          "as_of",
+          "padj_status"
+        ],
+        "title": "KpiFact",
+        "type": "object"
+      },
+      "KpiGapOut": {
+        "description": "Club vs benchmark on one KPI of a position group (percentile points).",
+        "properties": {
+          "benchmark_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Benchmark Score"
+          },
+          "club_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Club Score"
+          },
+          "gap": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Benchmark minus club; positive = club trails.",
+            "title": "Gap"
+          },
+          "is_proxy": {
+            "title": "Is Proxy",
+            "type": "boolean"
+          },
+          "kpi": {
+            "title": "Kpi",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "weight": {
+            "title": "Weight",
+            "type": "number"
+          }
+        },
+        "required": [
+          "kpi",
+          "label",
+          "weight",
+          "is_proxy",
+          "club_score",
+          "benchmark_score",
+          "gap"
+        ],
+        "title": "KpiGapOut",
+        "type": "object"
+      },
+      "MarketValueFact": {
+        "description": "A Transfermarkt estimated market value with Transfermarkt's own as-of date.",
+        "properties": {
+          "is_stale": {
+            "title": "Is Stale",
+            "type": "boolean"
+          },
+          "source": {
+            "description": "override, transfermarkt or transfermarkt_datasets",
+            "title": "Source",
+            "type": "string"
+          },
+          "tm_last_updated": {
+            "format": "date",
+            "title": "Tm Last Updated",
+            "type": "string"
+          },
+          "value_eur": {
+            "title": "Value Eur",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "value_eur",
+          "tm_last_updated",
+          "source",
+          "is_stale"
+        ],
+        "title": "MarketValueFact",
+        "type": "object"
+      },
+      "MarketValueOut": {
+        "description": "Transfermarkt estimated market value with Transfermarkt's own as-of date.",
+        "properties": {
+          "is_stale": {
+            "title": "Is Stale",
+            "type": "boolean"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "tm_last_updated": {
+            "format": "date",
+            "title": "Tm Last Updated",
+            "type": "string"
+          },
+          "value_eur": {
+            "title": "Value Eur",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "value_eur",
+          "tm_last_updated",
+          "source",
+          "is_stale"
+        ],
+        "title": "MarketValueOut",
+        "type": "object"
+      },
+      "MethodologyResponse": {
+        "description": "Definitions, weights, thresholds and limitations (US-08, PRD \u00a78).",
+        "properties": {
+          "fit_weights": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Fit Weights",
+            "type": "object"
+          },
+          "kpis": {
+            "items": {
+              "$ref": "#/components/schemas/KpiDefinitionOut"
+            },
+            "title": "Kpis",
+            "type": "array"
+          },
+          "limitations": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Limitations",
+            "type": "array"
+          },
+          "models": {
+            "items": {
+              "$ref": "#/components/schemas/ModelRunOut"
+            },
+            "title": "Models",
+            "type": "array"
+          },
+          "parameters": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Methodology and diagnosis thresholds from config/settings.yaml.",
+            "title": "Parameters",
+            "type": "object"
+          },
+          "peak_age": {
+            "additionalProperties": {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "integer"
+                }
+              ],
+              "type": "array"
+            },
+            "title": "Peak Age",
+            "type": "object"
+          },
+          "percentile_bands": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Percentile Bands",
+            "type": "object"
+          },
+          "position_groups": {
+            "additionalProperties": {
+              "additionalProperties": {
+                "type": "number"
+              },
+              "type": "object"
+            },
+            "description": "Group -> KPI -> weight.",
+            "title": "Position Groups",
+            "type": "object"
+          },
+          "team_kpis": {
+            "items": {
+              "$ref": "#/components/schemas/TeamKpiDefinitionOut"
+            },
+            "title": "Team Kpis",
+            "type": "array"
+          },
+          "upgrade_gate_min_delta": {
+            "title": "Upgrade Gate Min Delta",
+            "type": "number"
+          },
+          "value_model_caveat": {
+            "title": "Value Model Caveat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kpis",
+          "position_groups",
+          "team_kpis",
+          "fit_weights",
+          "upgrade_gate_min_delta",
+          "peak_age",
+          "parameters",
+          "percentile_bands",
+          "value_model_caveat",
+          "models",
+          "limitations"
+        ],
+        "title": "MethodologyResponse",
+        "type": "object"
+      },
+      "ModelRunOut": {
+        "description": "When an ML output stored in the warehouse was produced.",
+        "properties": {
+          "git_sha": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Git Sha"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "rows": {
+            "title": "Rows",
+            "type": "integer"
+          },
+          "trained_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trained At"
+          }
+        },
+        "required": [
+          "name",
+          "trained_at",
+          "git_sha",
+          "rows"
+        ],
+        "title": "ModelRunOut",
+        "type": "object"
+      },
+      "NeedKpiFact": {
+        "description": "A KPI where the club trails the benchmark: candidate vs incumbent.",
+        "properties": {
+          "candidate_percentile": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Candidate Percentile"
+          },
+          "delta": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Candidate minus incumbent, percentile points.",
+            "title": "Delta"
+          },
+          "gap": {
+            "description": "Benchmark minus club, percentile points.",
+            "title": "Gap",
+            "type": "number"
+          },
+          "incumbent_percentile": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Incumbent Percentile"
+          },
+          "is_proxy": {
+            "title": "Is Proxy",
+            "type": "boolean"
+          },
+          "kpi": {
+            "title": "Kpi",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kpi",
+          "label",
+          "is_proxy",
+          "gap",
+          "candidate_percentile",
+          "incumbent_percentile",
+          "delta"
+        ],
+        "title": "NeedKpiFact",
+        "type": "object"
+      },
+      "NeedOut": {
+        "description": "A ranked position-group need (US-02).",
+        "properties": {
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceOut"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "gaps": {
+            "items": {
+              "$ref": "#/components/schemas/KpiGapOut"
+            },
+            "title": "Gaps",
+            "type": "array"
+          },
+          "need_id": {
+            "title": "Need Id",
+            "type": "string"
+          },
+          "position_group": {
+            "title": "Position Group",
+            "type": "string"
+          },
+          "rank": {
+            "title": "Rank",
+            "type": "integer"
+          },
+          "risks": {
+            "items": {
+              "$ref": "#/components/schemas/RiskOut"
+            },
+            "title": "Risks",
+            "type": "array"
+          },
+          "severity": {
+            "title": "Severity",
+            "type": "number"
+          },
+          "team_needs": {
+            "description": "KPI ids of team needs this group shares.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Team Needs",
+            "type": "array"
+          },
+          "weak_links": {
+            "items": {
+              "$ref": "#/components/schemas/WeakLinkOut"
+            },
+            "title": "Weak Links",
+            "type": "array"
+          }
+        },
+        "required": [
+          "rank",
+          "need_id",
+          "position_group",
+          "severity",
+          "gaps",
+          "evidence",
+          "weak_links",
+          "risks",
+          "team_needs"
+        ],
+        "title": "NeedOut",
+        "type": "object"
+      },
+      "PlayerSearchHit": {
+        "description": "A player search result.",
+        "properties": {
+          "kind": {
+            "enum": [
+              "exact",
+              "prefix",
+              "fuzzy"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "matched": {
+            "title": "Matched",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "player_id": {
+            "title": "Player Id",
+            "type": "integer"
+          },
+          "position_group": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Position Group"
+          },
+          "score": {
+            "title": "Score",
+            "type": "number"
+          },
+          "team_id": {
+            "title": "Team Id",
+            "type": "integer"
+          },
+          "team_name": {
+            "title": "Team Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "player_id",
+          "name",
+          "team_id",
+          "team_name",
+          "position_group",
+          "matched",
+          "kind",
+          "score"
+        ],
+        "title": "PlayerSearchHit",
+        "type": "object"
+      },
+      "Receipt": {
+        "description": "A source behind the sheet and the newest timestamp used from it.",
+        "properties": {
+          "as_of": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "As Of"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "as_of"
+        ],
+        "title": "Receipt",
+        "type": "object"
+      },
+      "ReportOut": {
+        "description": "Scouting report text and how it was produced.",
+        "properties": {
+          "engine": {
+            "enum": [
+              "template",
+              "ollama"
+            ],
+            "title": "Engine",
+            "type": "string"
+          },
+          "fallback_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fallback Reason"
+          },
+          "requested_engine": {
+            "enum": [
+              "template",
+              "ollama"
+            ],
+            "title": "Requested Engine",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "violations": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Violations",
+            "type": "array"
+          }
+        },
+        "required": [
+          "text",
+          "engine",
+          "requested_engine",
+          "fallback_reason",
+          "violations"
+        ],
+        "title": "ReportOut",
+        "type": "object"
+      },
+      "ReportResponse": {
+        "description": "A grounded scouting report with the fact sheet behind it (US-06).",
+        "properties": {
+          "facts": {
+            "$ref": "#/components/schemas/FactSheet"
+          },
+          "report": {
+            "$ref": "#/components/schemas/ReportOut"
+          }
+        },
+        "required": [
+          "report",
+          "facts"
+        ],
+        "title": "ReportResponse",
+        "type": "object"
+      },
+      "RiskOut": {
+        "description": "Depth, age or contract risk in a position group.",
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "player_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Player Id"
+          },
+          "player_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Player Name"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "kind",
+          "detail",
+          "player_id",
+          "player_name",
+          "value"
+        ],
+        "title": "RiskOut",
+        "type": "object"
+      },
+      "RoleFact": {
+        "description": "Role archetype from the last ``scout train`` run (PRD \u00a78.10 step 1).",
+        "properties": {
+          "git_sha": {
+            "title": "Git Sha",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "trained_at": {
+            "title": "Trained At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "trained_at",
+          "git_sha"
+        ],
+        "title": "RoleFact",
+        "type": "object"
+      },
+      "ShortlistResponse": {
+        "description": "Ranked candidates for one need, and how many each filter removed (US-04/05).",
+        "properties": {
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/CandidateOut"
+            },
+            "title": "Candidates",
+            "type": "array"
+          },
+          "deficits": {
+            "items": {
+              "$ref": "#/components/schemas/DeficitOut"
+            },
+            "title": "Deficits",
+            "type": "array"
+          },
+          "excluded": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Excluded",
+            "type": "object"
+          },
+          "incumbent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IncumbentOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "need_id": {
+            "title": "Need Id",
+            "type": "string"
+          },
+          "position_group": {
+            "title": "Position Group",
+            "type": "string"
+          },
+          "season_mode": {
+            "enum": [
+              "blended",
+              "current"
+            ],
+            "title": "Season Mode",
+            "type": "string"
+          },
+          "team_id": {
+            "title": "Team Id",
+            "type": "integer"
+          },
+          "team_name": {
+            "title": "Team Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "team_id",
+          "team_name",
+          "need_id",
+          "position_group",
+          "season_mode",
+          "deficits",
+          "incumbent",
+          "candidates",
+          "excluded"
+        ],
+        "title": "ShortlistResponse",
+        "type": "object"
+      },
+      "SimilarPlayerOut": {
+        "description": "A similar player in the same position group.",
+        "properties": {
+          "player_id": {
+            "title": "Player Id",
+            "type": "integer"
+          },
+          "player_name": {
+            "title": "Player Name",
+            "type": "string"
+          },
+          "similarity": {
+            "description": "Cosine similarity, -1 to 1.",
+            "title": "Similarity",
+            "type": "number"
+          },
+          "team_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Team Id"
+          },
+          "team_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Team Name"
+          }
+        },
+        "required": [
+          "player_id",
+          "player_name",
+          "team_id",
+          "team_name",
+          "similarity"
+        ],
+        "title": "SimilarPlayerOut",
+        "type": "object"
+      },
+      "SimilarResponse": {
+        "description": "Top-k similar players (US-09).",
+        "properties": {
+          "player_id": {
+            "title": "Player Id",
+            "type": "integer"
+          },
+          "player_name": {
+            "title": "Player Name",
+            "type": "string"
+          },
+          "position_group": {
+            "title": "Position Group",
+            "type": "string"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/SimilarPlayerOut"
+            },
+            "title": "Results",
+            "type": "array"
+          },
+          "season_mode": {
+            "enum": [
+              "blended",
+              "current"
+            ],
+            "title": "Season Mode",
+            "type": "string"
+          }
+        },
+        "required": [
+          "player_id",
+          "player_name",
+          "position_group",
+          "season_mode",
+          "results"
+        ],
+        "title": "SimilarResponse",
+        "type": "object"
+      },
+      "SourceFreshnessOut": {
+        "description": "Newest snapshot of one source.",
+        "properties": {
+          "age_hours": {
+            "title": "Age Hours",
+            "type": "number"
+          },
+          "last_fetched": {
+            "format": "date-time",
+            "title": "Last Fetched",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "stale": {
+            "title": "Stale",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "source",
+          "last_fetched",
+          "age_hours",
+          "stale"
+        ],
+        "title": "SourceFreshnessOut",
+        "type": "object"
+      },
+      "TeamKpiDefinitionOut": {
+        "description": "One team KPI and the position groups a shortfall maps to.",
+        "properties": {
+          "higher_is_better": {
+            "title": "Higher Is Better",
+            "type": "boolean"
+          },
+          "kpi": {
+            "title": "Kpi",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "responsible_groups": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Responsible Groups",
+            "type": "array"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kpi",
+          "label",
+          "source",
+          "higher_is_better",
+          "responsible_groups"
+        ],
+        "title": "TeamKpiDefinitionOut",
+        "type": "object"
+      },
+      "TeamNeedOut": {
+        "description": "A team-level KPI shortfall mapped to the groups responsible (PRD \u00a78.8 step 7).",
+        "properties": {
+          "as_of": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "As Of"
+          },
+          "benchmark_percentile": {
+            "title": "Benchmark Percentile",
+            "type": "number"
+          },
+          "benchmark_value": {
+            "title": "Benchmark Value",
+            "type": "number"
+          },
+          "club_percentile": {
+            "title": "Club Percentile",
+            "type": "number"
+          },
+          "club_value": {
+            "title": "Club Value",
+            "type": "number"
+          },
+          "gap": {
+            "title": "Gap",
+            "type": "number"
+          },
+          "higher_is_better": {
+            "title": "Higher Is Better",
+            "type": "boolean"
+          },
+          "kpi": {
+            "title": "Kpi",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "matches": {
+            "title": "Matches",
+            "type": "integer"
+          },
+          "n_peers": {
+            "title": "N Peers",
+            "type": "integer"
+          },
+          "previous_matches": {
+            "title": "Previous Matches",
+            "type": "integer"
+          },
+          "responsible_groups": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Responsible Groups",
+            "type": "array"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kpi",
+          "label",
+          "higher_is_better",
+          "club_value",
+          "club_percentile",
+          "benchmark_value",
+          "benchmark_percentile",
+          "gap",
+          "n_peers",
+          "matches",
+          "previous_matches",
+          "responsible_groups",
+          "source",
+          "as_of"
+        ],
+        "title": "TeamNeedOut",
+        "type": "object"
+      },
+      "TeamOut": {
+        "description": "A club in the current season.",
+        "properties": {
+          "aliases": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Aliases",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "short_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Short Name"
+          },
+          "team_id": {
+            "title": "Team Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "team_id",
+          "name",
+          "short_name",
+          "aliases"
+        ],
+        "title": "TeamOut",
+        "type": "object"
+      },
+      "TeamRef": {
+        "description": "A club id with its name.",
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "team_id": {
+            "title": "Team Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "team_id",
+          "name"
+        ],
+        "title": "TeamRef",
+        "type": "object"
+      },
+      "TeamSearchHit": {
+        "description": "A club search result and how it matched (US-01).",
+        "properties": {
+          "kind": {
+            "enum": [
+              "exact",
+              "prefix",
+              "fuzzy"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "matched": {
+            "description": "The name or alias that matched.",
+            "title": "Matched",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "score": {
+            "title": "Score",
+            "type": "number"
+          },
+          "team_id": {
+            "title": "Team Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "team_id",
+          "name",
+          "matched",
+          "kind",
+          "score"
+        ],
+        "title": "TeamSearchHit",
+        "type": "object"
+      },
+      "WeakLinkOut": {
+        "description": "A regular starter rating poorly on an important KPI (US-03).",
+        "properties": {
+          "kpi": {
+            "title": "Kpi",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "minutes_share": {
+            "title": "Minutes Share",
+            "type": "number"
+          },
+          "percentile": {
+            "title": "Percentile",
+            "type": "number"
+          },
+          "player_id": {
+            "title": "Player Id",
+            "type": "integer"
+          },
+          "player_name": {
+            "title": "Player Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "player_id",
+          "player_name",
+          "kpi",
+          "label",
+          "percentile",
+          "minutes_share"
+        ],
+        "title": "WeakLinkOut",
         "type": "object"
       }
     }
@@ -82,9 +2564,127 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/compare": {
+      "get": {
+        "description": "KPIs of both players' position groups side by side, with percentile deltas.",
+        "operationId": "compare_compare_get",
+        "parameters": [
+          {
+            "description": "Player id (usually the candidate).",
+            "in": "query",
+            "name": "a",
+            "required": true,
+            "schema": {
+              "description": "Player id (usually the candidate).",
+              "title": "A",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Player id (usually the incumbent).",
+            "in": "query",
+            "name": "b",
+            "required": true,
+            "schema": {
+              "description": "Player id (usually the incumbent).",
+              "title": "B",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Club whose need marks KPIs.",
+            "in": "query",
+            "name": "team_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Club whose need marks KPIs.",
+              "title": "Team Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "season_mode",
+            "required": false,
+            "schema": {
+              "default": "blended",
+              "enum": [
+                "blended",
+                "current"
+              ],
+              "title": "Season Mode",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompareResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unknown club, player or need."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Invalid request parameters."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The warehouse has not been built yet."
+          }
+        },
+        "summary": "Compare",
+        "tags": [
+          "compare"
+        ]
+      }
+    },
     "/health": {
       "get": {
-        "description": "Report liveness and the warehouse version.",
+        "description": "Report liveness and when the warehouse was last built.",
         "operationId": "health_health_get",
         "responses": {
           "200": {
@@ -111,6 +2711,1124 @@
         "summary": "Health",
         "tags": [
           "meta"
+        ]
+      }
+    },
+    "/meta/freshness": {
+      "get": {
+        "description": "Per-source last fetch, mapping coverage, staleness flags and validation status.",
+        "operationId": "freshness_meta_freshness_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FreshnessResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unknown club, player or need."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Invalid request parameters."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The warehouse has not been built yet."
+          }
+        },
+        "summary": "Freshness",
+        "tags": [
+          "meta"
+        ]
+      }
+    },
+    "/meta/methodology": {
+      "get": {
+        "description": "KPI definitions, weights, proxies, thresholds, model runs and known limitations.",
+        "operationId": "methodology_meta_methodology_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MethodologyResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unknown club, player or need."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Invalid request parameters."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The warehouse has not been built yet."
+          }
+        },
+        "summary": "Methodology",
+        "tags": [
+          "meta"
+        ]
+      }
+    },
+    "/players/search": {
+      "get": {
+        "description": "Prefix search over this season's players (any word of the name), fuzzy for typos.",
+        "operationId": "search_players_players_search_get",
+        "parameters": [
+          {
+            "description": "Player name.",
+            "in": "query",
+            "name": "q",
+            "required": true,
+            "schema": {
+              "description": "Player name.",
+              "maxLength": 100,
+              "minLength": 1,
+              "title": "Q",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 100,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PlayerSearchHit"
+                  },
+                  "title": "Response Search Players Players Search Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unknown club, player or need."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Invalid request parameters."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The warehouse has not been built yet."
+          }
+        },
+        "summary": "Search Players",
+        "tags": [
+          "players"
+        ]
+      }
+    },
+    "/players/{player_id}": {
+      "get": {
+        "description": "Player profile: header facts, percentiles vs position peers, value, role, caveats.\n\nEvery KPI carries its source and as-of; the Transfermarkt estimated market value\ncarries Transfermarkt's own date.",
+        "operationId": "player_profile_players__player_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "player_id",
+            "required": true,
+            "schema": {
+              "title": "Player Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "season_mode",
+            "required": false,
+            "schema": {
+              "default": "blended",
+              "enum": [
+                "blended",
+                "current"
+              ],
+              "title": "Season Mode",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FactSheet"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unknown club, player or need."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Invalid request parameters."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The warehouse has not been built yet."
+          }
+        },
+        "summary": "Player Profile",
+        "tags": [
+          "players"
+        ]
+      }
+    },
+    "/players/{player_id}/report": {
+      "get": {
+        "description": "Grounded scouting report (template, or a validated local-LLM rewrite) and its facts.",
+        "operationId": "player_report_players__player_id__report_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "player_id",
+            "required": true,
+            "schema": {
+              "title": "Player Id",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Club whose need the report addresses.",
+            "in": "query",
+            "name": "team_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Club whose need the report addresses.",
+              "title": "Team Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "season_mode",
+            "required": false,
+            "schema": {
+              "default": "blended",
+              "enum": [
+                "blended",
+                "current"
+              ],
+              "title": "Season Mode",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "benchmark",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "top6",
+                    "top4",
+                    "league",
+                    "custom"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Benchmark"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unknown club, player or need."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Invalid request parameters."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The warehouse has not been built yet."
+          }
+        },
+        "summary": "Player Report",
+        "tags": [
+          "players"
+        ]
+      }
+    },
+    "/players/{player_id}/similar": {
+      "get": {
+        "description": "Top-k most similar players in the same position group (cosine, US-09).",
+        "operationId": "similar_players_players__player_id__similar_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "player_id",
+            "required": true,
+            "schema": {
+              "title": "Player Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "k",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 100,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "K"
+            }
+          },
+          {
+            "in": "query",
+            "name": "season_mode",
+            "required": false,
+            "schema": {
+              "default": "blended",
+              "enum": [
+                "blended",
+                "current"
+              ],
+              "title": "Season Mode",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimilarResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unknown club, player or need."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Invalid request parameters."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The warehouse has not been built yet."
+          }
+        },
+        "summary": "Similar Players",
+        "tags": [
+          "players"
+        ]
+      }
+    },
+    "/teams": {
+      "get": {
+        "description": "Clubs in the current season, alphabetically.",
+        "operationId": "list_teams_teams_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TeamOut"
+                  },
+                  "title": "Response List Teams Teams Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unknown club, player or need."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Invalid request parameters."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The warehouse has not been built yet."
+          }
+        },
+        "summary": "List Teams",
+        "tags": [
+          "teams"
+        ]
+      }
+    },
+    "/teams/search": {
+      "get": {
+        "description": "Prefix search over club names and aliases, with fuzzy suggestions for typos.",
+        "operationId": "search_teams_teams_search_get",
+        "parameters": [
+          {
+            "description": "Name or alias.",
+            "in": "query",
+            "name": "q",
+            "required": true,
+            "schema": {
+              "description": "Name or alias.",
+              "maxLength": 100,
+              "minLength": 1,
+              "title": "Q",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 100,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TeamSearchHit"
+                  },
+                  "title": "Response Search Teams Teams Search Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unknown club, player or need."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Invalid request parameters."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The warehouse has not been built yet."
+          }
+        },
+        "summary": "Search Teams",
+        "tags": [
+          "teams"
+        ]
+      }
+    },
+    "/teams/{team_id}/diagnosis": {
+      "get": {
+        "description": "Needs, weak links and risks with evidence, every position group ranked (US-02/03).",
+        "operationId": "team_diagnosis_teams__team_id__diagnosis_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "team_id",
+            "required": true,
+            "schema": {
+              "title": "Team Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "season_mode",
+            "required": false,
+            "schema": {
+              "default": "blended",
+              "enum": [
+                "blended",
+                "current"
+              ],
+              "title": "Season Mode",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "benchmark",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "top6",
+                    "top4",
+                    "league",
+                    "custom"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Benchmark"
+            }
+          },
+          {
+            "description": "Club ids for benchmark=custom.",
+            "in": "query",
+            "name": "custom",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "integer"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Club ids for benchmark=custom.",
+              "title": "Custom"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiagnosisResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unknown club, player or need."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Invalid request parameters."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The warehouse has not been built yet."
+          }
+        },
+        "summary": "Team Diagnosis",
+        "tags": [
+          "teams"
+        ]
+      }
+    },
+    "/teams/{team_id}/recommendations": {
+      "get": {
+        "description": "Ranked shortlist for one need with FitScore breakdowns and receipts (US-04/05).",
+        "operationId": "team_recommendations_teams__team_id__recommendations_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "team_id",
+            "required": true,
+            "schema": {
+              "title": "Team Id",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Need id from the diagnosis.",
+            "in": "query",
+            "name": "need_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Need id from the diagnosis.",
+              "title": "Need Id"
+            }
+          },
+          {
+            "description": "Alternative to need_id.",
+            "in": "query",
+            "name": "position_group",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Alternative to need_id.",
+              "title": "Position Group"
+            }
+          },
+          {
+            "in": "query",
+            "name": "max_value_eur",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Max Value Eur"
+            }
+          },
+          {
+            "in": "query",
+            "name": "min_age",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 60,
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Min Age"
+            }
+          },
+          {
+            "in": "query",
+            "name": "max_age",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 60,
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Max Age"
+            }
+          },
+          {
+            "in": "query",
+            "name": "min_minutes",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Min Minutes"
+            }
+          },
+          {
+            "in": "query",
+            "name": "exclude_team_ids",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "integer"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Exclude Team Ids"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_sideways",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Sideways",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 100,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Limit"
+            }
+          },
+          {
+            "in": "query",
+            "name": "season_mode",
+            "required": false,
+            "schema": {
+              "default": "blended",
+              "enum": [
+                "blended",
+                "current"
+              ],
+              "title": "Season Mode",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "benchmark",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "top6",
+                    "top4",
+                    "league",
+                    "custom"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Benchmark"
+            }
+          },
+          {
+            "in": "query",
+            "name": "custom",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "integer"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Custom"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShortlistResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unknown club, player or need."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Invalid request parameters."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The warehouse has not been built yet."
+          }
+        },
+        "summary": "Team Recommendations",
+        "tags": [
+          "teams"
         ]
       }
     }
