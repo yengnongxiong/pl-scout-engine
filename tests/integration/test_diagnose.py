@@ -215,3 +215,30 @@ def test_cli_train_reports_models_it_could_not_train(
     text = out.read_text()
     assert text.startswith("# Evaluation") and "Not available" in text
     assert (built.data_dir / "models").is_dir()
+
+
+def test_assess_player_scores_one_player_without_filters(built: Settings) -> None:
+    from scout.db.queries import player_profiles
+    from scout.engines.recommend import assess_player
+
+    engine = make_engine(built.database_url)
+    config = _config()
+    rovers = find_team(engine, "Synthetic Rovers", config.team_aliases.aliases)
+    town = find_team(engine, "Fixture Town", config.team_aliases.aliases)
+    ids = {
+        str(n): int(p) for n, p in player_profiles(engine)[["canonical_name", "player_id"]].values
+    }
+    shortlist = recommend(engine, rovers.team_id, config, position_group="ST")
+    bo = assess_player(engine, rovers.team_id, ids["Bo Fakeson"], config)
+    own = assess_player(engine, rovers.team_id, ids["Alex Testman"], config)
+    with pytest.raises(NotFoundError):
+        assess_player(engine, rovers.team_id, 999_999, config)
+    engine.dispose()
+    # Same numbers as the shortlist entry, for the player's own position group.
+    assert bo.context.position_group == "ST" and not bo.same_club
+    assert bo.candidate.fit == shortlist.candidates[0].fit
+    assert bo.candidate.team_id == town.team_id
+    # A player at the club itself can still be assessed (the report says so).
+    assert own.same_club and own.context.position_group == "CB"
+    assert own.context.incumbent is not None
+    assert own.context.incumbent.player_name == "Alex Testman"

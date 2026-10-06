@@ -32,6 +32,7 @@ from scout.engines.benchmark import Benchmark
 from scout.engines.diagnosis import (
     DAYS_PER_YEAR,
     Evidence,
+    KpiGap,
     diagnose,
     group_weights,
     season_context,
@@ -48,7 +49,7 @@ from scout.engines.fit import (
     upgrade_gate,
     weighted_percentile,
 )
-from scout.engines.style import team_styles
+from scout.engines.style import TeamStyle, team_styles
 from scout.errors import NotFoundError
 
 HIDDEN_GATES: frozenset[GateResult] = frozenset({"sideways", "insufficient_data"})
@@ -193,24 +194,46 @@ def _filter_reason(
     return None
 
 
-def recommend(
+@dataclass
+class NeedContext:
+    """Everything needed to score candidates for one of a club's needs."""
+
+    team_id: int
+    team_name: str
+    need_id: str
+    position_group: str
+    season_mode: str
+    as_of: date
+    gaps: list[KpiGap]
+    deficits: dict[str, float]
+    weights: dict[str, float]
+    peak_window: tuple[int, int] | None
+    component_weights: dict[str, float]
+    percentiles: dict[int, dict[str, float | None]]
+    effective_minutes: dict[int, float]
+    feature_rows: dict[int, list[dict[Hashable, Any]]]
+    styles: dict[int, TeamStyle]
+    team_names: dict[int, str]
+    incumbent: Incumbent | None
+    values: dict[int, list[dict[Hashable, Any]]]
+    profiles: list[dict[Hashable, Any]]
+
+
+def need_context(
     engine: Engine,
     team_id: int,
     config: AppConfig,
     *,
     position_group: str | None = None,
-    filters: Filters | None = None,
     benchmark: Benchmark | None = None,
     season_mode: str = "blended",
     as_of: date | None = None,
-) -> Shortlist:
-    """Shortlist for one of ``team_id``'s needs (the top-ranked need by default).
+) -> NeedContext:
+    """Diagnose ``team_id`` and gather the inputs for scoring candidates for one need.
 
     Raises:
         NotFoundError: If the club or the requested position group has no need.
     """
-    filters = filters or Filters()
-    rec_cfg = config.settings.recommend
     fit_cfg = config.fit_weights
     today = as_of or date.today()
     diagnosis = diagnose(
@@ -224,8 +247,6 @@ def recommend(
         raise NotFoundError(f"no {group} need for club {team_id}", details={"group": group})
     deficits = deficit_weights({g.kpi: (g.weight, g.gap) for g in need.gaps})
     weights = group_weights(config.kpis, group)
-    window = next((w for g, w in fit_cfg.peak_age.items() if g == group), None)
-    component_weights = {str(name): w for name, w in fit_cfg.components.items()}
 
     features = player_features(engine, season_mode)
     features = features[features["kpi"].isin(list(weights))]
@@ -247,7 +268,6 @@ def recommend(
         current=ctx.current,
         previous=ctx.previous if season_mode == "blended" else None,
     )
-    club_style = styles.get(team_id)
 
     squad = club_players(engine)
     squad = squad[(squad["team_id"] == team_id) & (squad["position_group"] == group)]
@@ -266,6 +286,107 @@ def recommend(
     for r in latest_market_values(engine).to_dict(orient="records"):
         values.setdefault(int(r["player_id"]), []).append(r)
 
+    return NeedContext(
+        team_id=team_id,
+        team_name=diagnosis.team_name,
+        need_id=need.need_id,
+        position_group=group,
+        season_mode=season_mode,
+        as_of=today,
+        gaps=need.gaps,
+        deficits=deficits,
+        weights=weights,
+        peak_window=next((w for g, w in fit_cfg.peak_age.items() if g == group), None),
+        component_weights={str(name): w for name, w in fit_cfg.components.items()},
+        percentiles=pcts,
+        effective_minutes=eff_minutes,
+        feature_rows=rows_by_player,
+        styles=styles,
+        team_names=ctx.team_names,
+        incumbent=incumbent,
+        values=values,
+        profiles=player_profiles(engine).to_dict(orient="records"),
+    )
+
+
+def score_candidate(
+    ctx: NeedContext, profile: Mapping[Hashable, Any], config: AppConfig
+) -> Candidate:
+    """FitScore breakdown, upgrade gate and receipts for one player (no hard filters)."""
+    fit_cfg = config.fit_weights
+    pid, club = int(profile["player_id"]), int(profile["current_team_id"])
+    age = age_on(profile["birth_date"], ctx.as_of)
+    minutes = ctx.effective_minutes.get(pid)
+    player_pcts = ctx.percentiles.get(pid, {})
+    nf = need_fill(player_pcts, ctx.deficits, ctx.weights)
+    club_style = ctx.styles.get(ctx.team_id)
+    components = {
+        "need_fill": nf,
+        "role_quality": weighted_percentile(player_pcts, ctx.weights),
+        "reliability": reliability(
+            minutes,
+            _text(profile["fpl_status"]),
+            _opt(profile["chance_of_playing"]),
+            fit_cfg.reliability,
+        ),
+        "style_fit": style_fit(ctx.styles[club].z, club_style.z)
+        if club in ctx.styles and club_style is not None
+        else None,
+        "age_profile": age_profile(age, ctx.peak_window, fit_cfg.age_profile.penalty_per_year)
+        if ctx.peak_window is not None
+        else None,
+    }
+    incumbent_nf = ctx.incumbent.need_fill if ctx.incumbent else None
+    name = str(profile["canonical_name"])
+    return Candidate(
+        rank=0,
+        player_id=pid,
+        player_name=name,
+        team_id=club,
+        team_name=ctx.team_names.get(club, str(club)),
+        position_group=ctx.position_group,
+        age=age,
+        minutes=float(profile["season_minutes"] or 0.0),
+        effective_minutes=minutes,
+        fpl_status=_text(profile["fpl_status"]),
+        chance_of_playing=_opt(profile["chance_of_playing"]),
+        status_as_of=_text(profile["status_as_of"]),
+        market_value=preferred_market_value(
+            ctx.values.get(pid, []), config.settings.recommend.market_value_precedence
+        ),
+        fit=fit_score(components, ctx.component_weights),
+        gate=upgrade_gate(nf, incumbent_nf, fit_cfg.upgrade_gate_min_delta),
+        evidence=_evidence(ctx.feature_rows.get(pid, []), name, profile),
+    )
+
+
+def recommend(
+    engine: Engine,
+    team_id: int,
+    config: AppConfig,
+    *,
+    position_group: str | None = None,
+    filters: Filters | None = None,
+    benchmark: Benchmark | None = None,
+    season_mode: str = "blended",
+    as_of: date | None = None,
+) -> Shortlist:
+    """Shortlist for one of ``team_id``'s needs (the top-ranked need by default).
+
+    Raises:
+        NotFoundError: If the club or the requested position group has no need.
+    """
+    filters = filters or Filters()
+    rec_cfg = config.settings.recommend
+    ctx = need_context(
+        engine,
+        team_id,
+        config,
+        position_group=position_group,
+        benchmark=benchmark,
+        season_mode=season_mode,
+        as_of=as_of,
+    )
     include_sideways = (
         filters.include_sideways
         if filters.include_sideways is not None
@@ -273,82 +394,96 @@ def recommend(
     )
     excluded: Counter[str] = Counter()
     pool: list[Candidate] = []
-    profiles = player_profiles(engine)
-    for p in profiles.to_dict(orient="records"):
+    for p in ctx.profiles:
         pid, club = int(p["player_id"]), int(p["current_team_id"])
-        if p["position_group"] != group or club == team_id:
+        if p["position_group"] != ctx.position_group or club == team_id:
             continue
-        age = age_on(p["birth_date"], today)
-        minutes = eff_minutes.get(pid)
-        value = preferred_market_value(values.get(pid, []), rec_cfg.market_value_precedence)
         reason = _filter_reason(
             p,
-            age=age,
-            minutes=minutes,
-            value=value,
+            age=age_on(p["birth_date"], ctx.as_of),
+            minutes=ctx.effective_minutes.get(pid),
+            value=preferred_market_value(ctx.values.get(pid, []), rec_cfg.market_value_precedence),
             filters=filters,
             excluded_statuses=rec_cfg.excluded_statuses,
         )
         if reason is not None:
             excluded[reason] += 1
             continue
-        player_pcts = pcts.get(pid, {})
-        nf = need_fill(player_pcts, deficits, weights)
-        components = {
-            "need_fill": nf,
-            "role_quality": weighted_percentile(player_pcts, weights),
-            "reliability": reliability(
-                minutes, _text(p["fpl_status"]), _opt(p["chance_of_playing"]), fit_cfg.reliability
-            ),
-            "style_fit": style_fit(styles[club].z, club_style.z)
-            if club in styles and club_style is not None
-            else None,
-            "age_profile": age_profile(age, window, fit_cfg.age_profile.penalty_per_year)
-            if window is not None
-            else None,
-        }
-        fit = fit_score(components, component_weights)
-        if fit.total is None:
+        candidate = score_candidate(ctx, p, config)
+        if candidate.fit.total is None:
             excluded["no evidence"] += 1
             continue
-        gate = upgrade_gate(nf, incumbent.need_fill if incumbent else None,
-                            fit_cfg.upgrade_gate_min_delta)  # fmt: skip
-        if gate in HIDDEN_GATES and not include_sideways:
+        if candidate.gate in HIDDEN_GATES and not include_sideways:
             excluded["sideways move"] += 1
             continue
-        pool.append(
-            Candidate(
-                rank=0,
-                player_id=pid,
-                player_name=str(p["canonical_name"]),
-                team_id=club,
-                team_name=ctx.team_names.get(club, str(club)),
-                position_group=group,
-                age=age,
-                minutes=float(p["season_minutes"] or 0.0),
-                effective_minutes=minutes,
-                fpl_status=_text(p["fpl_status"]),
-                chance_of_playing=_opt(p["chance_of_playing"]),
-                status_as_of=_text(p["status_as_of"]),
-                market_value=value,
-                fit=fit,
-                gate=gate,
-                evidence=_evidence(rows_by_player.get(pid, []), str(p["canonical_name"]), p),
-            )
-        )
+        pool.append(candidate)
     limit = filters.limit or rec_cfg.default_limit
     best = top_k(pool, limit, key=lambda c: c.fit.total or 0.0)
     ranked = [replace(c, rank=rank) for rank, c in enumerate(best, start=1)]
     return Shortlist(
         team_id=team_id,
-        team_name=diagnosis.team_name,
-        need_id=need.need_id,
-        position_group=group,
+        team_name=ctx.team_name,
+        need_id=ctx.need_id,
+        position_group=ctx.position_group,
         season_mode=season_mode,
-        deficit_weights=deficits,
-        incumbent=incumbent,
+        deficit_weights=ctx.deficits,
+        incumbent=ctx.incumbent,
         candidates=ranked,
         excluded=dict(sorted(excluded.items())),
+    )
+
+
+@dataclass(frozen=True)
+class Assessment:
+    """One player scored against a club's need in the player's own position group."""
+
+    context: NeedContext
+    candidate: Candidate
+    same_club: bool
+
+
+def assess_player(
+    engine: Engine,
+    team_id: int,
+    player_id: int,
+    config: AppConfig,
+    *,
+    benchmark: Benchmark | None = None,
+    season_mode: str = "blended",
+    as_of: date | None = None,
+) -> Assessment:
+    """Score ``player_id`` for ``team_id``'s need in the player's position group.
+
+    Unlike a shortlist, no hard filter applies: a scout asked about this player.
+
+    Raises:
+        NotFoundError: If the player has no current-season profile or position group.
+    """
+    profiles = player_profiles(engine)
+    match = profiles[profiles["player_id"] == player_id]
+    if match.empty:
+        raise NotFoundError(
+            f"player {player_id} has no current-season minutes", details={"player_id": player_id}
+        )
+    profile = match.to_dict(orient="records")[0]
+    group = _text(profile["position_group"])
+    if group is None:
+        raise NotFoundError(
+            f"player {player_id} has no position group", details={"player_id": player_id}
+        )
+    ctx = need_context(
+        engine,
+        team_id,
+        config,
+        position_group=group,
+        benchmark=benchmark,
+        season_mode=season_mode,
+        as_of=as_of,
+    )
+    return Assessment(
+        context=ctx,
+        candidate=score_candidate(ctx, profile, config),
+        same_club=int(profile["current_team_id"]) == team_id,
     )
 
 
