@@ -1,10 +1,10 @@
 # Progress
-Status: IN_PROGRESS            <!-- IN_PROGRESS or COMPLETE -->
-Active session: 20261006T0207Z-4005 started 2026-10-06T02:07:31Z
-Current milestone: Stretch (S3 Postgres next)
+Status: COMPLETE               <!-- IN_PROGRESS or COMPLETE -->
+Active session: none
+Current milestone: none (M0-M9 and stretch S7, S2, S4, S5, S3 done; S1 and S6 need the owner's go-ahead)
 
 ## Plan for this session
-- M0-04 web scaffold (Vite + React + TS strict, ESLint, Prettier, Vitest + RTL, Tailwind), M0-05 (`web/openapi.json` + `npm run gen:api`), M0-06 (`web` and `contract` CI jobs); then M6 reports.
+- (none: the project is complete. Next steps are on the owner's machine: `uv run scout demo` with live data, then the questions below.)
 
 ## Task queue (current milestone)
 - [x] M0-01 Apply ADR-0001 edits to PRD, bump to v1.1 + changelog — PRD diff matches ADR list
@@ -164,6 +164,7 @@ Current milestone: Stretch (S3 Postgres next)
 - 2026-10-03: Commits are authored as Yengnong Xiong (GitHub noreply email) per owner request; Claude stays as Co-Authored-By. Set in CLAUDE.md session protocol step 4.
 
 ## Session log (keep the last 15 entries; summarize older ones in one line)
+- 20261006T0207Z-4005 (02:07-03:58 UTC, chat session): Finished M0-04 to M0-06 (web scaffold, OpenAPI + generated TS client, `web` and `contract` CI jobs, `uv.lock` + `--locked`), M6 (fact sheets, template reports, grounding validator, optional Ollama, `scout report`), M7 (all PRD §12 endpoints, trie search, LRU cache, one error schema), M8 (the five dashboard pages, tested in loading/empty/error/success), M9 (live FPL check, `scout demo`, METHODOLOGY, README, screenshots, fresh-clone check) and every stretch goal in order: S7 backtest, S2 goalkeepers, S4 age curves, S5 PDF/Markdown export, S3 Postgres with a CI parity job (which caught backend-dependent timestamps, now normalised). All checks ran locally (PyPI and npm reachable through the proxy), so Preflight wasn't needed; CI stayed green on main. Set `Status: COMPLETE`. Open for the owner: verify Understat/FotMob live ingest (soccerdata's TLS library download fails in the sandbox) and run `uv run scout demo` on real data.
 - 20261004T0125Z-8108 (01:25-02:10 UTC, chat session): Finished M5-07 (a1 valuation history + season-bound SQL, a2 training frame with end-of-season labels, b HistGradientBoosting value model vs baseline with q10/q90 band, c scoring this season's players with blended features and receipts) and M5-08 (a training + joblib artefacts + metadata JSON, b `scout train` + `docs/EVALUATION.md` renderer). M5 is complete. Every code commit passed Preflight first; one Preflight caught HGB failing on all-missing feature columns (fixed by fitting only columns with two or more known values and recording them). npm and the PyPI index are reachable through the proxy; files.pythonhosted.org is still denied. Next: M0-04 web scaffold, then M0-05/M0-06, then M6.
 - 20261003T2337Z-49bb (23:37-00:30 UTC, first chat session, no routine): Finished M4-05 (team-level needs) and M5-01 to M5-06 (heap top-k, FitScore + upgrade gate, StyleFit team style vectors, player profile/market value SQL, `scout recommend`, `scout similar` with k-d tree + scripts/bench_knn.py, GMM roles). Every code commit passed Preflight first; one Preflight caught a too-strict synthetic test (BIC picked k=3 within range), fixed before pushing. Commits authored as Yengnong Xiong, pushed to main, session branch kept in sync. Next: M5-07a (historical TM valuations + training set; design notes in queue). Blocker unchanged: pypi.org / registry.npmjs.org denied by this environment's network policy (web scaffold waits).
 - 20261003T2032Z-df3b (20:32-21:07 UTC): Finished M3-05 (player_season_features materialised by `scout build`) and M4-01 to M4-04 (benchmark clubs, group scores and gaps, weak links, role scores, risk flags, `scout diagnose` with ranked needs and evidence receipts). Process change after the owner reported CI failure emails: added the always-green `Preflight` workflow (workflow_dispatch + gzip/base64 patch via scripts/preflight_patch.sh); every code push this session passed it first, so main's CI was never red. Next: M4-05 team-level needs. Blocker unchanged: npm/PyPI egress blocked locally (web scaffold waits).
