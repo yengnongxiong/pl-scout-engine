@@ -36,9 +36,46 @@ function isMissing(value: Maybe<number>): value is null | undefined {
   return value === null || value === undefined || Number.isNaN(value);
 }
 
-/** A per-90 rate, one decimal ("2.4"). */
+const twoDecimals = new Intl.NumberFormat("en-GB", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+/**
+ * A per-90 rate: one decimal ("2.4"), two below 1 ("0.52") so xG-type rates stay readable.
+ * Same rule as the scouting reports (docs/PROGRESS.md decisions, 2026-10-06).
+ */
 export function formatPer90(value: Maybe<number>): string {
-  return isMissing(value) ? NOT_AVAILABLE : oneDecimal.format(value);
+  if (isMissing(value)) {
+    return NOT_AVAILABLE;
+  }
+  return Math.abs(value) < 1 ? twoDecimals.format(value) : oneDecimal.format(value);
+}
+
+/** A percentile as an ordinal ("72nd"). */
+export function formatOrdinal(value: Maybe<number>): string {
+  if (isMissing(value)) {
+    return NOT_AVAILABLE;
+  }
+  const n = Math.round(value);
+  const mod100 = n % 100;
+  const suffix =
+    mod100 >= 11 && mod100 <= 13 ? "th" : ({ 1: "st", 2: "nd", 3: "rd" }[n % 10] ?? "th");
+  return `${integer.format(n)}${suffix}`;
+}
+
+/** Peer count with the right noun ("1 peer", "48 peers"). */
+export function formatPeers(value: Maybe<number>): string {
+  if (isMissing(value)) {
+    return NOT_AVAILABLE;
+  }
+  const n = Math.round(value);
+  return `${integer.format(n)} ${n === 1 ? "peer" : "peers"}`;
+}
+
+/** A cosine similarity, two decimals. */
+export function formatSimilarity(value: Maybe<number>): string {
+  return isMissing(value) ? NOT_AVAILABLE : twoDecimals.format(value);
 }
 
 /** A generic number with a fixed number of decimals. */

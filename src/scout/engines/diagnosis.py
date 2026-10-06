@@ -292,6 +292,7 @@ class Evidence:
     player_name: str
     kpi: str
     raw_p90: float | None
+    value: float | None
     percentile: float | None
     n_peers: int
     minutes: float
@@ -450,6 +451,7 @@ def diagnose(
                 player_name=str(names[r["player_id"]]),
                 kpi=str(r["kpi"]),
                 raw_p90=_opt_float(r["raw_p90"]),
+                value=_opt_float(r["value"]),
                 percentile=_opt_float(r["percentile"]),
                 n_peers=int(r["n_peers"]),
                 minutes=float(minutes_here[r["player_id"]]),

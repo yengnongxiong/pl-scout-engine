@@ -44,3 +44,22 @@ export function EmptyState({ title, children }: { title: string; children?: Reac
     </div>
   );
 }
+
+/** Error panel, or the "no data yet" empty state when the warehouse has not been built. */
+export function QueryError({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
+  if (error instanceof ApiError && error.code === "warehouse_not_ready") {
+    return (
+      <EmptyState title="No data yet">
+        <p>
+          The warehouse has not been built. Run <code>uv run scout demo</code> (or{" "}
+          <code>scout ingest</code>, <code>scout build</code> and <code>scout train</code>) and
+          reload.
+        </p>
+      </EmptyState>
+    );
+  }
+  if (error instanceof ApiError && error.status === 404) {
+    return <EmptyState title="Not available">{error.message}</EmptyState>;
+  }
+  return <ErrorState error={error} onRetry={onRetry} />;
+}

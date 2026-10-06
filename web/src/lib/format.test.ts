@@ -15,6 +15,9 @@ import {
   formatScore,
   formatShare,
   formatDateTime,
+  formatOrdinal,
+  formatPeers,
+  formatSimilarity,
 } from "./format";
 
 describe("format", () => {
@@ -42,10 +45,33 @@ describe("format", () => {
 
   it("rounds per PRD §13", () => {
     expect(formatPer90(2.449)).toBe("2.4");
-    expect(formatPer90(0)).toBe("0.0");
+    expect(formatPer90(0.523)).toBe("0.52");
+    expect(formatPer90(0)).toBe("0.00");
     expect(formatEurMillions(45_000_000)).toBe("€45.0m");
     expect(formatEurMillions(2_550_000)).toBe("€2.6m");
     expect(formatNumber(1.23456, 2)).toBe("1.23");
+  });
+
+  it("formats ordinals and similarities", () => {
+    expect([1, 2, 3, 4, 11, 12, 13, 21, 22, 93, 100].map(formatOrdinal)).toEqual([
+      "1st",
+      "2nd",
+      "3rd",
+      "4th",
+      "11th",
+      "12th",
+      "13th",
+      "21st",
+      "22nd",
+      "93rd",
+      "100th",
+    ]);
+    expect(formatOrdinal(null)).toBe(NOT_AVAILABLE);
+    expect(formatSimilarity(0.914)).toBe("0.91");
+    expect(formatPeers(1)).toBe("1 peer");
+    expect(formatPeers(48)).toBe("48 peers");
+    expect(formatPeers(null)).toBe(NOT_AVAILABLE);
+    expect(formatSimilarity(undefined)).toBe(NOT_AVAILABLE);
   });
 
   it("formats counts, percentiles, gaps and shares", () => {

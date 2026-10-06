@@ -48,6 +48,11 @@ def whole(value: float | None) -> str:
     return NOT_AVAILABLE if value is None or math.isnan(value) else f"{round(value):,}"
 
 
+def peer_noun(value: float | None) -> str:
+    """The noun for a peer count, so a report never reads "1 peers"."""
+    return "peer" if value is not None and round(value) == 1 else "peers"
+
+
 def minutes(value: float | None) -> str:
     """Minutes ("1,234 minutes")."""
     return NOT_AVAILABLE if value is None or math.isnan(value) else f"{round(value):,} minutes"

@@ -29,7 +29,7 @@ STRENGTHS
 {% if strengths %}
 {{ strengths_intro }}
 {% for k in strengths %}
-- {{ k.label }}{{ " [proxy]" if k.is_proxy }}: {{ k.value | per90 }}, {{ k.percentile | ordinal }} percentile among {{ k.n_peers | whole }} {{ s.position_group }} peers ({{ band_phrase[k.kpi] }}).
+- {{ k.label }}{{ " [proxy]" if k.is_proxy }}: {{ k.value | per90 }}, {{ k.percentile | ordinal }} percentile among {{ k.n_peers | whole }} {{ s.position_group }} {{ k.n_peers | peer_noun }} ({{ band_phrase[k.kpi] }}).
 {% endfor %}
 {% else %}
 No weighted KPI rates strong or elite yet.
@@ -39,7 +39,7 @@ CONCERNS
 {% if concerns %}
 {{ concerns_intro }}
 {% for k in concerns %}
-- {{ k.label }}{{ " [proxy]" if k.is_proxy }}: {{ k.value | per90 }}, {{ k.percentile | ordinal }} percentile among {{ k.n_peers | whole }} {{ s.position_group }} peers ({{ band_phrase[k.kpi] }}).
+- {{ k.label }}{{ " [proxy]" if k.is_proxy }}: {{ k.value | per90 }}, {{ k.percentile | ordinal }} percentile among {{ k.n_peers | whole }} {{ s.position_group }} {{ k.n_peers | peer_noun }} ({{ band_phrase[k.kpi] }}).
 {% endfor %}
 {% else %}
 No weighted KPI rates weak.

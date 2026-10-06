@@ -611,6 +611,18 @@
           "source": {
             "title": "Source",
             "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Per-90 value in the requested season mode (what the percentile ranks).",
+            "title": "Value"
           }
         },
         "required": [
@@ -619,6 +631,7 @@
           "kpi",
           "label",
           "raw_p90",
+          "value",
           "percentile",
           "n_peers",
           "minutes",

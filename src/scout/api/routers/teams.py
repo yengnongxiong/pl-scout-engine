@@ -122,6 +122,7 @@ def evidence_out(e: Evidence, state: ApiState) -> EvidenceOut:
         kpi=e.kpi,
         label=kpi_label(state.config, e.kpi),
         raw_p90=e.raw_p90,
+        value=e.value,
         percentile=e.percentile,
         n_peers=e.n_peers,
         minutes=e.minutes,

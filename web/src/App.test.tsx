@@ -21,8 +21,13 @@ describe("App shell", () => {
     expect(await screen.findByText("API: unreachable")).toBeInTheDocument();
   });
 
-  it("routes to the methodology page", () => {
+  it("routes to the methodology page", async () => {
     renderWithProviders(<App />, { route: "/methodology" });
-    expect(screen.getByRole("heading", { name: "Methodology & data" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Methodology & data" })).toBeInTheDocument();
+  });
+
+  it("shows a not-found page for unknown addresses", () => {
+    renderWithProviders(<App />, { route: "/nowhere" });
+    expect(screen.getByRole("heading", { name: "Page not found" })).toBeInTheDocument();
   });
 });

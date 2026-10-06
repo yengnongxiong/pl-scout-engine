@@ -490,6 +490,11 @@ export interface components {
       raw_p90: number | null;
       /** Source */
       source: string;
+      /**
+       * Value
+       * @description Per-90 value in the requested season mode (what the percentile ranks).
+       */
+      value: number | null;
     };
     /**
      * FactSheet

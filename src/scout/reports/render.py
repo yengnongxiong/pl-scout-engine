@@ -47,6 +47,7 @@ def _environment() -> Environment:
         score=fmt.score,
         points=fmt.points,
         whole=fmt.whole,
+        peer_noun=fmt.peer_noun,
         minutes=fmt.minutes,
         age=fmt.age,
         eur_m=fmt.eur_m,

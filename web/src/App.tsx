@@ -1,13 +1,31 @@
+import { lazy, Suspense } from "react";
 import { Route, Routes } from "react-router";
 
 import { Layout } from "./components/Layout";
-import { EmptyState } from "./components/states";
+import { EmptyState, LoadingState } from "./components/states";
 
-function Placeholder({ title }: { title: string }) {
+// Route-level code splitting keeps the first load small (PRD §14: < 2 s locally).
+const DiagnosisPage = lazy(() =>
+  import("./pages/DiagnosisPage").then((m) => ({ default: m.DiagnosisPage })),
+);
+const ShortlistPage = lazy(() =>
+  import("./pages/ShortlistPage").then((m) => ({ default: m.ShortlistPage })),
+);
+const PlayerPage = lazy(() =>
+  import("./pages/PlayerPage").then((m) => ({ default: m.PlayerPage })),
+);
+const ComparePage = lazy(() =>
+  import("./pages/ComparePage").then((m) => ({ default: m.ComparePage })),
+);
+const MethodologyPage = lazy(() =>
+  import("./pages/MethodologyPage").then((m) => ({ default: m.MethodologyPage })),
+);
+
+function NotFound() {
   return (
     <section>
-      <h1 className="text-2xl font-semibold">{title}</h1>
-      <EmptyState title="Coming in M8">This page is built in milestone M8 (PRD §16).</EmptyState>
+      <h1 className="text-2xl font-semibold">Page not found</h1>
+      <EmptyState title="Not available">There is no page at this address.</EmptyState>
     </section>
   );
 }
@@ -15,11 +33,16 @@ function Placeholder({ title }: { title: string }) {
 export function App() {
   return (
     <Layout>
-      <Routes>
-        <Route path="/" element={<Placeholder title="Club diagnosis" />} />
-        <Route path="/methodology" element={<Placeholder title="Methodology & data" />} />
-        <Route path="*" element={<Placeholder title="Page not found" />} />
-      </Routes>
+      <Suspense fallback={<LoadingState label="Loading page…" />}>
+        <Routes>
+          <Route path="/" element={<DiagnosisPage />} />
+          <Route path="/clubs/:teamId/needs/:needId" element={<ShortlistPage />} />
+          <Route path="/players/:playerId" element={<PlayerPage />} />
+          <Route path="/compare" element={<ComparePage />} />
+          <Route path="/methodology" element={<MethodologyPage />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Suspense>
     </Layout>
   );
 }

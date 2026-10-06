@@ -510,6 +510,7 @@ def _evidence(
             player_name=name,
             kpi=str(r["kpi"]),
             raw_p90=_opt(r["raw_p90"]),
+            value=_opt(r["value"]),
             percentile=_opt(r["percentile"]),
             n_peers=int(r["n_peers"]),
             minutes=float(profile["season_minutes"] or 0.0),

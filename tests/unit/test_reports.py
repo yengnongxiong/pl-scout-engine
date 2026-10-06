@@ -249,6 +249,7 @@ def test_report_formats() -> None:
         "43%",
         "78.4",
     )
+    assert (fmt.peer_noun(1), fmt.peer_noun(48), fmt.peer_noun(None)) == ("peer", "peers", "peers")
     assert fmt.iso_date("2026-09-28 10:00:00") == "2026-09-28"
     assert fmt.iso_date(date(2026, 9, 1)) == "2026-09-01"
     for f in (fmt.ordinal, fmt.score, fmt.points, fmt.whole, fmt.minutes, fmt.age, fmt.eur_m,

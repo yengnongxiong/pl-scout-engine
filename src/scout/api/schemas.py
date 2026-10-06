@@ -168,6 +168,9 @@ class EvidenceOut(_Out):
     kpi: str
     label: str
     raw_p90: float | None = Field(description="This season's per-90 value.")
+    value: float | None = Field(
+        description="Per-90 value in the requested season mode (what the percentile ranks)."
+    )
     percentile: float | None
     n_peers: int
     minutes: float
