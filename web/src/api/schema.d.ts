@@ -207,6 +207,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/players/{player_id}/report/export": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Export Report
+     * @description Download the grounded report as PDF or Markdown, with its receipts.
+     */
+    get: operations["export_report_players__player_id__report_export_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/players/{player_id}/similar": {
     parameters: {
       query?: never;
@@ -2046,6 +2066,71 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["ReportResponse"];
+        };
+      };
+      /** @description Unknown club, player or need. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Invalid request parameters. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description The warehouse has not been built yet. */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  export_report_players__player_id__report_export_get: {
+    parameters: {
+      query?: {
+        format?: "pdf" | "markdown";
+        /** @description Club whose need the report addresses. */
+        team_id?: number | null;
+        season_mode?: "blended" | "current";
+        benchmark?: ("top6" | "top4" | "league" | "custom") | null;
+      };
+      header?: never;
+      path: {
+        player_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The report as a file, with its sources (US-17). */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/pdf": string;
+          "text/markdown": string;
         };
       };
       /** @description Unknown club, player or need. */

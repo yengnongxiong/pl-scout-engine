@@ -7,6 +7,7 @@ import { Badge, StaleBadge, ValueLabelBadge } from "../components/Badges";
 import { Card } from "../components/Card";
 import { ClubPicker } from "../components/ClubPicker";
 import { CopyButton } from "../components/CopyButton";
+import { ExportButtons } from "../components/ExportButtons";
 import { PercentileBar } from "../components/PercentileBar";
 import { PlayerPicker } from "../components/PlayerPicker";
 import { Receipt } from "../components/Receipt";
@@ -310,6 +311,9 @@ function ReportCard({ playerId, teamId }: { playerId: number; teamId: number | u
           <pre className="max-h-[36rem] overflow-auto rounded bg-slate-50 p-3 font-mono text-xs whitespace-pre-wrap text-slate-900">
             {report.data.report.text}
           </pre>
+          <div className="mt-2">
+            <ExportButtons playerId={playerId} teamId={teamId} seasonMode={seasonMode} />
+          </div>
           <p className="mt-2 text-xs text-slate-600">
             {report.data.report.engine === "ollama"
               ? "Rewritten by a local model and checked number by number against the fact sheet."

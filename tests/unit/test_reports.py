@@ -331,3 +331,32 @@ def test_goalkeeper_reports_lead_with_the_limited_metrics_caveat() -> None:
     assert out[0].kind == "limited_group" and "Goalkeeper ratings are limited" in out[0].text
     sheet["position_group"] = "ST"
     assert all(c.kind != "limited_group" for c in caveats(sheet, [], CONFIG))
+
+
+def test_markdown_export_keeps_the_text_and_adds_receipts() -> None:
+    from scout.reports.export import filename, footer_line, is_heading, to_markdown
+
+    sheet = synthetic_sheet()
+    text = render_template_report(sheet, CONFIG)
+    md = to_markdown(sheet, text)
+    assert md.startswith("# Scouting report: Sam Synthetic\n")
+    assert "## VERDICT" in md and "## WHY SAM SYNTHETIC FITS SYNTHETIC ROVERS" in md
+    assert "Fixture Town · ST · age 27.5 · 540 minutes this season  \n" in md
+    assert "- Non-penalty xG (per 90): 0.52, 93rd percentile among 48 ST peers" in md
+    assert "Sources: fpl (as of 2026-09-28); transfermarkt (as of 2026-09-15)" in md
+    assert "fact sheet as of 2026-10-01" in md
+    # The export adds receipts and its fixed footer wording, never a number of its own.
+    reference = template_vocabulary() + "\n" + footer_line(sheet, "template")
+    assert validate(md, sheet, reference=reference).ok
+    assert filename(sheet, "md") == "scouting-report-sam-synthetic.md"
+    assert is_heading("STRENGTHS") and not is_heading("Strengths:") and not is_heading("123")
+
+
+def test_pdf_export() -> None:
+    from scout.reports.export import latin1, to_pdf
+
+    sheet = synthetic_sheet()
+    pdf = to_pdf(sheet, render_template_report(sheet, CONFIG), engine="template")
+    assert pdf.startswith(b"%PDF-") and len(pdf) > 1000
+    assert latin1("€38.0m \u2013 \u201cok\u201d \u22121") == 'EUR 38.0m - "ok" -1'
+    assert latin1("Ødegaard · 5") == "Ødegaard · 5"  # Latin-1 stays as it is

@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Query
+from fastapi.responses import Response
 
 from scout.api.deps import ApiState, State
 from scout.api.errors import ERROR_RESPONSES
@@ -25,8 +26,9 @@ from scout.engines.search import SearchIndex
 from scout.errors import ConfigError, InvalidRequestError, NotFoundError
 from scout.ml.age_curves import project_player
 from scout.ml.similarity import find_similar
+from scout.reports.export import filename, to_markdown, to_pdf
 from scout.reports.facts import FactSheet, build_fact_sheet
-from scout.reports.generate import generate_report
+from scout.reports.generate import Report, generate_report
 
 router = APIRouter(prefix="/players", tags=["players"], responses=ERROR_RESPONSES)
 
@@ -166,6 +168,26 @@ def similar_players(
     )
 
 
+def _report(
+    state: ApiState,
+    player_id: int,
+    team_id: int | None,
+    season_mode: str,
+    benchmark: str | None,
+) -> tuple[FactSheet, Report]:
+    """The fact sheet and the grounded report for one player (cached)."""
+    if benchmark == "custom":
+        raise InvalidRequestError("reports support the top6, top4 and league benchmarks")
+    sheet = fact_sheet(
+        state, player_id, team_id=team_id, season_mode=season_mode, benchmark=benchmark
+    )
+    report = state.cached(
+        ("report", player_id, team_id, season_mode, benchmark, state.settings.report_engine),
+        lambda: generate_report(sheet, state.settings, state.config),
+    )
+    return sheet, report
+
+
 @router.get("/{player_id}/report", response_model=ReportResponse)
 def player_report(
     state: State,
@@ -177,15 +199,7 @@ def player_report(
     benchmark: BenchmarkName | None = None,
 ) -> ReportResponse:
     """Grounded scouting report (template, or a validated local-LLM rewrite) and its facts."""
-    if benchmark == "custom":
-        raise InvalidRequestError("reports support the top6, top4 and league benchmarks")
-    sheet = fact_sheet(
-        state, player_id, team_id=team_id, season_mode=season_mode, benchmark=benchmark
-    )
-    report = state.cached(
-        ("report", player_id, team_id, season_mode, benchmark, state.settings.report_engine),
-        lambda: generate_report(sheet, state.settings, state.config),
-    )
+    sheet, report = _report(state, player_id, team_id, season_mode, benchmark)
     return ReportResponse(
         report=ReportOut(
             text=report.text,
@@ -223,4 +237,45 @@ def player_age_curve(player_id: int, state: State) -> PlayerAgeCurveResponse:
             )
             for p in result.projections
         ],
+    )
+
+
+EXPORT_TYPES = {"pdf": "application/pdf", "markdown": "text/markdown; charset=utf-8"}
+
+
+@router.get(
+    "/{player_id}/report/export",
+    response_class=Response,
+    responses={
+        200: {
+            "description": "The report as a file, with its sources (US-17).",
+            "content": {
+                "application/pdf": {"schema": {"type": "string", "format": "binary"}},
+                "text/markdown": {"schema": {"type": "string"}},
+            },
+        }
+    },
+)
+def export_report(
+    player_id: int,
+    state: State,
+    fmt: Annotated[Literal["pdf", "markdown"], Query(alias="format")] = "pdf",
+    team_id: Annotated[
+        int | None, Query(description="Club whose need the report addresses.")
+    ] = None,
+    season_mode: SeasonMode = "blended",
+    benchmark: BenchmarkName | None = None,
+) -> Response:
+    """Download the grounded report as PDF or Markdown, with its receipts."""
+    sheet, report = _report(state, player_id, team_id, season_mode, benchmark)
+    if fmt == "pdf":
+        body: bytes = to_pdf(sheet, report.text, engine=report.engine)
+        name = filename(sheet, "pdf")
+    else:
+        body = to_markdown(sheet, report.text, engine=report.engine).encode("utf-8")
+        name = filename(sheet, "md")
+    return Response(
+        content=body,
+        media_type=EXPORT_TYPES[fmt],
+        headers={"Content-Disposition": f'attachment; filename="{name}"'},
     )

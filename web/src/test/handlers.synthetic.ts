@@ -33,6 +33,16 @@ export const handlers = [
   http.get(apiPath("/players/search"), () => HttpResponse.json(data.playerSearch)),
   http.get(apiPath("/players/:playerId/similar"), () => HttpResponse.json(data.similar)),
   http.get(apiPath("/players/:playerId/report"), () => HttpResponse.json(data.report)),
+  http.get(apiPath("/players/:playerId/report/export"), ({ request }) => {
+    const format = new URL(request.url).searchParams.get("format");
+    const md = format === "markdown";
+    return new HttpResponse(md ? "# Scouting report: Sam Synthetic\n" : "%PDF-1.7 synthetic", {
+      headers: {
+        "content-type": md ? "text/markdown" : "application/pdf",
+        "content-disposition": `attachment; filename="scouting-report-sam-synthetic.${md ? "md" : "pdf"}"`,
+      },
+    });
+  }),
   http.get(apiPath("/players/:playerId/age-curve"), () => HttpResponse.json(data.playerAgeCurve)),
   http.get(apiPath("/players/:playerId"), ({ params }) =>
     HttpResponse.json(params.playerId === "7" ? data.incumbentSheet : data.factSheet),

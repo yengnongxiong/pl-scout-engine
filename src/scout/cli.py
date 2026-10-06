@@ -329,6 +329,8 @@ def report(
     benchmark: Annotated[str | None, typer.Option(help="top6 (default), top4 or league.")] = None,
     mode: Annotated[str, typer.Option(help="Season mode: blended or current.")] = "blended",
     facts: Annotated[bool, typer.Option("--facts", help="Print the fact sheet as JSON.")] = False,
+    pdf: Annotated[Path | None, typer.Option(help="Also save the report as a PDF.")] = None,
+    markdown: Annotated[Path | None, typer.Option(help="Also save the report as Markdown.")] = None,
 ) -> None:
     """Scouting report for one player, grounded in its fact sheet (PRD §9)."""
     from scout.db.queries import player_profiles
@@ -379,6 +381,17 @@ def report(
     typer.echo(result.text, nl=False)
     if result.fallback_reason:
         typer.echo(f"(template report shown: {result.fallback_reason})", err=True)
+    if pdf is not None or markdown is not None:
+        from scout.reports.export import to_markdown, to_pdf
+
+        if pdf is not None:
+            pdf.write_bytes(to_pdf(sheet, result.text, engine=result.engine))
+            typer.echo(f"Wrote {pdf}", err=True)
+        if markdown is not None:
+            markdown.write_text(
+                to_markdown(sheet, result.text, engine=result.engine), encoding="utf-8"
+            )
+            typer.echo(f"Wrote {markdown}", err=True)
 
 
 def _git_sha() -> str:

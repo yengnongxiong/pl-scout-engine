@@ -278,3 +278,19 @@ def test_age_curve_endpoints(client: TestClient, monkeypatch: pytest.MonkeyPatch
     ids = _ids(client)
     mine = client.get(f"/players/{ids['Bo Fakeson']}/age-curve").json()
     assert mine["age"] == 28 and mine["projections"][0]["projected"] == 0.25
+
+
+def test_report_export(client: TestClient) -> None:
+    bo = _ids(client)["Bo Fakeson"]
+    pdf = client.get(
+        f"/players/{bo}/report/export", params={"team_id": _ids(client)["Synthetic Rovers"]}
+    )
+    assert pdf.status_code == 200 and pdf.headers["content-type"] == "application/pdf"
+    assert pdf.content.startswith(b"%PDF-")
+    assert 'filename="scouting-report-bo-fakeson.pdf"' in pdf.headers["content-disposition"]
+    md = client.get(f"/players/{bo}/report/export", params={"format": "markdown"})
+    assert md.headers["content-type"].startswith("text/markdown")
+    assert md.text.startswith("# Scouting report: Bo Fakeson") and "Sources: " in md.text
+    _error(client.get(f"/players/{bo}/report/export", params={"format": "docx"}), 422,
+           "invalid_request")  # fmt: skip
+    _error(client.get("/players/999999/report/export"), 404, "not_found")

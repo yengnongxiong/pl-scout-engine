@@ -415,3 +415,17 @@ def test_age_curves_and_projection_from_the_warehouse(built: Settings) -> None:
     assert alex.effective_minutes is not None and alex.effective_minutes > 180
     # At 29 the curve has no point: the projection is Not available, not the current rate.
     assert later.projections[0].delta is None and later.projections[0].projected is None
+
+
+def test_cli_report_exports(
+    built: Settings, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr(cli, "get_settings", lambda: built)
+    monkeypatch.setattr(cli, "get_config", _config)
+    pdf, md = tmp_path / "r.pdf", tmp_path / "r.md"
+    ok = CliRunner().invoke(
+        cli.app, ["report", "Bo Fakeson", "--pdf", str(pdf), "--markdown", str(md)]
+    )
+    assert ok.exit_code == 0, ok.output
+    assert pdf.read_bytes().startswith(b"%PDF-")
+    assert md.read_text().startswith("# Scouting report: Bo Fakeson")

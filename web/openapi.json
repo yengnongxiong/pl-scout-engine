@@ -3925,6 +3925,153 @@
         ]
       }
     },
+    "/players/{player_id}/report/export": {
+      "get": {
+        "description": "Download the grounded report as PDF or Markdown, with its receipts.",
+        "operationId": "export_report_players__player_id__report_export_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "player_id",
+            "required": true,
+            "schema": {
+              "title": "Player Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "format",
+            "required": false,
+            "schema": {
+              "default": "pdf",
+              "enum": [
+                "pdf",
+                "markdown"
+              ],
+              "title": "Format",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Club whose need the report addresses.",
+            "in": "query",
+            "name": "team_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Club whose need the report addresses.",
+              "title": "Team Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "season_mode",
+            "required": false,
+            "schema": {
+              "default": "blended",
+              "enum": [
+                "blended",
+                "current"
+              ],
+              "title": "Season Mode",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "benchmark",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "top6",
+                    "top4",
+                    "league",
+                    "custom"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Benchmark"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              },
+              "text/markdown": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "The report as a file, with its sources (US-17)."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unknown club, player or need."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Invalid request parameters."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The warehouse has not been built yet."
+          }
+        },
+        "summary": "Export Report",
+        "tags": [
+          "players"
+        ]
+      }
+    },
     "/players/{player_id}/similar": {
       "get": {
         "description": "Top-k most similar players in the same position group (cosine, US-09).",

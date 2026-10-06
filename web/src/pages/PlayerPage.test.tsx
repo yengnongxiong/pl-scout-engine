@@ -1,7 +1,7 @@
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { delay, http, HttpResponse } from "msw";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { report } from "../test/data.synthetic";
 import { apiPath, errorBody } from "../test/handlers.synthetic";
@@ -161,5 +161,50 @@ describe("PlayerPage age curve", () => {
     );
     renderWithProviders(<PlayerPage />, { route: "/players/11", path: "/players/:playerId" });
     expect(await screen.findByText(/age curves need two past seasons/)).toBeInTheDocument();
+  });
+});
+
+describe("PlayerPage exports", () => {
+  it("downloads the report as PDF and Markdown through the API", async () => {
+    const seen: (string | null)[] = [];
+    server.events.on("request:start", ({ request }) => {
+      const url = new URL(request.url);
+      if (url.pathname.endsWith("/report/export")) {
+        seen.push(
+          `${url.searchParams.get("format") ?? ""}:${url.searchParams.get("team_id") ?? ""}`,
+        );
+      }
+    });
+    const created = vi.fn(() => "blob:synthetic");
+    const revoked = vi.fn();
+    const click = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(() => undefined);
+    Object.assign(URL, { createObjectURL: created, revokeObjectURL: revoked });
+    const user = userEvent.setup();
+    renderWithProviders(<PlayerPage />, {
+      route: "/players/11?team=1",
+      path: "/players/:playerId",
+    });
+    await user.click(await screen.findByRole("button", { name: "Download PDF" }));
+    expect(await screen.findByText("Saved scouting-report-sam-synthetic.pdf.")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Download Markdown" }));
+    expect(await screen.findByText("Saved scouting-report-sam-synthetic.md.")).toBeInTheDocument();
+    expect(seen).toEqual(["pdf:1", "markdown:1"]);
+    expect(created).toHaveBeenCalledTimes(2);
+    expect(click).toHaveBeenCalledTimes(2);
+    server.events.removeAllListeners();
+  });
+
+  it("reports a failed export", async () => {
+    server.use(
+      http.get(apiPath("/players/:id/report/export"), () =>
+        HttpResponse.json(errorBody("x", "boom"), { status: 500 }),
+      ),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<PlayerPage />, { route: "/players/11", path: "/players/:playerId" });
+    await user.click(await screen.findByRole("button", { name: "Download PDF" }));
+    expect(await screen.findByText("Export failed; try again.")).toBeInTheDocument();
   });
 });
