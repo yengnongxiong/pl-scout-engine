@@ -30,7 +30,7 @@ from scout.api.schemas import (
     TeamSearchHit,
     WeakLinkOut,
 )
-from scout.api.shared import implied_values, kpi_label, player_names
+from scout.api.shared import group_caveat, implied_values, kpi_label, player_names
 from scout.db.models import DimTeam
 from scout.db.session import make_session_factory
 from scout.engines.diagnosis import Diagnosis, Evidence, diagnose
@@ -177,6 +177,7 @@ def _diagnosis_out(result: Diagnosis, state: ApiState) -> DiagnosisResponse:
                 for r in n.risks
             ],
             team_needs=[t.kpi for t in n.team_needs],
+            caveat=group_caveat(state.config, n.position_group),
         )
         for n in result.needs
     ]
@@ -291,6 +292,7 @@ def _shortlist_out(s: Shortlist, state: ApiState) -> ShortlistResponse:
         else None,
         candidates=[candidate_out(c, state) for c in s.candidates],
         excluded=s.excluded,
+        caveat=group_caveat(state.config, s.position_group),
     )
 
 

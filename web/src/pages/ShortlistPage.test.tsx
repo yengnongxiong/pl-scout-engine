@@ -128,11 +128,11 @@ describe("ShortlistPage", () => {
   it("shows unknown needs as not available", async () => {
     server.use(
       http.get(apiPath("/teams/:id/recommendations"), () =>
-        HttpResponse.json(errorBody("not_found", "no GK need for club 1"), { status: 404 }),
+        HttpResponse.json(errorBody("not_found", "no XX need for club 1"), { status: 404 }),
       ),
     );
-    renderWithProviders(<ShortlistPage />, { route: "/clubs/1/needs/1-GK", path: PATH });
-    expect(await screen.findByText("no GK need for club 1")).toBeInTheDocument();
+    renderWithProviders(<ShortlistPage />, { route: "/clubs/1/needs/1-XX", path: PATH });
+    expect(await screen.findByText("no XX need for club 1")).toBeInTheDocument();
   });
 
   it("shows server errors", async () => {

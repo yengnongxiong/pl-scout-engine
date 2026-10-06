@@ -57,11 +57,13 @@ describe("DiagnosisPage", () => {
       screen.getByText(/compared with Top 6 of last season \(Fixture Town, Mock City\)/),
     ).toBeInTheDocument();
     const strip = screen.getByRole("list", { name: "Need severity by position group" });
-    expect(within(strip).getAllByRole("link")).toHaveLength(3);
+    expect(within(strip).getAllByRole("link")).toHaveLength(4);
     expect(within(strip).getAllByRole("link")[0]).toHaveAttribute("href", "/clubs/1/needs/1-ST");
     expect(screen.getAllByText(/Ivo Placeholder/).length).toBeGreaterThan(0);
     expect(screen.getByText("Depth")).toBeInTheDocument();
     expect(screen.getByRole("cell", { name: "xG for (per 90)" })).toBeInTheDocument();
+    // Goalkeeper ratings always carry their limited-metrics caveat.
+    expect(screen.getByText(/Goalkeeper ratings are limited/)).toBeInTheDocument();
     // Only groups with a shortfall become top needs (the W group has severity 0).
     expect(screen.queryByRole("heading", { name: /Winger \(W\)/ })).not.toBeInTheDocument();
   });

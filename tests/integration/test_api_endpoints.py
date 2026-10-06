@@ -116,7 +116,7 @@ def test_recommendations(client: TestClient) -> None:
                    {"min_age": 30, "max_age": 20}, {"limit": 0}):  # fmt: skip
         _error(client.get(f"/teams/{rovers}/recommendations", params=params), 422,
                "invalid_request")  # fmt: skip
-    _error(client.get(f"/teams/{rovers}/recommendations", params={"position_group": "GK"}),
+    _error(client.get(f"/teams/{rovers}/recommendations", params={"position_group": "XX"}),
            404, "not_found")  # fmt: skip
 
 

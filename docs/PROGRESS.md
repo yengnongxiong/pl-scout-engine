@@ -1,7 +1,7 @@
 # Progress
 Status: IN_PROGRESS            <!-- IN_PROGRESS or COMPLETE -->
 Active session: 20261006T0207Z-4005 started 2026-10-06T02:07:31Z
-Current milestone: Stretch (S2 GK module next)
+Current milestone: Stretch (S4 age curves next)
 
 ## Plan for this session
 - M0-04 web scaffold (Vite + React + TS strict, ESLint, Prettier, Vitest + RTL, Tailwind), M0-05 (`web/openapi.json` + `npm run gen:api`), M0-06 (`web` and `contract` CI jobs); then M6 reports.
@@ -97,12 +97,13 @@ Current milestone: Stretch (S2 GK module next)
 
 ### Stretch
 - [x] S7 Backtest (US-16, PRD §8.11): `engines/backtest.py` re-runs the diagnosis as of the end of last season (same feature pipeline with last season as "current"), compares each club's top-n needs with the position groups of this season's arrivals (players with minutes at a club they had no FPL record with last season), precision@n vs a leave-one-club-out most-signed baseline and random expectation; `scout backtest`, `GET /meta/backtest`, `/backtest` page — unit + integration + page tests
-- [ ] S2 GK module (US-14)
+- [x] S2 GK module (US-14): FPL saves/goals conceded/penalties saved stored (migration 0004, adapter fields verified against the live 2026-27 payload, vaastav optional columns); GK position group (TM Goalkeeper, FPL GKP fallback) with goals prevented vs xG conceded (proxy), save %, saves p90 and xGC on pitch; group-level caveat shown in diagnosis, shortlist, reports and methodology; goalkeepers excluded from outfield role archetypes (`ml.role_groups`); peak age 27-33
 - [ ] S4 Age curves (US-18)
 - [ ] S5 PDF export (US-17)
 - [ ] S3 Postgres via docker-compose
 
 ## Done
+- S2 (2026-10-06): goalkeeper module with limited, caveated metrics.
 - S7 (2026-10-06): backtest engine, CLI, API and page.
 - M9-01 to M9-04 (2026-10-06): live FPL adapter check, club aliases for promoted clubs, `scout demo`, METHODOLOGY + README + screenshots, fresh-clone check. M9 complete; next: stretch goals in the order S7, S2, S4, S5, S3.
 - M8-01 to M8-03 (2026-10-06): the five PRD §13 pages, typed against the generated client, every page tested in loading/empty/error/success states, lazy-loaded routes and chart. M8 complete (real-data demo happens on the owner's machine with `scout demo`).

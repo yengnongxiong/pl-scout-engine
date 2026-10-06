@@ -154,6 +154,14 @@ function MethodologySection() {
             </tbody>
           </table>
         </div>
+        {Object.entries(m.group_caveats).map(([group, caveat]) => (
+          <p
+            key={group}
+            className="mt-2 rounded border border-amber-200 bg-amber-50 p-2 text-sm text-amber-900"
+          >
+            {positionLabel(group)}: {caveat}
+          </p>
+        ))}
         <p className="mt-2 text-xs text-slate-600">
           Weights per position group sum to 100%. Percentiles rank shrunk per-90 rates among players
           with at least {formatInteger(Number(m.parameters.percentile_min_minutes))} blended

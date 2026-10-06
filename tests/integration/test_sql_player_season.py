@@ -17,8 +17,8 @@ from tests.integration.test_build import _seed
 CONFIG = load_config(PROJECT_ROOT / "config")
 STATS = [
     "goals", "assists", "xg", "npxg", "xa", "shots", "key_passes", "xg_chain", "xg_buildup",
-    "tackles", "recoveries", "cbi", "def_contribution", "xgc_on_pitch", "yellow_cards",
-    "red_cards",
+    "tackles", "recoveries", "cbi", "def_contribution", "xgc_on_pitch", "saves",
+    "goals_conceded", "penalties_saved", "yellow_cards", "red_cards",
 ]  # fmt: skip
 KEYS = ["player_id", "season_id", "team_id", "source"]
 

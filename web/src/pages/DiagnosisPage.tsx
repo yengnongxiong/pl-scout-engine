@@ -253,6 +253,11 @@ function NeedCard({
       }
       footer={<Receipt items={need.evidence.map((e) => ({ source: e.source, asOf: e.as_of }))} />}
     >
+      {need.caveat ? (
+        <p className="mb-2 rounded border border-amber-200 bg-amber-50 p-2 text-sm text-amber-900">
+          {need.caveat}
+        </p>
+      ) : null}
       <table className="w-full text-left text-sm">
         <caption className="sr-only">
           Club vs benchmark percentile scores for {need.position_group}

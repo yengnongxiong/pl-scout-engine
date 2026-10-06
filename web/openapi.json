@@ -325,6 +325,7 @@
         "properties": {
           "kind": {
             "enum": [
+              "limited_group",
               "small_sample",
               "proxy_metric",
               "unadjusted_defence",
@@ -1846,6 +1847,14 @@
             "title": "Fit Weights",
             "type": "object"
           },
+          "group_caveats": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Groups whose free metrics are limited.",
+            "title": "Group Caveats",
+            "type": "object"
+          },
           "kpis": {
             "items": {
               "$ref": "#/components/schemas/KpiDefinitionOut"
@@ -1939,6 +1948,7 @@
         "required": [
           "kpis",
           "position_groups",
+          "group_caveats",
           "team_kpis",
           "fit_weights",
           "upgrade_gate_min_delta",
@@ -2066,6 +2076,18 @@
       "NeedOut": {
         "description": "A ranked position-group need (US-02).",
         "properties": {
+          "caveat": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Shown when the group's free metrics are limited.",
+            "title": "Caveat"
+          },
           "evidence": {
             "items": {
               "$ref": "#/components/schemas/EvidenceOut"
@@ -2128,7 +2150,8 @@
           "evidence",
           "weak_links",
           "risks",
-          "team_needs"
+          "team_needs",
+          "caveat"
         ],
         "title": "NeedOut",
         "type": "object"
@@ -2397,6 +2420,18 @@
             "title": "Candidates",
             "type": "array"
           },
+          "caveat": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Shown when the group's free metrics are limited.",
+            "title": "Caveat"
+          },
           "deficits": {
             "items": {
               "$ref": "#/components/schemas/DeficitOut"
@@ -2455,7 +2490,8 @@
           "deficits",
           "incumbent",
           "candidates",
-          "excluded"
+          "excluded",
+          "caveat"
         ],
         "title": "ShortlistResponse",
         "type": "object"

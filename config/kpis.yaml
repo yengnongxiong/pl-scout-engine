@@ -81,6 +81,24 @@ kpis:
     source: understat
     higher_is_better: true
     is_proxy: false
+  gk_goals_prevented_p90:
+    label: "Goals prevented vs xG conceded (per 90)"
+    source: fpl
+    higher_is_better: true
+    is_proxy: true
+    proxy_for: "shot-stopping (post-shot xG is not freely available; pre-shot xG also reflects the finishing faced)"
+    shrinkage_k: 20.0
+  gk_save_pct:
+    label: "Save percentage (saves / (saves + goals conceded))"
+    source: fpl
+    higher_is_better: true
+    is_proxy: false
+    shrinkage_k: 20.0
+  gk_saves_p90:
+    label: "Saves (per 90)"
+    source: fpl
+    higher_is_better: true
+    is_proxy: false
   goals_minus_xg_p90:
     label: "Goals minus xG (per 90; shown, not weighted: finishing is noisy)"
     source: understat
@@ -88,6 +106,15 @@ kpis:
     is_proxy: false
 
 position_groups:
+  # Stretch S2 (US-14). Free data has no post-shot xG, distribution, claiming or sweeping
+  # numbers, so goalkeeper ratings are limited and always carry this caveat.
+  GK:
+    caveat: "Goalkeeper ratings are limited: free data has no post-shot xG, distribution, claiming or sweeping numbers."
+    weights:
+      gk_goals_prevented_p90: 0.40
+      gk_save_pct: 0.30
+      gk_saves_p90: 0.10
+      xgc_on_pitch_p90: 0.20
   CB:
     weights:
       def_activity_padj_p90: 0.30

@@ -140,7 +140,9 @@ Methodology page.
   fallback stopped updating in mid-2026 and is labelled stale.
 - The value model learns the market's biases and only sees past Premier League seasons of
   current players (survivorship bias).
-- Candidates are Premier League players only, and goalkeepers are not rated.
+- Candidates are Premier League players only. Goalkeeper ratings are limited (no post-shot xG,
+  distribution or claiming data is free), use a shot-stopping proxy, and say so wherever they
+  appear.
 - Personal, non-commercial use only. Scraped data is never committed or redistributed, and the
   app is not deployed.
 

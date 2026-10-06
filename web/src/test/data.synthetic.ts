@@ -122,9 +122,32 @@ export const diagnosis: Schemas["DiagnosisResponse"] = {
         },
       ],
       team_needs: ["xg_p90"],
+      caveat: null,
     },
     {
       rank: 2,
+      need_id: "1-GK",
+      position_group: "GK",
+      severity: 7.5,
+      gaps: [
+        {
+          kpi: "gk_goals_prevented_p90",
+          label: "Goals prevented vs xG conceded (per 90)",
+          weight: 0.4,
+          is_proxy: true,
+          club_score: 30,
+          benchmark_score: 58,
+          gap: 28,
+        },
+      ],
+      evidence: [],
+      weak_links: [],
+      risks: [],
+      team_needs: [],
+      caveat: "Goalkeeper ratings are limited: free data has no post-shot xG.",
+    },
+    {
+      rank: 3,
       need_id: "1-CB",
       position_group: "CB",
       severity: 6.2,
@@ -152,9 +175,10 @@ export const diagnosis: Schemas["DiagnosisResponse"] = {
       weak_links: [],
       risks: [],
       team_needs: [],
+      caveat: null,
     },
     {
-      rank: 3,
+      rank: 4,
       need_id: "1-W",
       position_group: "W",
       severity: 0,
@@ -163,6 +187,7 @@ export const diagnosis: Schemas["DiagnosisResponse"] = {
       weak_links: [],
       risks: [],
       team_needs: [],
+      caveat: null,
     },
   ],
   team_needs: [
@@ -273,6 +298,7 @@ export const shortlist: Schemas["ShortlistResponse"] = {
     },
   ],
   excluded: { "over budget": 2, "sideways move": 4 },
+  caveat: null,
 };
 
 export const emptyShortlist: Schemas["ShortlistResponse"] = {
@@ -520,6 +546,7 @@ export const methodology: Schemas["MethodologyResponse"] = {
     },
   ],
   position_groups: { ST: { npxg_p90: 1 }, CB: { def_activity_padj_p90: 1 } },
+  group_caveats: { GK: "Goalkeeper ratings are limited." },
   team_kpis: [
     {
       kpi: "xg_p90",

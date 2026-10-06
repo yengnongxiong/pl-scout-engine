@@ -394,6 +394,11 @@ function ShortlistView({
   return (
     <div className="space-y-4">
       <Card title="The need">
+        {s.caveat ? (
+          <p className="mb-2 rounded border border-amber-200 bg-amber-50 p-2 text-sm text-amber-900">
+            {s.caveat}
+          </p>
+        ) : null}
         <p className="text-sm text-slate-800">
           {s.team_name} trail the benchmark on:{" "}
           {s.deficits.length > 0

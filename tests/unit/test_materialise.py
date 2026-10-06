@@ -124,3 +124,34 @@ def test_unknown_kpi_in_config_rejected() -> None:
             pd.DataFrame(), pd.DataFrame(), {}, current_season=CUR, previous_season=PREV,
             catalogue=kpis, method=CFG.settings.methodology,
         )  # fmt: skip
+
+
+def test_goalkeeper_kpis_are_hand_calculated() -> None:
+    # 900 minutes = 10 nineties: 12.0 xG conceded on the pitch, 9 goals conceded, 30 saves.
+    totals = pd.DataFrame(
+        [totals_row(7, CUR, "fpl", 900, xgc_on_pitch=12.0, goals_conceded=9, saves=30)]
+    )
+    out = compute_features(
+        totals,
+        pd.DataFrame(),
+        {7: "GK"},
+        current_season=CUR,
+        previous_season=PREV,
+        catalogue=CFG.kpis,
+        method=CFG.settings.methodology,
+    )
+    assert pick(out, 7, "gk_goals_prevented_p90", "current")["raw_p90"] == pytest.approx(0.3)
+    assert pick(out, 7, "gk_saves_p90", "current")["raw_p90"] == pytest.approx(3.0)
+    assert pick(out, 7, "gk_save_pct", "current")["raw_p90"] == pytest.approx(30 / 39)
+    assert bool(pick(out, 7, "gk_goals_prevented_p90")["is_proxy"])
+
+
+def test_goalkeeper_kpis_need_their_inputs() -> None:
+    # No goals-conceded data: both ratios are missing, never 0 (CLAUDE.md rule 2).
+    totals = pd.DataFrame([totals_row(7, CUR, "fpl", 900, xgc_on_pitch=12.0, saves=30)])
+    out = compute_features(
+        totals, pd.DataFrame(), {7: "GK"}, current_season=CUR, previous_season=PREV,
+        catalogue=CFG.kpis, method=CFG.settings.methodology,
+    )  # fmt: skip
+    assert pd.isna(pick(out, 7, "gk_goals_prevented_p90", "current")["raw_p90"])
+    assert pd.isna(pick(out, 7, "gk_save_pct", "current")["raw_p90"])

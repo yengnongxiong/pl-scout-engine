@@ -1,6 +1,7 @@
 /** Display names for codes the API returns (positions, gates, statuses, components). */
 
 export const POSITION_GROUPS: Record<string, string> = {
+  GK: "Goalkeeper",
   CB: "Centre-back",
   FB: "Full-back",
   DM: "Defensive midfield",

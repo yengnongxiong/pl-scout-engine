@@ -140,7 +140,7 @@ class DimensionLoader:
         """Upsert resolved players; returns ``fpl_code → player_id``.
 
         Position group comes from Transfermarkt's detailed position (PRD §8.5), falling
-        back to the coarse FPL position; goalkeepers get no group (GK is stretch S2).
+        back to the coarse FPL position (GKP maps to the GK group, stretch S2).
         """
         fpl_pos = {
             int(r["fpl_code"]): str(r["fpl_position"])
@@ -627,6 +627,9 @@ _FPL_PM_COLS = (
     "def_contribution",
     "yellow_cards",
     "red_cards",
+    "saves",
+    "goals_conceded",
+    "penalties_saved",
 )
 _UNDERSTAT_PM_COLS = (
     "minutes",

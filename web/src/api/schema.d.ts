@@ -390,6 +390,7 @@ export interface components {
        * @enum {string}
        */
       kind:
+        | "limited_group"
         | "small_sample"
         | "proxy_metric"
         | "unadjusted_defence"
@@ -967,6 +968,13 @@ export interface components {
       fit_weights: {
         [key: string]: number;
       };
+      /**
+       * Group Caveats
+       * @description Groups whose free metrics are limited.
+       */
+      group_caveats: {
+        [key: string]: string;
+      };
       /** Kpis */
       kpis: components["schemas"]["KpiDefinitionOut"][];
       /** Limitations */
@@ -1049,6 +1057,11 @@ export interface components {
      * @description A ranked position-group need (US-02).
      */
     NeedOut: {
+      /**
+       * Caveat
+       * @description Shown when the group's free metrics are limited.
+       */
+      caveat: string | null;
       /** Evidence */
       evidence: components["schemas"]["EvidenceOut"][];
       /** Gaps */
@@ -1181,6 +1194,11 @@ export interface components {
     ShortlistResponse: {
       /** Candidates */
       candidates: components["schemas"]["CandidateOut"][];
+      /**
+       * Caveat
+       * @description Shown when the group's free metrics are limited.
+       */
+      caveat: string | null;
       /** Deficits */
       deficits: components["schemas"]["DeficitOut"][];
       /** Excluded */

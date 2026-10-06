@@ -46,7 +46,8 @@ LIMITATIONS = [
     "The stats-implied value model learns the market's own biases and is trained on past "
     "Premier League seasons of current players only (survivorship bias). It is not a fee "
     "prediction.",
-    "Candidates are Premier League players only; goalkeepers are not rated.",
+    "Candidates are Premier League players only. Goalkeeper ratings are limited: free data has "
+    "no post-shot xG, distribution, claiming or sweeping numbers, so shot-stopping is a proxy.",
     "FPL data fields are undocumented and can change; `scout doctor` validates the schema on "
     "every run.",
 ]
@@ -131,6 +132,7 @@ def methodology(state: State) -> MethodologyResponse:
             for kpi, d in cfg.kpis.kpis.items()
         ],
         position_groups={g: dict(c.weights) for g, c in cfg.kpis.position_groups.items()},
+        group_caveats={g: c.caveat for g, c in cfg.kpis.position_groups.items() if c.caveat},
         team_kpis=[
             TeamKpiDefinitionOut(
                 kpi=kpi,

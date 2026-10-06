@@ -18,6 +18,12 @@ def kpi_label(config: AppConfig, kpi: str) -> str:
     return definition.label if definition else kpi
 
 
+def group_caveat(config: AppConfig, group: str) -> str | None:
+    """The configured caveat for a position group with limited free metrics (e.g. GK)."""
+    cfg = next((c for g, c in config.kpis.position_groups.items() if g == group), None)
+    return cfg.caveat if cfg else None
+
+
 def player_names(state: ApiState) -> dict[int, str]:
     """Player id -> canonical name."""
 

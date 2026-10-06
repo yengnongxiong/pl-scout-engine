@@ -20,7 +20,7 @@ from scout.errors import ConfigError
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
-PositionGroup = Literal["CB", "FB", "DM", "CM", "AM", "W", "ST"]
+PositionGroup = Literal["GK", "CB", "FB", "DM", "CM", "AM", "W", "ST"]
 Source = Literal[
     "fpl", "understat", "fotmob", "transfermarkt", "transfermarkt_datasets", "vaastav", "statsbomb"
 ]
@@ -32,6 +32,7 @@ TeamMatchColumn = Literal[
 ]  # fmt: skip
 
 WEIGHT_SUM_TOLERANCE = 1e-6
+OUTFIELD_GROUPS: list[PositionGroup] = ["CB", "FB", "DM", "CM", "AM", "W", "ST"]
 
 
 class Settings(BaseSettings):
@@ -168,6 +169,8 @@ class MLConfig(_Strict):
     similarity_examples_k: int = Field(default=3, gt=0)
     # Role archetypes: automatic label ("high X, low Y") -> scout-friendly name.
     role_renames: dict[str, str] = Field(default_factory=dict)
+    # Position groups clustered into role archetypes (goalkeepers are a role of their own).
+    role_groups: list[PositionGroup] = Field(default_factory=lambda: list(OUTFIELD_GROUPS))
 
 
 class ValueModelConfig(_Strict):
@@ -304,6 +307,8 @@ class GroupKpis(_Strict):
     """KPI weights for one position group."""
 
     weights: dict[str, float]
+    # Shown wherever the group's ratings appear when its free metrics are limited (e.g. GK).
+    caveat: str | None = None
 
 
 class TeamMetricDef(_Strict):
@@ -421,7 +426,7 @@ class PositionsConfig(_Strict):
 
     groups: list[PositionGroup]
     transfermarkt: dict[str, PositionGroup]
-    fpl_element_type_fallback: dict[Literal["DEF", "MID", "FWD"], PositionGroup]
+    fpl_element_type_fallback: dict[Literal["GKP", "DEF", "MID", "FWD"], PositionGroup]
 
 
 class TeamAliases(_Strict):

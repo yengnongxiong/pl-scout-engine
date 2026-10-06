@@ -128,7 +128,7 @@ def test_recommend_shortlist_with_breakdown_and_receipts(built: Settings) -> Non
         filters=Filters(exclude_team_ids=(town.team_id,)),
     )
     with pytest.raises(NotFoundError):
-        recommend(engine, rovers.team_id, config, position_group="GK")
+        recommend(engine, rovers.team_id, config, position_group="XX")
     engine.dispose()
     assert top_need.position_group == diagnose_top_group(built, rovers.team_id)
     # Rovers have no striker, so there is no incumbent and every candidate clears the gate.
@@ -177,7 +177,7 @@ def test_cli_recommend(built: Settings, monkeypatch: pytest.MonkeyPatch) -> None
         cli.app, ["recommend", "Synthetic Rovers", "--need", "ST", "--max-value", "5"]
     )
     assert capped.exit_code == 0 and "Filtered out: no market value 1" in capped.output
-    bad = CliRunner().invoke(cli.app, ["recommend", "Synthetic Rovers", "--need", "GK"])
+    bad = CliRunner().invoke(cli.app, ["recommend", "Synthetic Rovers", "--need", "XX"])
     assert bad.exit_code == 1
 
 
@@ -351,7 +351,7 @@ def test_backtest_compares_last_seasons_needs_with_arrivals(
     assert [a.player_name for a in rov.arrivals] == ["Nia Newcomer"]
     assert rov.hits == ["ST"] and rov.precision == pytest.approx(0.5)
     assert rov.baseline_groups == [] and rov.baseline_precision is None
-    assert rov.random_precision == pytest.approx(1 / 7)
+    assert rov.random_precision == pytest.approx(1 / len(config.kpis.position_groups))
     assert result.evaluated == 1 and result.precision == pytest.approx(0.5)
     assert result.hit_rate == 1.0
     assert result.skipped == {"no arrivals yet": 1}

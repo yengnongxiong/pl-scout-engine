@@ -43,6 +43,7 @@ from scout.ml.value_model import CAVEAT as VALUE_CAVEAT
 
 Band = Literal["elite", "strong", "above_average", "below_average", "weak"]
 CaveatKind = Literal[
+    "limited_group",
     "small_sample",
     "proxy_metric",
     "unadjusted_defence",
@@ -340,6 +341,11 @@ def caveats(sheet: dict[str, Any], kpis: list[KpiFact], config: AppConfig) -> li
     """Caveats for the report, in a fixed order (PRD §9 step 2)."""
     out: list[Caveat] = []
     rep = config.settings.reports
+    group_cfg = next(
+        (c for g, c in config.kpis.position_groups.items() if g == sheet["position_group"]), None
+    )
+    if group_cfg is not None and group_cfg.caveat:
+        out.append(Caveat(kind="limited_group", text=group_cfg.caveat))
     eff = sheet["effective_minutes"]
     if eff is None or eff < rep.small_sample_minutes:
         shown = "no" if eff is None else f"{eff:.0f}"

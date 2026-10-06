@@ -26,7 +26,7 @@ def _edit(path: Path, mutate: object) -> None:
 
 def test_committed_config_is_valid() -> None:
     cfg = load_config(CONFIG_DIR)
-    assert set(cfg.kpis.position_groups) == {"CB", "FB", "DM", "CM", "AM", "W", "ST"}
+    assert set(cfg.kpis.position_groups) == {"GK", "CB", "FB", "DM", "CM", "AM", "W", "ST"}
     assert cfg.fit_weights.components["need_fill"] == pytest.approx(0.40)
     assert cfg.settings.methodology.blend_lambda == pytest.approx(0.5)
 
@@ -129,3 +129,13 @@ def test_invalid_yaml_rejected(config_copy: Path) -> None:
     (config_copy / "positions.yaml").write_text("groups: [CB\n")
     with pytest.raises(ConfigError, match="invalid YAML"):
         load_config(config_copy)
+
+
+def test_goalkeepers_have_a_limited_group() -> None:
+    cfg = load_config(PROJECT_ROOT / "config")
+    assert cfg.positions.transfermarkt["Goalkeeper"] == "GK"
+    assert cfg.positions.fpl_element_type_fallback["GKP"] == "GK"
+    gk = cfg.kpis.position_groups["GK"]
+    assert gk.caveat and "limited" in gk.caveat
+    assert cfg.kpis.kpis["gk_goals_prevented_p90"].is_proxy
+    assert cfg.fit_weights.peak_age["GK"] == (27, 33)

@@ -129,6 +129,9 @@ class FactPlayerMatch(Base):
     xgc_on_pitch: Mapped[float | None] = mapped_column(Float)
     yellow_cards: Mapped[int | None] = mapped_column(Integer)
     red_cards: Mapped[int | None] = mapped_column(Integer)
+    saves: Mapped[int | None] = mapped_column(Integer)
+    goals_conceded: Mapped[int | None] = mapped_column(Integer)
+    penalties_saved: Mapped[int | None] = mapped_column(Integer)
     source: Mapped[str] = mapped_column(String(30))
     fetched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 

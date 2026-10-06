@@ -1,8 +1,9 @@
 # PRD §8.5: Transfermarkt detailed position → position group.
-# GK is stretch S2 and is not mapped to an outfield group.
-groups: [CB, FB, DM, CM, AM, W, ST]
+# GK (stretch S2) has its own, clearly limited KPIs (config/kpis.yaml).
+groups: [GK, CB, FB, DM, CM, AM, W, ST]
 
 transfermarkt:
+  "Goalkeeper": GK
   "Centre-Back": CB
   "Left-Back": FB
   "Right-Back": FB
@@ -18,6 +19,7 @@ transfermarkt:
 
 # Fallback when only the FPL element type is known (coarse; flagged in the UI).
 fpl_element_type_fallback:
+  GKP: GK
   DEF: CB
   MID: CM
   FWD: ST

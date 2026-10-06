@@ -30,8 +30,8 @@ def _provenance() -> dict[str, pa.Column]:
     }
 
 
-def _nonneg(dtype: type = float) -> pa.Column:
-    return pa.Column(dtype, pa.Check.ge(0), nullable=True, coerce=True)
+def _nonneg(dtype: type = float, *, required: bool = True) -> pa.Column:
+    return pa.Column(dtype, pa.Check.ge(0), nullable=True, coerce=True, required=required)
 
 
 def build_schemas(cfg: ValidationConfig) -> dict[str, pa.DataFrameSchema]:
@@ -57,6 +57,10 @@ def build_schemas(cfg: ValidationConfig) -> dict[str, pa.DataFrameSchema]:
                 "recoveries": _nonneg(),
                 "yellow_cards": _nonneg(),
                 "red_cards": _nonneg(),
+                # Goalkeeping columns (S2) are optional: older payloads may lack them.
+                "saves": _nonneg(required=False),
+                "goals_conceded": _nonneg(required=False),
+                "penalties_saved": _nonneg(required=False),
                 **_provenance(),
             },
             unique=["fpl_code", "fpl_fixture_code"],

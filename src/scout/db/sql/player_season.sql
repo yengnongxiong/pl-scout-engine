@@ -11,7 +11,8 @@ WITH match_rows AS (
         CASE WHEN f.started IS NULL THEN NULL WHEN f.started THEN 1 ELSE 0 END AS start_flag,
         f.goals, f.assists, f.xg, f.npxg, f.xa, f.shots, f.key_passes,
         f.xg_chain, f.xg_buildup, f.tackles, f.recoveries, f.cbi, f.def_contribution,
-        f.xgc_on_pitch, f.yellow_cards, f.red_cards, f.fetched_at
+        f.xgc_on_pitch, f.yellow_cards, f.red_cards, f.saves, f.goals_conceded,
+        f.penalties_saved, f.fetched_at
     FROM fact_player_match AS f
     JOIN dim_match AS m ON m.match_id = f.match_id
 )
@@ -37,6 +38,9 @@ SELECT
     SUM(cbi) AS cbi,
     SUM(def_contribution) AS def_contribution,
     SUM(xgc_on_pitch) AS xgc_on_pitch,
+    SUM(saves) AS saves,
+    SUM(goals_conceded) AS goals_conceded,
+    SUM(penalties_saved) AS penalties_saved,
     SUM(yellow_cards) AS yellow_cards,
     SUM(red_cards) AS red_cards,
     MAX(fetched_at) AS fetched_at

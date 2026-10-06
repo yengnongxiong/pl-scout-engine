@@ -319,3 +319,15 @@ def test_ollama_unreachable_falls_back(monkeypatch: pytest.MonkeyPatch) -> None:
     client = httpx.Client(transport=httpx.MockTransport(refuse))
     report = generate_report(synthetic_sheet(), _settings("ollama"), CONFIG, client=client)
     assert report.fallback_reason == "local LLM unavailable"
+
+
+def test_goalkeeper_reports_lead_with_the_limited_metrics_caveat() -> None:
+    from scout.reports.facts import caveats
+
+    model = synthetic_sheet(with_fit=False)
+    sheet = {name: getattr(model, name) for name in type(model).model_fields}
+    sheet["position_group"] = "GK"
+    out = caveats(sheet, [], CONFIG)
+    assert out[0].kind == "limited_group" and "Goalkeeper ratings are limited" in out[0].text
+    sheet["position_group"] = "ST"
+    assert all(c.kind != "limited_group" for c in caveats(sheet, [], CONFIG))

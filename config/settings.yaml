@@ -120,6 +120,8 @@ ml:
   # Optional names for automatically labelled role archetypes, e.g.
   # "high Build-up involvement, high Recoveries, possession-adjusted": "Deep playmaker".
   role_renames: {}
+  # Position groups clustered into role archetypes; goalkeepers (S2) have their own KPIs.
+  role_groups: [CB, FB, DM, CM, AM, W, ST]
 
 value_model:
   # PRD §8.10 step 3. Label = the Transfermarkt estimated market value nearest the season's

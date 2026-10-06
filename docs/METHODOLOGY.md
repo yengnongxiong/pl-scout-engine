@@ -70,9 +70,9 @@ least `percentile_min_minutes` (600) effective minutes; "lower is better" KPIs a
 negated value so a higher percentile is always better. `n_peers` is always returned with a
 percentile. The SQL (`db/sql/percentiles.sql`) has a pandas twin tested to give the same answer.
 
-**Positions.** Transfermarkt's detailed position maps to seven groups (CB, FB, DM, CM, AM, W,
-ST) in `config/positions.yaml`; the coarse FPL element type is a flagged fallback. Goalkeepers
-are not rated in the MVP.
+**Positions.** Transfermarkt's detailed position maps to eight groups (GK, CB, FB, DM, CM, AM,
+W, ST) in `config/positions.yaml`; the coarse FPL element type is a fallback. Goalkeepers have
+their own, clearly limited group (below).
 
 ## 3. KPIs
 
@@ -86,6 +86,13 @@ weight them (weights sum to 1 per group). Proxies are badged everywhere they app
   event data.
 - **xA** comes from Understat (xG of the shots a player's key passes created), which is not the
   FPL/Opta definition; each KPI uses one source and says which.
+
+**Goalkeepers** (stretch S2) are rated on what free data allows, and every goalkeeper rating
+carries a "limited metrics" caveat: goals prevented vs xG conceded per 90 (xG conceded on the
+pitch minus goals conceded; a **proxy** for shot-stopping, because post-shot xG is not free and
+pre-shot xG also reflects the finishing faced), save percentage (saves / (saves + goals
+conceded)), saves per 90 and xG conceded on the pitch. There are no distribution, claiming or
+sweeping numbers. Goalkeepers are kept out of the outfield role archetypes.
 
 Team KPIs (xG for/against, PPDA, PPDA allowed, deep completions, set-piece and open-play xG)
 come from Understat and are mapped to the position groups most responsible for them.
@@ -183,5 +190,6 @@ skipped and the reason recorded.
   in mid-2026 and is labelled stale.
 - The value model is trained on past Premier League seasons of current players (survivorship
   bias) and learns market biases.
-- Candidates are Premier League players only; goalkeepers are not rated.
+- Candidates are Premier League players only. Goalkeeper ratings are limited (no post-shot xG,
+  distribution, claiming or sweeping data) and always say so.
 - FPL fields are undocumented and can change; `scout doctor` validates the schema every run.

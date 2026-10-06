@@ -50,6 +50,9 @@ OPTIONAL_GW = {
     "clearances_blocks_interceptions": "cbi",
     "recoveries": "recoveries",
     "defensive_contribution": "def_contribution",
+    "saves": "saves",
+    "goals_conceded": "goals_conceded",
+    "penalties_saved": "penalties_saved",
 }
 REQUIRED_PLAYERS = frozenset({"id", "code"})
 REQUIRED_TEAMS = frozenset({"id", "code", "name"})

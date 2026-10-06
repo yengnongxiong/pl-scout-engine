@@ -11,6 +11,7 @@ upgrade_gate_min_delta: 15
 
 # Peak-age window per position group (AgeProfile). Expert-set starting points.
 peak_age:
+  GK: [27, 33]
   CB: [26, 30]
   FB: [24, 28]
   DM: [25, 29]

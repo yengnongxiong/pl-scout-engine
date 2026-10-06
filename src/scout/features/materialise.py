@@ -81,6 +81,18 @@ def _goals_minus_xg(t: Row, _p: Row, _c: bool) -> float | None:
     return None if goals is None or xg is None else goals - xg
 
 
+def _goals_prevented(t: Row, _p: Row, _c: bool) -> float | None:
+    # xG of shots faced while on the pitch minus goals conceded: a shot-stopping proxy
+    # (pre-shot xG, so it also reflects the finishing faced; PRD §7.2 honesty rules).
+    xgc, conceded = _get(t, "xgc_on_pitch"), _get(t, "goals_conceded")
+    return None if xgc is None or conceded is None else xgc - conceded
+
+
+def _shots_on_target_faced(t: Row) -> float | None:
+    saves, conceded = _get(t, "saves"), _get(t, "goals_conceded")
+    return None if saves is None or conceded is None else saves + conceded
+
+
 def _total(column: str) -> Callable[[Row, Row, bool], float | None]:
     return lambda t, _p, _c: _get(t, column)
 
@@ -103,6 +115,10 @@ FORMULAS: dict[str, KpiFormula] = {
     "key_passes_p90": KpiFormula(_total("key_passes")),
     "shots_p90": KpiFormula(_total("shots")),
     "goals_minus_xg_p90": KpiFormula(_goals_minus_xg),
+    "gk_goals_prevented_p90": KpiFormula(_goals_prevented),
+    "gk_saves_p90": KpiFormula(_total("saves")),
+    # Save percentage is a ratio: saves / (saves + goals conceded).
+    "gk_save_pct": KpiFormula(_total("saves"), per_90=False, denominator=_shots_on_target_faced),
     # Shot quality is a ratio, not a rate: npxG per shot.
     "npxg_per_shot": KpiFormula(
         _total("npxg"), per_90=False, denominator=lambda t: _get(t, "shots")

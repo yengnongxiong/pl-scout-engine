@@ -22,7 +22,10 @@
    "defensive_contribution": 2,
    "yellow_cards": 0,
    "red_cards": 0,
-   "total_points": 2
+   "total_points": 2,
+   "saves": 0,
+   "goals_conceded": 1,
+   "penalties_saved": 0
   },
   {
    "element": 12,
@@ -44,7 +47,10 @@
    "defensive_contribution": 2,
    "yellow_cards": 0,
    "red_cards": 0,
-   "total_points": 2
+   "total_points": 2,
+   "saves": 0,
+   "goals_conceded": 1,
+   "penalties_saved": 0
   }
  ]
 }

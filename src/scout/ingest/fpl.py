@@ -126,6 +126,10 @@ class FplHistoryRow(_Model):
     defensive_contribution: int
     yellow_cards: int
     red_cards: int
+    # Goalkeeping (stretch S2); present in the live 2026-27 payload.
+    saves: int
+    goals_conceded: int
+    penalties_saved: int
 
 
 class FplElementSummary(_Model):
@@ -338,6 +342,9 @@ class FplAdapter(SourceAdapter):
                         "def_contribution": h.defensive_contribution,
                         "yellow_cards": h.yellow_cards,
                         "red_cards": h.red_cards,
+                        "saves": h.saves,
+                        "goals_conceded": h.goals_conceded,
+                        "penalties_saved": h.penalties_saved,
                         "source": SOURCE,
                         "fetched_at": snap.fetched_at,
                     }

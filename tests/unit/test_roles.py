@@ -93,3 +93,27 @@ def test_train_roles_uses_config() -> None:
     for cluster in set(model.assignments.values()):
         members = {p % 2 for p, c in model.assignments.items() if c == cluster}
         assert len(members) == 1
+
+
+def test_goalkeepers_are_not_clustered_with_outfield_roles() -> None:
+    from scout.config import PROJECT_ROOT, load_config
+    from scout.ml.roles import role_kpis, train_roles
+
+    base = load_config(PROJECT_ROOT / "config")
+    outfield = role_kpis(base.kpis, base.settings.ml.role_groups)
+    assert "GK" not in base.settings.ml.role_groups
+    assert not any(k.startswith("gk_") for k in outfield)
+    assert "gk_save_pct" in role_kpis(base.kpis)
+    ml = base.settings.ml.model_copy(update={"gmm_k_min": 2, "gmm_k_max": 2})
+    config = base.model_copy(update={"settings": base.settings.model_copy(update={"ml": ml})})
+    rng = np.random.default_rng(2)
+    rows = [
+        (pid, "GK" if pid >= 30 else "CB", kpi, rng.normal(0, 1), 1200.0)
+        for pid in range(36)
+        for kpi in outfield
+    ]
+    frame = pd.DataFrame(
+        rows, columns=["player_id", "position_group", "kpi", "shrunk", "effective_minutes"]
+    )
+    model = train_roles(frame, config)
+    assert set(model.assignments) == set(range(30))  # the six keepers are left out

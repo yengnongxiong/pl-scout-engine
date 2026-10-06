@@ -106,6 +106,7 @@ class MethodologyResponse(_Out):
 
     kpis: list[KpiDefinitionOut]
     position_groups: dict[str, dict[str, float]] = Field(description="Group -> KPI -> weight.")
+    group_caveats: dict[str, str] = Field(description="Groups whose free metrics are limited.")
     team_kpis: list[TeamKpiDefinitionOut]
     fit_weights: dict[str, float]
     upgrade_gate_min_delta: float
@@ -232,6 +233,7 @@ class NeedOut(_Out):
     weak_links: list[WeakLinkOut]
     risks: list[RiskOut]
     team_needs: list[str] = Field(description="KPI ids of team needs this group shares.")
+    caveat: str | None = Field(description="Shown when the group's free metrics are limited.")
 
 
 class DiagnosisResponse(_Out):
@@ -317,6 +319,7 @@ class ShortlistResponse(_Out):
     incumbent: IncumbentOut | None
     candidates: list[CandidateOut]
     excluded: dict[str, int]
+    caveat: str | None = Field(description="Shown when the group's free metrics are limited.")
 
 
 # --- players --------------------------------------------------------------------------

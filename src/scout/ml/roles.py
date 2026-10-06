@@ -174,9 +174,21 @@ def fit_roles(
     )
 
 
-def role_kpis(catalogue: KpiCatalogue) -> list[str]:
-    """KPIs with a positive weight in at least one position group (the feature vector)."""
-    used = {k for g in catalogue.position_groups.values() for k, w in g.weights.items() if w > 0}
+def role_kpis(catalogue: KpiCatalogue, groups: Sequence[str] | None = None) -> list[str]:
+    """KPIs with a positive weight in at least one of ``groups`` (the feature vector).
+
+    Args:
+        catalogue: KPI catalogue.
+        groups: Position groups to cluster (all when ``None``); goalkeepers are left out by
+            config because their KPIs mean nothing for outfield players.
+    """
+    used = {
+        k
+        for name, g in catalogue.position_groups.items()
+        if groups is None or name in groups
+        for k, w in g.weights.items()
+        if w > 0
+    }
     return sorted(used)
 
 
@@ -188,9 +200,12 @@ def short_names(catalogue: KpiCatalogue) -> dict[str, str]:
 def train_roles(features: pd.DataFrame, config: AppConfig) -> RoleModel:
     """Fit role archetypes on blended features with the configured settings."""
     ml = config.settings.ml
+    groups = list(ml.role_groups)
+    if "position_group" in features:
+        features = features[features["position_group"].isin(groups)]
     matrix = role_matrix(
         features,
-        role_kpis(config.kpis),
+        role_kpis(config.kpis, groups),
         min_minutes=config.settings.methodology.roles_min_minutes,
     )
     return fit_roles(
