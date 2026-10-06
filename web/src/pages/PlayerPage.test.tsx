@@ -138,3 +138,28 @@ describe("PlayerPage", () => {
     expect(screen.getByTestId("location")).toHaveTextContent("/compare?a=11&b=7&team=1");
   });
 });
+
+describe("PlayerPage age curve", () => {
+  it("projects next season from the typical change at the player's age", async () => {
+    renderWithProviders(<PlayerPage />, { route: "/players/11", path: "/players/:playerId" });
+    const card = (await screen.findByRole("heading", { name: "Age curve (next season)" })).closest(
+      "section",
+    );
+    const scoped = within(present(card));
+    expect(await scoped.findByText("+0.01 (n=31)")).toBeInTheDocument();
+    expect(scoped.getByText("0.49")).toBeInTheDocument();
+    expect(scoped.getByRole("columnheader", { name: "At age 27" })).toBeInTheDocument();
+    // Too few pairs at this age for xA: no projection, never the current rate repeated.
+    expect(scoped.getAllByText("Not available")).toHaveLength(2);
+  });
+
+  it("explains a missing age curve", async () => {
+    server.use(
+      http.get(apiPath("/players/:id/age-curve"), () =>
+        HttpResponse.json(errorBody("not_found", "need two seasons"), { status: 404 }),
+      ),
+    );
+    renderWithProviders(<PlayerPage />, { route: "/players/11", path: "/players/:playerId" });
+    expect(await screen.findByText(/age curves need two past seasons/)).toBeInTheDocument();
+  });
+});

@@ -258,6 +258,28 @@ class ApiConfig(_Strict):
     max_shortlist: int = Field(default=50, gt=0)
 
 
+class AgeCurvesConfig(_Strict):
+    """PRD §8.10 step 4 / US-18: delta-method aging curves from past FPL seasons."""
+
+    # player_season.sql counting stats turned into per-90 rates -> display label. Only stats
+    # every past season has (FPL defensive stats start in 2025-26).
+    metrics: dict[str, str] = Field(
+        default_factory=lambda: {
+            "xg": "xG (FPL, per 90)",
+            "xa": "xA (FPL, per 90)",
+            "goals": "Goals (per 90)",
+            "assists": "Assists (per 90)",
+        },
+        min_length=1,
+    )
+    # Both seasons of a pair need this many minutes.
+    min_minutes: float = Field(default=900.0, ge=0.0)
+    # An age with fewer pairs shows "Not available" instead of a noisy average.
+    min_pairs: int = Field(default=15, gt=0)
+    age_min: int = Field(default=18, gt=0)
+    age_max: int = Field(default=36, gt=0)
+
+
 class BacktestConfig(_Strict):
     """PRD §8.11 / US-16: did last season's diagnosis point at the positions clubs signed?"""
 
@@ -282,6 +304,7 @@ class EngineSettings(_Strict):
     reports: ReportsConfig
     api: ApiConfig = Field(default_factory=ApiConfig)
     backtest: BacktestConfig = Field(default_factory=BacktestConfig)
+    age_curves: AgeCurvesConfig = Field(default_factory=AgeCurvesConfig)
 
 
 class KpiDef(_Strict):

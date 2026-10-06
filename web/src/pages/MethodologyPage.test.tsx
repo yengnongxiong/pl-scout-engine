@@ -64,3 +64,26 @@ describe("MethodologyPage", () => {
     expect(await screen.findByText("No data yet")).toBeInTheDocument();
   });
 });
+
+describe("MethodologyPage age curves", () => {
+  it("shows the delta-method table with sample sizes and the caveat", async () => {
+    renderWithProviders(<MethodologyPage />);
+    expect(await screen.findByText("+0.012 (n=31)")).toBeInTheDocument();
+    expect(screen.getByText("-0.018 (n=27)")).toBeInTheDocument();
+    expect(screen.getByText(/412 player pairs from 2024-25, 2025-26/)).toBeInTheDocument();
+    expect(screen.getByText(/survivorship bias/)).toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "Legend" })).toHaveTextContent("xA (FPL, per 90)");
+  });
+
+  it("says when there is not enough history", async () => {
+    server.use(
+      http.get(apiPath("/meta/age-curves"), () =>
+        HttpResponse.json(errorBody("not_found", "need two seasons"), { status: 404 }),
+      ),
+    );
+    renderWithProviders(<MethodologyPage />);
+    expect(
+      await screen.findByText(/age curves need at least two past seasons/),
+    ).toBeInTheDocument();
+  });
+});

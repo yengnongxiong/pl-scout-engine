@@ -619,3 +619,60 @@ export const backtest: Schemas["BacktestResponse"] = {
   arrivals_as_of: "2026-09-28T10:00:00",
   caveat: "Exploratory: clubs sign players for many reasons.",
 };
+
+export const ageCurves: Schemas["AgeCurvesResponse"] = {
+  seasons: ["2024-25", "2025-26"],
+  min_minutes: 900,
+  min_pairs: 15,
+  pair_count: 412,
+  history_as_of: "2026-06-01T00:00:00",
+  caveat: "Delta-method age curves understate declines (survivorship bias).",
+  curves: [
+    {
+      metric: "xg",
+      label: "xG (FPL, per 90)",
+      n_pairs: 206,
+      points: [
+        { age: 27, delta: 0.012, cumulative: 0, n_pairs: 31 },
+        { age: 28, delta: -0.018, cumulative: 0.012, n_pairs: 27 },
+        { age: 29, delta: null, cumulative: -0.006, n_pairs: 9 },
+      ],
+    },
+    {
+      metric: "xa",
+      label: "xA (FPL, per 90)",
+      n_pairs: 206,
+      points: [
+        { age: 27, delta: 0.004, cumulative: 0, n_pairs: 31 },
+        { age: 28, delta: -0.009, cumulative: 0.004, n_pairs: 27 },
+        { age: 29, delta: null, cumulative: -0.005, n_pairs: 9 },
+      ],
+    },
+  ],
+};
+
+export const playerAgeCurve: Schemas["PlayerAgeCurveResponse"] = {
+  player_id: 11,
+  age: 27,
+  effective_minutes: 1540,
+  seasons: ["2024-25", "2025-26"],
+  caveat: "Delta-method age curves understate declines (survivorship bias).",
+  projections: [
+    {
+      metric: "xg",
+      label: "xG (FPL, per 90)",
+      current: 0.48,
+      delta: 0.012,
+      projected: 0.492,
+      n_pairs: 31,
+    },
+    {
+      metric: "xa",
+      label: "xA (FPL, per 90)",
+      current: 0.11,
+      delta: null,
+      projected: null,
+      n_pairs: 4,
+    },
+  ],
+};

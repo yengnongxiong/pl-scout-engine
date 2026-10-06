@@ -463,3 +463,58 @@ class BacktestResponse(_Out):
     history_as_of: str | None
     arrivals_as_of: str | None
     caveat: str
+
+
+# --- age curves -----------------------------------------------------------------------
+
+
+class AgePointOut(_Out):
+    """Typical next-season change in a per-90 rate at one age."""
+
+    age: int
+    delta: float | None = Field(description="Weighted mean change; null below the sample size.")
+    cumulative: float | None = Field(description="Rate relative to the youngest age with data.")
+    n_pairs: int
+
+
+class AgeCurveOut(_Out):
+    """One stat's delta-method aging curve."""
+
+    metric: str
+    label: str
+    n_pairs: int
+    points: list[AgePointOut]
+
+
+class AgeCurvesResponse(_Out):
+    """Aging curves from past FPL seasons (PRD §8.10 step 4, US-18)."""
+
+    seasons: list[str]
+    min_minutes: float
+    min_pairs: int
+    pair_count: int
+    history_as_of: str | None
+    caveat: str
+    curves: list[AgeCurveOut]
+
+
+class ProjectionOut(_Out):
+    """A player's blended FPL rate, the typical change at their age, and the projection."""
+
+    metric: str
+    label: str
+    current: float | None
+    delta: float | None
+    projected: float | None
+    n_pairs: int
+
+
+class PlayerAgeCurveResponse(_Out):
+    """Next-season projections for one player from the age curves (US-18)."""
+
+    player_id: int
+    age: int | None
+    effective_minutes: float | None
+    seasons: list[str]
+    caveat: str
+    projections: list[ProjectionOut]

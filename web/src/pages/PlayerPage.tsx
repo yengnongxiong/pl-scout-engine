@@ -11,7 +11,7 @@ import { PercentileBar } from "../components/PercentileBar";
 import { PlayerPicker } from "../components/PlayerPicker";
 import { Receipt } from "../components/Receipt";
 import { EmptyState, LoadingState, QueryError } from "../components/states";
-import { usePlayer, useReport, useSimilar } from "../hooks/players";
+import { usePlayer, usePlayerAgeCurve, useReport, useSimilar } from "../hooks/players";
 import { useTeams } from "../hooks/teams";
 import {
   NOT_AVAILABLE,
@@ -68,6 +68,7 @@ export function PlayerPage() {
             </div>
             <div className="space-y-6">
               <ValueCard facts={player.data} />
+              <AgeCurveCard playerId={playerId} />
               <SimilarCard playerId={playerId} />
               <CompareCard playerId={playerId} teamId={teamId} />
               <NotesCard facts={player.data} />
@@ -181,6 +182,54 @@ function ValueCard({ facts: f }: { facts: Facts }) {
           Stats-implied value: {NOT_AVAILABLE} (needs a Transfermarkt value, enough minutes and a
           trained value model).
         </p>
+      )}
+    </Card>
+  );
+}
+
+function AgeCurveCard({ playerId }: { playerId: number }) {
+  const curve = usePlayerAgeCurve(playerId);
+  return (
+    <Card title="Age curve (next season)">
+      {curve.isPending ? (
+        <LoadingState label="Projecting…" />
+      ) : curve.isError ? (
+        <p className="text-sm text-slate-600">
+          {NOT_AVAILABLE}: age curves need two past seasons of FPL history.
+        </p>
+      ) : (
+        <>
+          <table className="w-full text-left text-sm">
+            <caption className="sr-only">
+              Current blended rate, typical change at this age and projection per stat
+            </caption>
+            <thead className="text-xs text-slate-600">
+              <tr>
+                <th scope="col">Stat</th>
+                <th scope="col">Now</th>
+                <th scope="col">At age {curve.data.age ?? NOT_AVAILABLE}</th>
+                <th scope="col">Next season</th>
+              </tr>
+            </thead>
+            <tbody>
+              {curve.data.projections.map((p) => (
+                <tr key={p.metric} className="border-t border-slate-100">
+                  <th scope="row" className="py-1 text-left font-normal">
+                    {p.label}
+                  </th>
+                  <td className="tabular-nums">{formatPer90(p.current)}</td>
+                  <td className="tabular-nums">
+                    {p.delta === null
+                      ? NOT_AVAILABLE
+                      : `${p.delta > 0 ? "+" : ""}${formatPer90(p.delta)} (n=${String(p.n_pairs)})`}
+                  </td>
+                  <td className="tabular-nums">{formatPer90(p.projected)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="mt-2 text-xs text-slate-600">{curve.data.caveat}</p>
+        </>
       )}
     </Card>
   );

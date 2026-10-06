@@ -234,3 +234,47 @@ def test_backtest_endpoint(client: TestClient) -> None:
     assert body["skipped"] == {"no arrivals yet": 2}
     assert {c["team_name"] for c in body["clubs"]} == {"Synthetic Rovers", "Fixture Town"}
     assert body["caveat"].startswith("Exploratory")
+
+
+def test_age_curves_need_two_past_seasons(client: TestClient) -> None:
+    # The fixture warehouse has one past season: Not available, never a made-up curve.
+    _error(client.get("/meta/age-curves"), 404, "not_found")
+    _error(client.get("/players/1/age-curve"), 404, "not_found")
+
+
+def test_age_curve_endpoints(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    from scout.api import shared
+    from scout.api.routers import players
+    from scout.ml.age_curves import (
+        AgeCurve,
+        AgeCurves,
+        AgePoint,
+        PlayerProjection,
+        Projection,
+    )
+
+    curves = AgeCurves(
+        curves=[AgeCurve("xg", "xG (FPL, per 90)", [AgePoint(28, -0.05, 0.0, 20)], 20)],
+        seasons=["2024-25", "2025-26"],
+        min_minutes=900,
+        min_pairs=15,
+        history_as_of="2026-06-01",
+        pair_count=20,
+    )
+    monkeypatch.setattr(shared, "build_curves", lambda _e, _c: curves)
+    monkeypatch.setattr(
+        players,
+        "project_player",
+        lambda _e, pid, _c, _cv: PlayerProjection(
+            pid, 28, [Projection("xg", "xG (FPL, per 90)", 0.3, -0.05, 0.25, 20)], 1500.0
+        ),
+    )
+    body = client.get("/meta/age-curves").json()
+    assert body["seasons"] == ["2024-25", "2025-26"] and body["pair_count"] == 20
+    assert body["curves"][0]["points"] == [
+        {"age": 28, "delta": -0.05, "cumulative": 0.0, "n_pairs": 20}
+    ]
+    assert "survivorship" in body["caveat"]
+    ids = _ids(client)
+    mine = client.get(f"/players/{ids['Bo Fakeson']}/age-curve").json()
+    assert mine["age"] == 28 and mine["projections"][0]["projected"] == 0.25

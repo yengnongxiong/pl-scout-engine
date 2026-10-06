@@ -44,6 +44,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/meta/age-curves": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Age Curve List
+     * @description Delta-method aging curves per stat from past FPL seasons (US-18).
+     */
+    get: operations["age_curve_list_meta_age_curves_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/meta/backtest": {
     parameters: {
       query?: never;
@@ -139,6 +159,26 @@ export interface paths {
      *     carries Transfermarkt's own date.
      */
     get: operations["player_profile_players__player_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/players/{player_id}/age-curve": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Player Age Curve
+     * @description Next-season projection from the age curves: blended rate + typical change at age.
+     */
+    get: operations["player_age_curve_players__player_id__age_curve_get"];
     put?: never;
     post?: never;
     delete?: never;
@@ -271,6 +311,60 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /**
+     * AgeCurveOut
+     * @description One stat's delta-method aging curve.
+     */
+    AgeCurveOut: {
+      /** Label */
+      label: string;
+      /** Metric */
+      metric: string;
+      /** N Pairs */
+      n_pairs: number;
+      /** Points */
+      points: components["schemas"]["AgePointOut"][];
+    };
+    /**
+     * AgeCurvesResponse
+     * @description Aging curves from past FPL seasons (PRD §8.10 step 4, US-18).
+     */
+    AgeCurvesResponse: {
+      /** Caveat */
+      caveat: string;
+      /** Curves */
+      curves: components["schemas"]["AgeCurveOut"][];
+      /** History As Of */
+      history_as_of: string | null;
+      /** Min Minutes */
+      min_minutes: number;
+      /** Min Pairs */
+      min_pairs: number;
+      /** Pair Count */
+      pair_count: number;
+      /** Seasons */
+      seasons: string[];
+    };
+    /**
+     * AgePointOut
+     * @description Typical next-season change in a per-90 rate at one age.
+     */
+    AgePointOut: {
+      /** Age */
+      age: number;
+      /**
+       * Cumulative
+       * @description Rate relative to the youngest age with data.
+       */
+      cumulative: number | null;
+      /**
+       * Delta
+       * @description Weighted mean change; null below the sample size.
+       */
+      delta: number | null;
+      /** N Pairs */
+      n_pairs: number;
+    };
     /**
      * ArrivalOut
      * @description A player who joined a club for this season and has played for it.
@@ -1085,6 +1179,24 @@ export interface components {
       weak_links: components["schemas"]["WeakLinkOut"][];
     };
     /**
+     * PlayerAgeCurveResponse
+     * @description Next-season projections for one player from the age curves (US-18).
+     */
+    PlayerAgeCurveResponse: {
+      /** Age */
+      age: number | null;
+      /** Caveat */
+      caveat: string;
+      /** Effective Minutes */
+      effective_minutes: number | null;
+      /** Player Id */
+      player_id: number;
+      /** Projections */
+      projections: components["schemas"]["ProjectionOut"][];
+      /** Seasons */
+      seasons: string[];
+    };
+    /**
      * PlayerSearchHit
      * @description A player search result.
      */
@@ -1118,6 +1230,24 @@ export interface components {
       position_group: string;
       /** Severity */
       severity: number;
+    };
+    /**
+     * ProjectionOut
+     * @description A player's blended FPL rate, the typical change at their age, and the projection.
+     */
+    ProjectionOut: {
+      /** Current */
+      current: number | null;
+      /** Delta */
+      delta: number | null;
+      /** Label */
+      label: string;
+      /** Metric */
+      metric: string;
+      /** N Pairs */
+      n_pairs: number;
+      /** Projected */
+      projected: number | null;
     };
     /**
      * Receipt
@@ -1491,6 +1621,62 @@ export interface operations {
       };
     };
   };
+  age_curve_list_meta_age_curves_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AgeCurvesResponse"];
+        };
+      };
+      /** @description Unknown club, player or need. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Invalid request parameters. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description The warehouse has not been built yet. */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
   backtest_meta_backtest_get: {
     parameters: {
       query?: never;
@@ -1739,6 +1925,64 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["FactSheet"];
+        };
+      };
+      /** @description Unknown club, player or need. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Invalid request parameters. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description The warehouse has not been built yet. */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  player_age_curve_players__player_id__age_curve_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        player_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PlayerAgeCurveResponse"];
         };
       };
       /** @description Unknown club, player or need. */

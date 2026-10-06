@@ -1,7 +1,9 @@
+import { lazy, Suspense } from "react";
+
 import { Badge, ProxyBadge } from "../components/Badges";
 import { Card } from "../components/Card";
 import { LoadingState, QueryError } from "../components/states";
-import { useFreshness, useMethodology } from "../hooks/meta";
+import { useAgeCurves, useFreshness, useMethodology } from "../hooks/meta";
 import {
   NOT_AVAILABLE,
   formatDateTime,
@@ -11,12 +13,17 @@ import {
 } from "../lib/format";
 import { FIT_COMPONENTS, positionLabel, sourceLabel } from "../lib/labels";
 
+const AgeCurveChart = lazy(() =>
+  import("../components/AgeCurveChart").then((m) => ({ default: m.AgeCurveChart })),
+);
+
 export function MethodologyPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold text-slate-900">Methodology &amp; data</h1>
       <FreshnessSection />
       <MethodologySection />
+      <AgeCurvesSection />
     </div>
   );
 }
@@ -238,5 +245,71 @@ function MethodologySection() {
         </Card>
       </div>
     </div>
+  );
+}
+
+function AgeCurvesSection() {
+  const ages = useAgeCurves();
+  return (
+    <Card title="Age curves">
+      {ages.isPending ? (
+        <LoadingState label="Building age curves…" />
+      ) : ages.isError ? (
+        <p className="text-sm text-slate-600">
+          {NOT_AVAILABLE}: age curves need at least two past seasons of FPL history (
+          <code>scout ingest --source vaastav</code>).
+        </p>
+      ) : (
+        <>
+          <p className="text-sm text-slate-700">
+            How a per-90 rate typically changes from one season to the next at each age (delta
+            method): {formatInteger(ages.data.pair_count)} player pairs from{" "}
+            {ages.data.seasons.join(", ")}, both seasons with at least{" "}
+            {formatInteger(ages.data.min_minutes)} minutes; ages with fewer than{" "}
+            {formatInteger(ages.data.min_pairs)} pairs are not shown.
+          </p>
+          <Suspense fallback={<LoadingState label="Loading chart…" />}>
+            <AgeCurveChart curves={ages.data.curves} />
+          </Suspense>
+          <div className="mt-3 overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <caption className="sr-only">Typical next-season change per age and stat</caption>
+              <thead className="text-xs text-slate-600">
+                <tr>
+                  <th scope="col">Age</th>
+                  {ages.data.curves.map((c) => (
+                    <th scope="col" key={c.metric}>
+                      {c.label}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {(ages.data.curves[0]?.points ?? []).map((point, row) => (
+                  <tr key={point.age} className="border-t border-slate-100">
+                    <th scope="row" className="py-1 text-left font-normal">
+                      {point.age}
+                    </th>
+                    {ages.data.curves.map((c) => {
+                      const p = c.points[row];
+                      return (
+                        <td key={c.metric} className="tabular-nums">
+                          {p?.delta === null || p?.delta === undefined
+                            ? NOT_AVAILABLE
+                            : `${p.delta > 0 ? "+" : ""}${formatNumber(p.delta, 3)} (n=${formatInteger(p.n_pairs)})`}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-2 text-xs text-slate-600">
+            {ages.data.caveat} FPL history · as of {formatDateTime(ages.data.history_as_of)}
+          </p>
+        </>
+      )}
+    </Card>
   );
 }

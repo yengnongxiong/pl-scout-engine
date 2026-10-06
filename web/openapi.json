@@ -1,6 +1,140 @@
 {
   "components": {
     "schemas": {
+      "AgeCurveOut": {
+        "description": "One stat's delta-method aging curve.",
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "metric": {
+            "title": "Metric",
+            "type": "string"
+          },
+          "n_pairs": {
+            "title": "N Pairs",
+            "type": "integer"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/AgePointOut"
+            },
+            "title": "Points",
+            "type": "array"
+          }
+        },
+        "required": [
+          "metric",
+          "label",
+          "n_pairs",
+          "points"
+        ],
+        "title": "AgeCurveOut",
+        "type": "object"
+      },
+      "AgeCurvesResponse": {
+        "description": "Aging curves from past FPL seasons (PRD \u00a78.10 step 4, US-18).",
+        "properties": {
+          "caveat": {
+            "title": "Caveat",
+            "type": "string"
+          },
+          "curves": {
+            "items": {
+              "$ref": "#/components/schemas/AgeCurveOut"
+            },
+            "title": "Curves",
+            "type": "array"
+          },
+          "history_as_of": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "History As Of"
+          },
+          "min_minutes": {
+            "title": "Min Minutes",
+            "type": "number"
+          },
+          "min_pairs": {
+            "title": "Min Pairs",
+            "type": "integer"
+          },
+          "pair_count": {
+            "title": "Pair Count",
+            "type": "integer"
+          },
+          "seasons": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Seasons",
+            "type": "array"
+          }
+        },
+        "required": [
+          "seasons",
+          "min_minutes",
+          "min_pairs",
+          "pair_count",
+          "history_as_of",
+          "caveat",
+          "curves"
+        ],
+        "title": "AgeCurvesResponse",
+        "type": "object"
+      },
+      "AgePointOut": {
+        "description": "Typical next-season change in a per-90 rate at one age.",
+        "properties": {
+          "age": {
+            "title": "Age",
+            "type": "integer"
+          },
+          "cumulative": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Rate relative to the youngest age with data.",
+            "title": "Cumulative"
+          },
+          "delta": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Weighted mean change; null below the sample size.",
+            "title": "Delta"
+          },
+          "n_pairs": {
+            "title": "N Pairs",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "age",
+          "delta",
+          "cumulative",
+          "n_pairs"
+        ],
+        "title": "AgePointOut",
+        "type": "object"
+      },
       "ArrivalOut": {
         "description": "A player who joined a club for this season and has played for it.",
         "properties": {
@@ -2156,6 +2290,65 @@
         "title": "NeedOut",
         "type": "object"
       },
+      "PlayerAgeCurveResponse": {
+        "description": "Next-season projections for one player from the age curves (US-18).",
+        "properties": {
+          "age": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Age"
+          },
+          "caveat": {
+            "title": "Caveat",
+            "type": "string"
+          },
+          "effective_minutes": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective Minutes"
+          },
+          "player_id": {
+            "title": "Player Id",
+            "type": "integer"
+          },
+          "projections": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectionOut"
+            },
+            "title": "Projections",
+            "type": "array"
+          },
+          "seasons": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Seasons",
+            "type": "array"
+          }
+        },
+        "required": [
+          "player_id",
+          "age",
+          "effective_minutes",
+          "seasons",
+          "caveat",
+          "projections"
+        ],
+        "title": "PlayerAgeCurveResponse",
+        "type": "object"
+      },
       "PlayerSearchHit": {
         "description": "A player search result.",
         "properties": {
@@ -2234,6 +2427,66 @@
           "severity"
         ],
         "title": "PredictedNeedOut",
+        "type": "object"
+      },
+      "ProjectionOut": {
+        "description": "A player's blended FPL rate, the typical change at their age, and the projection.",
+        "properties": {
+          "current": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current"
+          },
+          "delta": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delta"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "metric": {
+            "title": "Metric",
+            "type": "string"
+          },
+          "n_pairs": {
+            "title": "N Pairs",
+            "type": "integer"
+          },
+          "projected": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Projected"
+          }
+        },
+        "required": [
+          "metric",
+          "label",
+          "current",
+          "delta",
+          "projected",
+          "n_pairs"
+        ],
+        "title": "ProjectionOut",
         "type": "object"
       },
       "Receipt": {
@@ -3038,6 +3291,68 @@
         ]
       }
     },
+    "/meta/age-curves": {
+      "get": {
+        "description": "Delta-method aging curves per stat from past FPL seasons (US-18).",
+        "operationId": "age_curve_list_meta_age_curves_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgeCurvesResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unknown club, player or need."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Invalid request parameters."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The warehouse has not been built yet."
+          }
+        },
+        "summary": "Age Curve List",
+        "tags": [
+          "meta"
+        ]
+      }
+    },
     "/meta/backtest": {
       "get": {
         "description": "Did last season's top needs match the position groups clubs then signed? (US-16).",
@@ -3405,6 +3720,79 @@
           }
         },
         "summary": "Player Profile",
+        "tags": [
+          "players"
+        ]
+      }
+    },
+    "/players/{player_id}/age-curve": {
+      "get": {
+        "description": "Next-season projection from the age curves: blended rate + typical change at age.",
+        "operationId": "player_age_curve_players__player_id__age_curve_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "player_id",
+            "required": true,
+            "schema": {
+              "title": "Player Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerAgeCurveResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unknown club, player or need."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Invalid request parameters."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The warehouse has not been built yet."
+          }
+        },
+        "summary": "Player Age Curve",
         "tags": [
           "players"
         ]

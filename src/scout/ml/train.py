@@ -30,6 +30,8 @@ from scout.config import AppConfig
 from scout.db.models import DimPlayer, PlayerRole, PlayerValueScore
 from scout.db.queries import player_features
 from scout.db.session import make_session_factory
+from scout.errors import NotFoundError
+from scout.ml.age_curves import AgeCurves, build_curves
 from scout.ml.roles import RoleModel, train_roles
 from scout.ml.similarity import group_vectors, similar_players
 from scout.ml.value_data import scoring_frame, training_frame
@@ -67,6 +69,8 @@ class TrainResult:
     scores: pd.DataFrame
     similarity: list[SimilarityExample]
     artefacts: list[Path] = field(default_factory=list)
+    age_curves: AgeCurves | None = None
+    age_curves_skipped: str | None = None
 
 
 def _names(engine: Engine) -> dict[int, str]:
@@ -141,7 +145,16 @@ def train_all(engine: Engine, config: AppConfig, *, trained_at: str, git_sha: st
     else:
         scores = score_players(value, scoring_frame(engine, config))
 
+    age_curves: AgeCurves | None = None
+    age_skipped: str | None = None
+    try:
+        age_curves = build_curves(engine, config)
+    except (NotFoundError, ValueError) as exc:
+        age_skipped = getattr(exc, "message", str(exc))
+
     return TrainResult(
+        age_curves=age_curves,
+        age_curves_skipped=age_skipped,
         trained_at=trained_at,
         git_sha=git_sha,
         features_as_of=features_as_of,

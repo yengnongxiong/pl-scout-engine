@@ -128,6 +128,33 @@ def _similarity_section(result: TrainResult) -> list[str]:
     return [*lines, *(_similarity_line(e) for e in result.similarity), ""]
 
 
+def _age_section(result: TrainResult) -> list[str]:
+    lines = ["## Age curves (PRD §8.10 step 4)", ""]
+    curves = result.age_curves
+    if curves is None:
+        reason = result.age_curves_skipped or "not computed"
+        return [*lines, f"{NOT_AVAILABLE}: {reason}.", ""]
+    lines += [
+        f"Delta method on {curves.pair_count} consecutive-season player pairs from "
+        f"{', '.join(curves.seasons)} (both seasons ≥ {curves.min_minutes:.0f} minutes; ages "
+        f"with fewer than {curves.min_pairs} pairs get no estimate). Typical next-season "
+        "change per 90:",
+        "",
+        "| Age | " + " | ".join(_cell(c.label) for c in curves.curves) + " |",
+        "|---|" + "---|" * len(curves.curves),
+    ]
+    ages = [p.age for p in curves.curves[0].points] if curves.curves else []
+    for i, age in enumerate(ages):
+        cells = []
+        for c in curves.curves:
+            point = c.points[i]
+            cells.append(
+                NOT_AVAILABLE if point.delta is None else f"{point.delta:+.3f} (n={point.n_pairs})"
+            )
+        lines.append(f"| {age} | " + " | ".join(cells) + " |")
+    return [*lines, "", f"> {curves.caveat}", ""]
+
+
 def render_evaluation(result: TrainResult) -> str:
     """Markdown for ``docs/EVALUATION.md``."""
     lines = [
@@ -141,5 +168,6 @@ def render_evaluation(result: TrainResult) -> str:
         *_value_section(result),
         *_roles_section(result),
         *_similarity_section(result),
+        *_age_section(result),
     ]
     return "\n".join(lines).rstrip("\n") + "\n"

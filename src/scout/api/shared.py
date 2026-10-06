@@ -8,6 +8,7 @@ from scout.api.deps import ApiState
 from scout.config import AppConfig
 from scout.db.models import DimPlayer, PlayerValueScore
 from scout.db.session import make_session_factory
+from scout.ml.age_curves import AgeCurves, build_curves
 from scout.ml.value_model import CAVEAT
 from scout.reports.facts import ImpliedValueFact
 
@@ -58,3 +59,9 @@ def implied_values(state: ApiState) -> dict[int, ImpliedValueFact]:
         }
 
     return state.cached(("implied_values", season), load)
+
+
+def age_curves(state: ApiState) -> AgeCurves:
+    """Aging curves from the warehouse (NotFoundError without two past seasons)."""
+    state.season()
+    return state.cached(("age_curves",), lambda: build_curves(state.engine, state.config))

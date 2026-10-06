@@ -381,3 +381,37 @@ def test_cli_backtest(built: Settings, monkeypatch: pytest.MonkeyPatch) -> None:
     assert "Needs at the end of 2025-26" in ok.output and "precision@3 Not available" in ok.output
     assert "Synthetic Rovers: needs none; arrivals none yet" in ok.output
     assert "Skipped: no arrivals yet 2" in ok.output
+
+
+def test_age_curves_and_projection_from_the_warehouse(built: Settings) -> None:
+    from datetime import date
+
+    from scout.db.queries import player_profiles
+    from scout.ml.age_curves import AgeCurve, AgeCurves, AgePoint, build_curves, project_player
+
+    engine = make_engine(built.database_url)
+    config = _config()
+    ids = {
+        str(n): int(p) for n, p in player_profiles(engine)[["canonical_name", "player_id"]].values
+    }
+    # The fixture warehouse holds one past season: no pairs, so no curve is made up.
+    with pytest.raises(NotFoundError, match="two past seasons"):
+        build_curves(engine, config)
+    curves = AgeCurves(
+        curves=[AgeCurve("xg", "xG (FPL, per 90)", [AgePoint(28, -0.05, 0.0, 20)], 20)],
+        seasons=["2024-25", "2025-26"],
+        min_minutes=900,
+        min_pairs=15,
+    )
+    alex = project_player(engine, ids["Alex Testman"], config, curves, as_of=date(2026, 10, 1))
+    later = project_player(engine, ids["Alex Testman"], config, curves, as_of=date(2027, 10, 1))
+    with pytest.raises(NotFoundError):
+        project_player(engine, 999_999, config, curves)
+    engine.dispose()
+    assert alex.age == 28  # born 1998-03-14
+    [xg] = alex.projections
+    assert xg.current is not None and xg.delta == -0.05 and xg.n_pairs == 20
+    assert xg.projected == pytest.approx(max(0.0, xg.current - 0.05))
+    assert alex.effective_minutes is not None and alex.effective_minutes > 180
+    # At 29 the curve has no point: the projection is Not available, not the current rate.
+    assert later.projections[0].delta is None and later.projections[0].projected is None

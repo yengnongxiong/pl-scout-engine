@@ -8,6 +8,9 @@ from sqlalchemy import func, select
 from scout.api.deps import ApiState, State
 from scout.api.errors import ERROR_RESPONSES
 from scout.api.schemas import (
+    AgeCurveOut,
+    AgeCurvesResponse,
+    AgePointOut,
     ArrivalOut,
     BacktestResponse,
     ClubBacktestOut,
@@ -19,6 +22,7 @@ from scout.api.schemas import (
     SourceFreshnessOut,
     TeamKpiDefinitionOut,
 )
+from scout.api.shared import age_curves
 from scout.db.doctor import run_doctor
 from scout.db.models import PlayerRole, PlayerValueScore
 from scout.db.session import make_session_factory
@@ -212,3 +216,31 @@ def backtest(state: State) -> BacktestResponse:
         )
 
     return state.cached(("backtest",), compute)
+
+
+@router.get("/age-curves", response_model=AgeCurvesResponse)
+def age_curve_list(state: State) -> AgeCurvesResponse:
+    """Delta-method aging curves per stat from past FPL seasons (US-18)."""
+    curves = age_curves(state)
+    return AgeCurvesResponse(
+        seasons=curves.seasons,
+        min_minutes=curves.min_minutes,
+        min_pairs=curves.min_pairs,
+        pair_count=curves.pair_count,
+        history_as_of=curves.history_as_of,
+        caveat=curves.caveat,
+        curves=[
+            AgeCurveOut(
+                metric=c.metric,
+                label=c.label,
+                n_pairs=c.n_pairs,
+                points=[
+                    AgePointOut(
+                        age=p.age, delta=p.delta, cumulative=p.cumulative, n_pairs=p.n_pairs
+                    )
+                    for p in c.points
+                ],
+            )
+            for c in curves.curves
+        ],
+    )

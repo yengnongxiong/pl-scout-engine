@@ -10,17 +10,20 @@ from scout.api.deps import ApiState, State
 from scout.api.errors import ERROR_RESPONSES
 from scout.api.schemas import (
     BenchmarkName,
+    PlayerAgeCurveResponse,
     PlayerSearchHit,
+    ProjectionOut,
     ReportOut,
     ReportResponse,
     SeasonMode,
     SimilarPlayerOut,
     SimilarResponse,
 )
-from scout.api.shared import player_names
+from scout.api.shared import age_curves, player_names
 from scout.db.queries import player_profiles
 from scout.engines.search import SearchIndex
 from scout.errors import ConfigError, InvalidRequestError, NotFoundError
+from scout.ml.age_curves import project_player
 from scout.ml.similarity import find_similar
 from scout.reports.facts import FactSheet, build_fact_sheet
 from scout.reports.generate import generate_report
@@ -192,4 +195,32 @@ def player_report(
             violations=list(report.violations),
         ),
         facts=sheet,
+    )
+
+
+@router.get("/{player_id}/age-curve", response_model=PlayerAgeCurveResponse)
+def player_age_curve(player_id: int, state: State) -> PlayerAgeCurveResponse:
+    """Next-season projection from the age curves: blended rate + typical change at age."""
+    curves = age_curves(state)
+    result = state.cached(
+        ("age_projection", player_id),
+        lambda: project_player(state.engine, player_id, state.config, curves),
+    )
+    return PlayerAgeCurveResponse(
+        player_id=player_id,
+        age=result.age,
+        effective_minutes=result.effective_minutes,
+        seasons=curves.seasons,
+        caveat=curves.caveat,
+        projections=[
+            ProjectionOut(
+                metric=p.metric,
+                label=p.label,
+                current=p.current,
+                delta=p.delta,
+                projected=p.projected,
+                n_pairs=p.n_pairs,
+            )
+            for p in result.projections
+        ],
     )

@@ -231,7 +231,8 @@ def _club_records(engine: Engine, seasons: Sequence[str]) -> dict[str, dict[int,
     return out
 
 
-def _context(engine: Engine) -> tuple[str, dict[int, tuple[str | None, date | None]]]:
+def player_context(engine: Engine) -> tuple[str, dict[int, tuple[str | None, date | None]]]:
+    """The current season and every player's ``(position group, date of birth)``."""
     with make_session_factory(engine)() as session:
         current = session.scalars(select(DimSeason.season_id).where(DimSeason.is_current)).first()
         players = {
@@ -246,7 +247,7 @@ def _context(engine: Engine) -> tuple[str, dict[int, tuple[str | None, date | No
 def training_frame(engine: Engine, config: AppConfig) -> pd.DataFrame:
     """Labelled past player-seasons with at least ``min_minutes`` (model training data)."""
     cfg = config.settings.value_model
-    current, players = _context(engine)
+    current, players = player_context(engine)
     totals = player_season_totals(engine)
     seasons = zip(totals["season_id"], totals["source"], strict=True)
     past = sorted({str(s) for s, src in seasons if src == HISTORY_SOURCE and str(s) != current})
@@ -298,7 +299,7 @@ def scoring_frame(engine: Engine, config: AppConfig) -> pd.DataFrame:
     are returned; for everyone else the stats-implied value is "Not available".
     """
     cfg = config.settings.value_model
-    current, players = _context(engine)
+    current, players = player_context(engine)
     previous = previous_seasons(current, 1)[0]
     totals = player_season_totals(engine)
     records = _club_records(engine, [current, previous])

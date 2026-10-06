@@ -25,3 +25,12 @@ export function useBacktest() {
     queryFn: async () => unwrap(await api.GET("/meta/backtest")),
   });
 }
+
+/** Delta-method aging curves from past FPL seasons (US-18). */
+export function useAgeCurves() {
+  return useQuery({
+    queryKey: ["meta", "age-curves"],
+    queryFn: async () => unwrap(await api.GET("/meta/age-curves")),
+    retry: false,
+  });
+}

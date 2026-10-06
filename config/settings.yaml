@@ -181,3 +181,18 @@ backtest:
   top_n: 3
   # An arrival counts once they have played at least this many minutes for the new club.
   arrival_min_minutes: 1
+
+age_curves:
+  # PRD §8.10 step 4 / US-18 (P2): delta-method aging curves from past FPL seasons (vaastav).
+  # Pairs of consecutive seasons by the same player, both with at least min_minutes, give a
+  # change in each per-90 rate, weighted by the harmonic mean of the two seasons' minutes and
+  # assigned to the player's age at the end of the first season.
+  metrics:
+    xg: "xG (FPL, per 90)"
+    xa: "xA (FPL, per 90)"
+    goals: "Goals (per 90)"
+    assists: "Assists (per 90)"
+  min_minutes: 900
+  min_pairs: 15
+  age_min: 18
+  age_max: 36

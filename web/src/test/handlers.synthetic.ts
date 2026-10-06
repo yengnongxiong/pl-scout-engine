@@ -33,6 +33,7 @@ export const handlers = [
   http.get(apiPath("/players/search"), () => HttpResponse.json(data.playerSearch)),
   http.get(apiPath("/players/:playerId/similar"), () => HttpResponse.json(data.similar)),
   http.get(apiPath("/players/:playerId/report"), () => HttpResponse.json(data.report)),
+  http.get(apiPath("/players/:playerId/age-curve"), () => HttpResponse.json(data.playerAgeCurve)),
   http.get(apiPath("/players/:playerId"), ({ params }) =>
     HttpResponse.json(params.playerId === "7" ? data.incumbentSheet : data.factSheet),
   ),
@@ -40,4 +41,5 @@ export const handlers = [
   http.get(apiPath("/meta/freshness"), () => HttpResponse.json(data.freshness)),
   http.get(apiPath("/meta/methodology"), () => HttpResponse.json(data.methodology)),
   http.get(apiPath("/meta/backtest"), () => HttpResponse.json(data.backtest)),
+  http.get(apiPath("/meta/age-curves"), () => HttpResponse.json(data.ageCurves)),
 ];

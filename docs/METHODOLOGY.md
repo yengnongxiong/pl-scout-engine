@@ -162,6 +162,13 @@ bounded min-heap (`dsa/heap_topk.py`).
   **Undervalued**, above it **Premium**, inside it **Fair**. It is a stats-implied value, not a fee
   prediction: the model learns the market's own biases.
 
+- **Age curves** (delta method): for players with ≥ 900 minutes in two consecutive past seasons,
+  the change in each per-90 rate (FPL xG, xA, goals, assists) is assigned to the player's age at
+  the end of the first season and weighted by the harmonic mean of the two seasons' minutes; the
+  weighted mean per age (only with ≥ 15 pairs) gives the typical next-season change, and the
+  player page projects next season as the blended rate plus that change. The delta method only
+  sees players good enough to keep playing, so declines are understated (survivorship bias).
+
 All fits are seeded. `scout train` saves each model with a metadata JSON (data window, features,
 metrics, seed, git SHA), stores role labels and value bands in the warehouse, and writes
 [`docs/EVALUATION.md`](EVALUATION.md). A model is never trained on too little data; it is

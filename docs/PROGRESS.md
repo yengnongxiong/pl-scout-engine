@@ -1,7 +1,7 @@
 # Progress
 Status: IN_PROGRESS            <!-- IN_PROGRESS or COMPLETE -->
 Active session: 20261006T0207Z-4005 started 2026-10-06T02:07:31Z
-Current milestone: Stretch (S4 age curves next)
+Current milestone: Stretch (S5 PDF export next)
 
 ## Plan for this session
 - M0-04 web scaffold (Vite + React + TS strict, ESLint, Prettier, Vitest + RTL, Tailwind), M0-05 (`web/openapi.json` + `npm run gen:api`), M0-06 (`web` and `contract` CI jobs); then M6 reports.
@@ -98,11 +98,12 @@ Current milestone: Stretch (S4 age curves next)
 ### Stretch
 - [x] S7 Backtest (US-16, PRD §8.11): `engines/backtest.py` re-runs the diagnosis as of the end of last season (same feature pipeline with last season as "current"), compares each club's top-n needs with the position groups of this season's arrivals (players with minutes at a club they had no FPL record with last season), precision@n vs a leave-one-club-out most-signed baseline and random expectation; `scout backtest`, `GET /meta/backtest`, `/backtest` page — unit + integration + page tests
 - [x] S2 GK module (US-14): FPL saves/goals conceded/penalties saved stored (migration 0004, adapter fields verified against the live 2026-27 payload, vaastav optional columns); GK position group (TM Goalkeeper, FPL GKP fallback) with goals prevented vs xG conceded (proxy), save %, saves p90 and xGC on pitch; group-level caveat shown in diagnosis, shortlist, reports and methodology; goalkeepers excluded from outfield role archetypes (`ml.role_groups`); peak age 27-33
-- [ ] S4 Age curves (US-18)
+- [x] S4 Age curves (US-18, PRD §8.10 step 4): `ml/age_curves.py` delta method on consecutive past FPL seasons (harmonic-mean minutes weights, min pairs per age, cumulative curve), player projection = blended FPL rate + typical change at age; `GET /meta/age-curves`, `GET /players/{id}/age-curve`, methodology chart + table, player card, EVALUATION.md section; 404 Not available without two past seasons
 - [ ] S5 PDF export (US-17)
 - [ ] S3 Postgres via docker-compose
 
 ## Done
+- S4 (2026-10-06): age curves and next-season projections.
 - S2 (2026-10-06): goalkeeper module with limited, caveated metrics.
 - S7 (2026-10-06): backtest engine, CLI, API and page.
 - M9-01 to M9-04 (2026-10-06): live FPL adapter check, club aliases for promoted clubs, `scout demo`, METHODOLOGY + README + screenshots, fresh-clone check. M9 complete; next: stretch goals in the order S7, S2, S4, S5, S3.
@@ -127,6 +128,7 @@ Current milestone: Stretch (S4 age curves next)
 - Please run the self-hosted `felipeall/transfermarkt-api` on :8001 (or change `ingest.base_urls.transfermarkt`) before `scout ingest --source transfermarkt`.
 
 ## Decisions log (minor)
+- 2026-10-06: Age curves (S4) use FPL-history stats that exist in every past season (xG, xA, goals, assists per 90; defensive stats start in 2025-26 so they cannot form pairs yet), completed past seasons only (the current season is partial), integer age at the end of the first season, harmonic-mean minutes weights, and at least 15 pairs per age (config). The curves are computed on request from the warehouse (cheap, LRU-cached) rather than stored, and `scout train` adds them to EVALUATION.md. Projections are clamped at 0 and are "Not available" when the player's age has too few pairs.
 - 2026-10-06: Backtest (S7): the PRD suggests Transfermarkt transfers for "first-team signings"; the warehouse has no transfers table, so arrivals are derived from FPL data already ingested: a player with minutes this season for a club they had no FPL record with last season (signings and loans; academy debutants with no FPL history count too). It needs no new source and only counts players who actually played (first team). The benchmark at season end is that season's own table (the last completed one at the time). Clubs without both a shortfall and an arrival are reported as skipped, never scored.
 - 2026-10-06: README screenshots render the front end's synthetic test data (made-up clubs and players, captioned as such) served to the production build through Playwright route interception, so the README never shows real-looking numbers without a receipt; `npm run screenshots -- --live` re-shoots them from the owner's real dashboard. Dependency: playwright (Apache-2.0, dev only; browsers via `npx playwright install chromium` or `PLAYWRIGHT_CHROMIUM_PATH`).
 - 2026-10-06: Dashboard: percentile bars are plain accessible elements (`role="meter"`, number always printed) rather than chart-library bars; Recharts is used only for the Moneyball scatter (marker shape + colour per label, lazy-loaded so the main bundle stays ~96 kB gzip). Evidence rows now carry `value` (the per-90 the percentile ranks, in the requested season mode) next to `raw_p90` (this season only), so bars never pair a blended percentile with a "Not available" current-season rate. ESLint: `react-hooks/incompatible-library` is off because the project does not run the React Compiler (the rule only reports that the compiler would skip TanStack Table components).

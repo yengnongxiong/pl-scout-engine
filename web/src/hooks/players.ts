@@ -83,3 +83,18 @@ export function useCompare(
     enabled: a !== undefined && b !== undefined && a !== b,
   });
 }
+
+/** Next-season projection for one player from the age curves (US-18). */
+export function usePlayerAgeCurve(playerId: number | undefined) {
+  return useQuery({
+    queryKey: ["age-curve", playerId],
+    queryFn: async () =>
+      unwrap(
+        await api.GET("/players/{player_id}/age-curve", {
+          params: { path: { player_id: playerId ?? 0 } },
+        }),
+      ),
+    enabled: playerId !== undefined,
+    retry: false,
+  });
+}
