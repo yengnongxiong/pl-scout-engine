@@ -1,10 +1,10 @@
 # Progress
 Status: IN_PROGRESS            <!-- IN_PROGRESS or COMPLETE -->
-Active session: none
+Active session: 20261006T0207Z-4005 started 2026-10-06T02:07:31Z
 Current milestone: M6 (M5 done; M0-04/05/06 web items come first now that npm is reachable)
 
 ## Plan for this session
-- (next session) M0-04 web scaffold now that npm is reachable, then M0-05 (`web/openapi.json` + `npm run gen:api`) and M0-06 (`web` and `contract` CI jobs); then M6 reports.
+- M0-04 web scaffold (Vite + React + TS strict, ESLint, Prettier, Vitest + RTL, Tailwind), M0-05 (`web/openapi.json` + `npm run gen:api`), M0-06 (`web` and `contract` CI jobs); then M6 reports.
 
 ## Task queue (current milestone)
 - [x] M0-01 Apply ADR-0001 edits to PRD, bump to v1.1 + changelog — PRD diff matches ADR list
