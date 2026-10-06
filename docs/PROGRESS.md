@@ -1,7 +1,7 @@
 # Progress
 Status: IN_PROGRESS            <!-- IN_PROGRESS or COMPLETE -->
 Active session: 20261006T0207Z-4005 started 2026-10-06T02:07:31Z
-Current milestone: M9
+Current milestone: Stretch (S7 backtest next)
 
 ## Plan for this session
 - M0-04 web scaffold (Vite + React + TS strict, ESLint, Prettier, Vitest + RTL, Tailwind), M0-05 (`web/openapi.json` + `npm run gen:api`), M0-06 (`web` and `contract` CI jobs); then M6 reports.
@@ -93,9 +93,10 @@ Current milestone: M9
 - [x] M9-01 Live adapter check within caps: FPL (5 requests) parses the 2026-27 payload (20 clubs, 667 players, 380 fixtures); aliases added for promoted clubs (Coventry City, Hull City) and recent history clubs. Understat/FotMob could not be checked: soccerdata 1.9 downloads a native TLS library from GitHub on first use, which fails in the sandbox
 - [x] M9-02 `scout demo` (ingest if no data → build → train → web dev server + API; `--refresh`, `--skip-build`, `--no-web`), `pipeline.train_and_store` shared with `scout train` — unit tests with faked steps; real run against fixture data
 - [x] M9-03 `docs/METHODOLOGY.md`; README (quick start, pages, architecture diagram, methodology, limitations, commands, DSA table, How it was made); `web/scripts/screenshots.mjs` (`npm run screenshots`, synthetic by default, `-- --live` for real data) + `docs/screenshots/`
-- [ ] M9-04 Fresh-clone check: clone into a temp dir, `uv sync`, `npm ci`, all checks, `scout --help`, `scout demo --no-web` against fixture snapshots
+- [x] M9-04 Fresh-clone check: clone of `main` into a temp dir, `uv sync --locked`, `npm ci`, ruff/mypy/pytest, web lint/typecheck/test/build, `make contract`, `scout --help` all pass (the demo itself ran against fixture snapshots in M9-02)
 
 ## Done
+- M9-01 to M9-04 (2026-10-06): live FPL adapter check, club aliases for promoted clubs, `scout demo`, METHODOLOGY + README + screenshots, fresh-clone check. M9 complete; next: stretch goals in the order S7, S2, S4, S5, S3.
 - M8-01 to M8-03 (2026-10-06): the five PRD §13 pages, typed against the generated client, every page tested in loading/empty/error/success states, lazy-loaded routes and chart. M8 complete (real-data demo happens on the owner's machine with `scout demo`).
 - M7-01 to M7-03 (2026-10-06): every PRD §12 endpoint plus `/meta/methodology`, trie search with fuzzy suggestions, LRU-cached hot endpoints, single error schema everywhere, OpenAPI exported and TS types regenerated. M7 complete.
 - M6-01 to M6-06 (2026-10-06): ML outputs in the warehouse, single-player assessment, fact sheets, template reports with seeded phrase banks, grounding validator, optional Ollama rewrite with fallback, `scout report`. M6 complete.
@@ -112,6 +113,7 @@ Current milestone: M9
 - (none) PyPI files and npm both install through the agent proxy as of 2026-10-06 (remove `pypi.org`, `files.pythonhosted.org` and `registry.npmjs.org` from `NO_PROXY`/`no_proxy`/`npm_config_noproxy` first), so all checks run locally and Preflight is only needed when that stops working.
 
 ## Questions for Yengnong (non-blocking; default chosen)
+- Understat and FotMob go through soccerdata 1.9, which downloads a native TLS library from GitHub releases on first use; that download fails in the cloud sandbox, so their live schemas are still unverified. Please run `uv run scout ingest --source understat` once on your machine and tell a session if it fails. Default: the adapters keep their fixture-based contract tests.
 - `ingest.base_urls.transfermarkt_datasets` defaults to the dataset's public R2 export URL. I couldn't verify it from the sandbox; please confirm or correct it in `config/settings.yaml`. Default: use it as is; a failed fetch just means no stale fallback.
 - Please run the self-hosted `felipeall/transfermarkt-api` on :8001 (or change `ingest.base_urls.transfermarkt`) before `scout ingest --source transfermarkt`.
 
