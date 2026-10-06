@@ -1,7 +1,7 @@
 # Progress
 Status: IN_PROGRESS            <!-- IN_PROGRESS or COMPLETE -->
 Active session: 20261006T0207Z-4005 started 2026-10-06T02:07:31Z
-Current milestone: M6 (M5 done; M0-04/05/06 web items come first now that npm is reachable)
+Current milestone: M6
 
 ## Plan for this session
 - M0-04 web scaffold (Vite + React + TS strict, ESLint, Prettier, Vitest + RTL, Tailwind), M0-05 (`web/openapi.json` + `npm run gen:api`), M0-06 (`web` and `contract` CI jobs); then M6 reports.
@@ -10,11 +10,9 @@ Current milestone: M6 (M5 done; M0-04/05/06 web items come first now that npm is
 - [x] M0-01 Apply ADR-0001 edits to PRD, bump to v1.1 + changelog — PRD diff matches ADR list
 - [x] M0-02 Python skeleton: pyproject (uv), src/scout package, errors.py, config.py (pydantic-settings + YAML), Typer CLI with `--help`, conftest network guard — `uv run scout --help`, pytest, ruff, mypy pass
 - [x] M0-03 config/*.yaml stubs (settings, kpis, fit_weights, positions, team_aliases) loaded + validated by config.py — unit tests pass
-- [ ] M0-04 web/ scaffold: Vite + React + TS strict, ESLint, Prettier, Vitest + RTL, Tailwind — lint/typecheck/test/build pass
-- [ ] M0-05 FastAPI stub (`/health`) + `scout export-openapi` + `npm run gen:api` (openapi-typescript) — generated files committed, no drift
-  - Note: Python half done (FastAPI `/health`, error schema, CORS, `scout api`, `scout export-openapi`; CI-verified). Remaining: commit `web/openapi.json`, `npm run gen:api` with openapi-typescript, `contract` CI job. Needs npm (blocked).
-- [ ] M0-06 CI workflow (python, web, contract jobs) + ADR template + README stub + Makefile + .env.example + .gitignore — workflow file valid; local equivalents pass
-  - Note: CI `python` job, Makefile, .gitignore, .env.example, ADR template and README stub done. Remaining: `web` and `contract` jobs once web/ exists.
+- [x] M0-04 web/ scaffold: Vite + React + TS strict, ESLint, Prettier, Vitest + RTL, Tailwind — lint/typecheck/test/build pass
+- [x] M0-05 FastAPI stub (`/health`) + `scout export-openapi` + `npm run gen:api` (openapi-typescript) — generated files committed, no drift
+- [x] M0-06 CI workflow (python, web, contract jobs) + ADR template + README stub + Makefile + .env.example + .gitignore — workflow file valid; local equivalents pass
 
 
 ### M1 (started early: remaining M0 items are blocked on npm; Python-only and independent)
@@ -74,6 +72,7 @@ Current milestone: M6 (M5 done; M0-04/05/06 web items come first now that npm is
 - [x] M5-08b `ml/evaluation.py` renders `docs/EVALUATION.md` (value model vs baseline, band coverage, limitations; GMM BIC/silhouette/stability + cluster labels; similarity examples; "Not available: reason" for skipped models); `scout train` CLI command (git SHA, models dir under `data_dir`); fixture run in tests
 
 ## Done
+- M0-04 to M0-06 (2026-10-06): `web/` scaffold (Vite + React 19 + TS strict, ESLint + jsx-a11y, Prettier, Vitest + RTL + MSW, Tailwind v4), committed `web/openapi.json` + generated `src/api/schema.d.ts` (openapi-typescript) + openapi-fetch client, CI `web` and `contract` jobs, `uv.lock` committed and CI installs with `--locked`. M0 complete.
 - M0-01, M0-02, M0-03 (2026-10-03); Python halves of M0-05/M0-06.
 - M1-01 to M1-08 (2026-10-03): all ingestion adapters plus `scout ingest`.
 - M2-01 to M2-07 (2026-10-03): warehouse, entity resolution, validation, `scout build`, `scout doctor`.
@@ -83,14 +82,14 @@ Current milestone: M6 (M5 done; M0-04/05/06 web items come first now that npm is
 - M5-07 and M5-08 (2026-10-04): Transfermarkt valuation history, value-model training frame, stats-implied value model vs baseline with q10/q90 band, current-player scoring, `scout train` (artefacts + metadata + `docs/EVALUATION.md`). M5 complete.
 
 ## Blocked
-- **PyPI downloads blocked in the cloud sandbox** (updated 2026-10-04): registry.npmjs.org and the pypi.org index now answer through the agent proxy (the default `NO_PROXY` entries for them must be removed for that, see the 2026-10-04 decision), but files.pythonhosted.org, where PyPI serves the package files, is still denied, so `uv sync` can't install anything locally. Python checks run in the Preflight workflow. npm works, so M0-04/05/06 (web scaffold, generated client, `web`/`contract` CI jobs) are unblocked. `uv.lock` isn't committed yet; generate it once files.pythonhosted.org is allowed.
+- (none) PyPI files and npm both install through the agent proxy as of 2026-10-06 (remove `pypi.org`, `files.pythonhosted.org` and `registry.npmjs.org` from `NO_PROXY`/`no_proxy`/`npm_config_noproxy` first), so all checks run locally and Preflight is only needed when that stops working.
 
 ## Questions for Yengnong (non-blocking; default chosen)
 - `ingest.base_urls.transfermarkt_datasets` defaults to the dataset's public R2 export URL. I couldn't verify it from the sandbox; please confirm or correct it in `config/settings.yaml`. Default: use it as is; a failed fetch just means no stale fallback.
 - Please run the self-hosted `felipeall/transfermarkt-api` on :8001 (or change `ingest.base_urls.transfermarkt`) before `scout ingest --source transfermarkt`.
-- Please also allow `files.pythonhosted.org` in this environment's network settings (pypi.org and registry.npmjs.org already work). Default until then: Python work verified via Preflight; web work goes ahead with npm.
 
 ## Decisions log (minor)
+- 2026-10-06: Web toolchain versions: React 19, React Router 8, TanStack Query 5, TanStack Table 8 (v9 changes the API), Recharts 3, Tailwind 4, Vite 8, Vitest 5, MSW 2, openapi-typescript 7 + openapi-fetch. TypeScript stays on 5.9 because typescript-eslint supports < 6.1 and openapi-typescript needs ^5. ESLint stays on 9 because eslint-plugin-jsx-a11y (accessibility lint, required by the code style) doesn't support 10 yet. All MIT/ISC/Apache.
 - 2026-10-04: Package registries in the sandbox: the environment lists pypi.org, files.pythonhosted.org and registry.npmjs.org in `NO_PROXY`, but direct connections are denied. Removing them from `NO_PROXY` (and setting `npm_config_proxy`/`npm_config_https_proxy` to `$HTTPS_PROXY`) routes npm and the PyPI index through the agent proxy, which allows them.
 - 2026-10-04: Value model (PRD §8.10 step 3): HistGradientBoostingRegressor on log value with the position group as a native categorical feature; missing features stay NaN and go down the trees' missing-value branches (no imputation). Evaluated on the latest labelled season held out (train on earlier ones) against the group x age-bucket median baseline (MAE log, median absolute % error), then refit on all labelled seasons for scoring. q10/q90 quantile models give the band; quantile predictions are sorted per row so the band never crosses. Band label: TM value below the band = Undervalued, above = Premium, else Fair. Inputs are scale-free (age, age², minutes share, club points per game, per-90 rates, group; no raw minutes, as in the PRD's feature list) so a part-season scores on the same footing as a full one. A column with fewer than two distinct known values in the fit's rows is left out of that fit (histogram binning can't use it, and it has no signal); the model records the columns it used for evaluation and for scoring.
 - 2026-10-04: Value-model features use the same per-90 blending as the rest of the engine (PRD §8.2: λ-weighted, capped previous season) for training rows and for this season's scoring rows, so a part-season is scored like a full one; minutes share and club points per game stay the season's own. Scoring (`ml/value_data.scoring_frame` + `ml/value_model.score_players`): this season's players with a position group, a current Transfermarkt estimated market value (config precedence, receipt kept) and at least `value_model.min_minutes` effective (blended) minutes; age is taken on the value's own date. Everyone else shows "Not available". The caveat text lives in `value_model.CAVEAT`.
