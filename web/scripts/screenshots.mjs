@@ -3,6 +3,7 @@
  *
  *   npm run screenshots              # synthetic test data (no API needed), the default
  *   npm run screenshots -- --live    # your real dashboard: run `uv run scout demo` first
+ *   SCOUT_SCREENSHOT_TEAM="Man Utd" npm run screenshots -- --live   # pick the club shown
  *
  * Synthetic mode serves the front end's synthetic test data (src/test/data.synthetic.ts:
  * made-up players and clubs) to the production build, so the README never shows numbers
@@ -66,11 +67,19 @@ async function synthetic(page) {
   });
 }
 
-async function shoot(page, path, name, waitFor, before) {
+async function shoot(page, path, name, waitFor, before, { fullPage = true, section } = {}) {
   await page.goto(base + path);
   await page.getByText(waitFor).first().waitFor({ timeout: 15000 });
   if (before) await before(page);
-  await page.screenshot({ path: `${out}/${name}.png`, fullPage: true });
+  const file = `${out}/${name}.png`;
+  if (section) {
+    // Just one card of the page (cards are <section>s titled by a heading).
+    const heading = page.getByRole("heading", { name: section, exact: true });
+    await page.locator("section", { has: heading }).first().screenshot({ path: file });
+  } else {
+    // The top of each page is what a README reader needs; full pages run 2,000-3,700 px.
+    await page.screenshot({ path: file, fullPage });
+  }
   console.log(`wrote docs/screenshots/${name}.png`);
 }
 
@@ -100,7 +109,8 @@ try {
   let incumbent = 7;
   if (live) {
     const teams = await (await fetch(`${base}/api/teams`)).json();
-    team = teams[0].team_id;
+    const wanted = process.env.SCOUT_SCREENSHOT_TEAM;
+    team = (teams.find((t) => t.name === wanted) ?? teams[0]).team_id;
     const diagnosis = await (await fetch(`${base}/api/teams/${team}/diagnosis`)).json();
     need = diagnosis.needs[0].need_id;
     const shortlist = await (
@@ -109,21 +119,46 @@ try {
     player = shortlist.candidates[0]?.player_id ?? diagnosis.needs[0].evidence[0].player_id;
     incumbent = shortlist.incumbent?.player_id ?? player;
   }
-  await shoot(page, `/?team=${team}`, "diagnosis", "Top needs");
+  const top = { fullPage: false };
+  await shoot(page, `/?team=${team}`, "diagnosis", "Top needs", undefined, top);
   await shoot(page, `/clubs/${team}/needs/${need}`, "shortlist", "Candidates (", (p) =>
     p.getByRole("button", { name: /Why\?/ }).first().click(),
   );
-  await shoot(page, `/clubs/${team}/needs/${need}?moneyball=1`, "moneyball", /Above the diagonal/);
-  await shoot(page, `/players/${player}?team=${team}`, "player", /SCOUTING REPORT:/);
+  await shoot(
+    page,
+    `/clubs/${team}/needs/${need}?moneyball=1`,
+    "moneyball",
+    /Above the diagonal/,
+    undefined,
+    { section: "Moneyball view" },
+  );
+  await shoot(
+    page,
+    `/players/${player}?team=${team}`,
+    "player",
+    /SCOUTING REPORT:/,
+    undefined,
+    top,
+  );
+  await shoot(page, `/players/${player}?team=${team}`, "report", /SCOUTING REPORT:/, undefined, {
+    section: "Scouting report",
+  });
   await shoot(
     page,
     `/compare?a=${player}&b=${incumbent}&team=${team}`,
     "compare",
     "Percentiles side by side",
+    undefined,
+    top,
   );
-  await shoot(page, "/backtest", "backtest", "By club");
-  await shoot(page, "/methodology", "methodology", "Known limitations", (p) =>
-    p.getByRole("list", { name: "Legend" }).waitFor({ timeout: 15000 }),
+  await shoot(page, "/backtest", "backtest", "By club", undefined, top);
+  await shoot(
+    page,
+    "/methodology",
+    "methodology",
+    "Known limitations",
+    (p) => p.getByRole("list", { name: "Legend" }).waitFor({ timeout: 15000 }),
+    top,
   );
 } finally {
   await browser.close();
