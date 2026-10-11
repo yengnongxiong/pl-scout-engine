@@ -1,10 +1,10 @@
 # Progress
-Status: IN_PROGRESS            <!-- IN_PROGRESS or COMPLETE -->
-Active session: 20261011T1909Z-9890 started 2026-10-11T19:09:33Z
+Status: COMPLETE               <!-- IN_PROGRESS or COMPLETE -->
+Active session: none
 Current milestone: none (M0-M9 and stretch S7, S2, S4, S5, S3 done; S1 and S6 need the owner's go-ahead)
 
 ## Plan for this session
-- Owner-requested audit on the owner's machine (local session, owner present): run every check locally, run the full pipeline on live data for the first time (ingest, build, train, API, web), fix any bugs found, then list improvement ideas. Status goes back to COMPLETE at wrap-up.
+- (none: the project is complete; the live-data audit of 2026-10-11 is done. Open items for the owner are under Questions.)
 
 ## Task queue (current milestone)
 - [x] M0-01 Apply ADR-0001 edits to PRD, bump to v1.1 + changelog — PRD diff matches ADR list
@@ -117,9 +117,17 @@ The first run against live data (every earlier session used synthetic fixtures i
 - [x] Similar players offered players with no current-season page (dead links)
 - [x] Relegated clubs counted as current (club picker, StyleFit scaling, backtest counts)
 - [x] Live Transfermarkt failure now says the self-hosted API is not running
+- [x] Entity review rows keep their reason (migration 0006)
+- [x] Value band covered 49% against a nominal 80% → split-conformal calibration (labels: Undervalued 36 / Fair 190 / Premium 43 instead of 69 / 120 / 80)
+- [x] `scout diagnose` printed weak links as player ids → names and KPI labels
+- [x] Search ranked fuzzy suggestions above word-prefix hits ("Saka" → Wan-Bissaka first)
+- [x] "This season only" early in the season showed severity 0.0 ("no shortfall") for unknown gaps → severity null, "Not available" and an explanation
+- [x] Age-curve pair count was multiplied by the number of stats (1276 → 319)
+- [x] `docs/EVALUATION.md` now holds the first live-data evaluation
+- Verified end to end: `uv run scout demo` from a fresh clone (all sources live; Transfermarkt live fails gracefully without the self-hosted API), every dashboard page on real data, PDF/Markdown export, CI green (python, postgres, web, contract) on every push.
 
 ## Done
-- Live-data audit (2026-10-11): first end-to-end run on real data; 13 fixes listed above, CI green on every push.
+- Live-data audit (2026-10-11): first end-to-end run on real data; 20 fixes listed above, CI green on every push.
 - S3 (2026-10-06): Postgres option with CI parity tests. All stretch goals in the agreed order (S7, S2, S4, S5, S3) are done.
 - S5 (2026-10-06): report export to PDF and Markdown.
 - S4 (2026-10-06): age curves and next-season projections.
@@ -148,6 +156,9 @@ The first run against live data (every earlier session used synthetic fixtures i
 - Players still unlinked to Understat after the matching fix (e.g. "Mathis Cherki" / Rayan Cherki, "Valentino" / Tino Livramento, "Yeremi" / Yéremy Pino) can be added to `data/overrides/player_overrides.csv` if you confirm they are the same people. Default: left in review rather than guessed.
 
 ## Decisions log (minor)
+- 2026-10-11: Value band calibration: split-conformal quantile regression on the held-out season (the same season the model is evaluated on); the shift is applied to the all-season refit used for scoring. EVALUATION reports raw coverage, the shift and calibrated coverage (by construction ≥ nominal on that season).
+- 2026-10-11: Need severity is null when no KPI of the group can be compared (CLAUDE.md rule 2); such groups sort last and the dashboard explains why. A compared group with no shortfall keeps 0.
+- 2026-10-11: `docs/EVALUATION.md` is committed from a live-data `scout train` run (header carries run time, commit and feature as-of); regenerate after every build.
 - 2026-10-11: Entity resolution: FPL's `known_name` is the display name and an extra anchor name; `birth_date` comes from FPL first (651 of 667 players), Transfermarkt second. Token rules (config scores 95 / 90) only fire within a club block and never from a one-token FPL web name (a shared surname is not evidence); a date-of-birth match confirms a name scoring ≥ 60 within the club, or links across clubs when exactly one FPL player with that birthday clears `accept_score`.
 - 2026-10-11: Position group precedence: Transfermarkt detailed position, then the Understat formation slot with the most minutes (both seasons; "Sub" ignored), then the coarse FPL type.
 - 2026-10-11: A club is current when it has a fixture in the current season (FPL loads the whole fixture list), not merely an FPL team code (codes persist for relegated clubs in the history archive).
@@ -186,6 +197,7 @@ The first run against live data (every earlier session used synthetic fixtures i
 - 2026-10-03: Commits are authored as Yengnong Xiong (GitHub noreply email) per owner request; Claude stays as Co-Authored-By. Set in CLAUDE.md session protocol step 4.
 
 ## Session log (keep the last 15 entries; summarize older ones in one line)
+- 20261011T1909Z-9890 (19:09-20:35 UTC, owner present, owner's machine): First live-data run of the whole pipeline. All checks were green on fixtures, but real data exposed 20 issues, each fixed test-first and pushed in small commits: a duplicate-row validation stop in the vaastav archive, non-hermetic tests, a runner crash on non-Scout errors, past seasons without kickoffs/scores (value model never trained), FPL legal names breaking entity resolution (Understat 88.6% → 99.1%, Transfermarkt 58.8% → 80.6%), coarse position fallbacks, FotMob removed from soccerdata (→ ESPN, ADR-0002), SQLite migrations with foreign keys, naive UTC receipts, dead similar-player links, relegated clubs as current, an uncalibrated value band (49% vs 80%), search ranking, zero severities for unknown gaps, and smaller UX/reporting fixes. Verified `scout demo` from a fresh clone. One mistake: a commit with an unformatted file reached main; its CI run was cancelled before failing and the fix pushed a minute later. Next: owner runs the self-hosted transfermarkt-api for current values; ideas in the chat summary.
 - 20261006T0207Z-4005 (02:07-03:58 UTC, chat session): Finished M0-04 to M0-06 (web scaffold, OpenAPI + generated TS client, `web` and `contract` CI jobs, `uv.lock` + `--locked`), M6 (fact sheets, template reports, grounding validator, optional Ollama, `scout report`), M7 (all PRD §12 endpoints, trie search, LRU cache, one error schema), M8 (the five dashboard pages, tested in loading/empty/error/success), M9 (live FPL check, `scout demo`, METHODOLOGY, README, screenshots, fresh-clone check) and every stretch goal in order: S7 backtest, S2 goalkeepers, S4 age curves, S5 PDF/Markdown export, S3 Postgres with a CI parity job (which caught backend-dependent timestamps, now normalised). All checks ran locally (PyPI and npm reachable through the proxy), so Preflight wasn't needed; CI stayed green on main. Set `Status: COMPLETE`. Open for the owner: verify Understat/FotMob live ingest (soccerdata's TLS library download fails in the sandbox) and run `uv run scout demo` on real data.
 - 20261004T0125Z-8108 (01:25-02:10 UTC, chat session): Finished M5-07 (a1 valuation history + season-bound SQL, a2 training frame with end-of-season labels, b HistGradientBoosting value model vs baseline with q10/q90 band, c scoring this season's players with blended features and receipts) and M5-08 (a training + joblib artefacts + metadata JSON, b `scout train` + `docs/EVALUATION.md` renderer). M5 is complete. Every code commit passed Preflight first; one Preflight caught HGB failing on all-missing feature columns (fixed by fitting only columns with two or more known values and recording them). npm and the PyPI index are reachable through the proxy; files.pythonhosted.org is still denied. Next: M0-04 web scaffold, then M0-05/M0-06, then M6.
 - 20261003T2337Z-49bb (23:37-00:30 UTC, first chat session, no routine): Finished M4-05 (team-level needs) and M5-01 to M5-06 (heap top-k, FitScore + upgrade gate, StyleFit team style vectors, player profile/market value SQL, `scout recommend`, `scout similar` with k-d tree + scripts/bench_knn.py, GMM roles). Every code commit passed Preflight first; one Preflight caught a too-strict synthetic test (BIC picked k=3 within range), fixed before pushing. Commits authored as Yengnong Xiong, pushed to main, session branch kept in sync. Next: M5-07a (historical TM valuations + training set; design notes in queue). Blocker unchanged: pypi.org / registry.npmjs.org denied by this environment's network policy (web scaffold waits).
