@@ -41,6 +41,32 @@ def test_last_season_table_counts_every_scored_match(built: Settings) -> None:
     assert sorted(table["played"]) == [2, 2]
 
 
+def test_clubs_from_past_seasons_are_not_current(built: Settings) -> None:
+    from scout.db.models import DimMatch, DimTeam
+    from scout.db.session import make_session_factory
+    from scout.engines.diagnosis import season_context
+
+    # FPL team codes are stable across seasons, so the history archive gives relegated
+    # clubs a code too. Only clubs with a fixture this season are current (live data had
+    # West Ham and Wolves in the club picker and the backtest after relegation).
+    engine = make_engine(built.database_url)
+    with make_session_factory(engine).begin() as session:
+        gone = DimTeam(name="Relegated Athletic", fpl_code=9099)
+        session.add(gone)
+        session.flush()
+        rovers = find_team(engine, "Synthetic Rovers", BASE.team_aliases.aliases)
+        session.add(
+            DimMatch(season_id="2025-26", home_team_id=gone.team_id, away_team_id=rovers.team_id)
+        )
+        gone_id = gone.team_id
+    context = season_context(engine)
+    assert gone_id not in context.team_names
+    assert set(context.team_names.values()) == {"Synthetic Rovers", "Fixture Town"}
+    with pytest.raises(NotFoundError):
+        find_team(engine, "Relegated Athletic", BASE.team_aliases.aliases)
+    engine.dispose()
+
+
 def test_find_team_by_name_and_id(built: Settings) -> None:
     engine = make_engine(built.database_url)
     rovers = find_team(engine, "Synthetic Rovers", BASE.team_aliases.aliases)

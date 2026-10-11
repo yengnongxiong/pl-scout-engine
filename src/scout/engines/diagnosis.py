@@ -22,10 +22,11 @@ from dataclasses import dataclass, field
 from datetime import date
 
 import pandas as pd
-from sqlalchemy import Engine, select
+from sqlalchemy import Engine, or_, select
+from sqlalchemy.orm import Session
 
 from scout.config import AppConfig, DiagnosisConfig, KpiCatalogue
-from scout.db.models import DimSeason, DimTeam
+from scout.db.models import DimMatch, DimSeason, DimTeam
 from scout.db.queries import club_players, player_features, standings, team_matches_played
 from scout.db.session import make_session_factory
 from scout.engines.benchmark import Benchmark, benchmark_clubs
@@ -343,6 +344,27 @@ class SeasonContext:
     team_names: dict[int, str]
 
 
+def _current_clubs(session: Session, season_id: str) -> list[DimTeam]:
+    """Clubs with a fixture in ``season_id`` (FPL loads the whole season's fixtures).
+
+    FPL team codes are stable across seasons, so a past club (relegated, say) loaded from
+    the history archive has one too; having a code does not make a club current.
+    """
+    in_season = select(DimMatch.match_id).where(
+        DimMatch.season_id == season_id,
+        or_(DimMatch.home_team_id == DimTeam.team_id, DimMatch.away_team_id == DimTeam.team_id),
+    )
+    query = select(DimTeam).where(DimTeam.fpl_code.is_not(None), in_season.exists())
+    return list(session.scalars(query.order_by(DimTeam.team_id)))
+
+
+def _current_season(session: Session) -> str:
+    current = session.scalars(select(DimSeason.season_id).where(DimSeason.is_current)).first()
+    if current is None:
+        raise NotFoundError("no current season in the warehouse; run `scout build`")
+    return current
+
+
 def season_context(engine: Engine) -> SeasonContext:
     """Read the current season and its clubs from the warehouse.
 
@@ -350,13 +372,8 @@ def season_context(engine: Engine) -> SeasonContext:
         NotFoundError: If no season is marked current (``scout build`` has not run).
     """
     with make_session_factory(engine)() as session:
-        current = session.scalars(select(DimSeason.season_id).where(DimSeason.is_current)).first()
-        if current is None:
-            raise NotFoundError("no current season in the warehouse; run `scout build`")
-        teams = {
-            t.team_id: t.name
-            for t in session.scalars(select(DimTeam).where(DimTeam.fpl_code.is_not(None)))
-        }
+        current = _current_season(session)
+        teams = {t.team_id: t.name for t in _current_clubs(session, current)}
     return SeasonContext(current, previous_seasons(current, 1)[0], teams)
 
 
@@ -367,7 +384,7 @@ def find_team(engine: Engine, query: str, aliases: Mapping[str, Sequence[str]]) 
         NotFoundError: If nothing matches.
     """
     with make_session_factory(engine)() as session:
-        teams = list(session.scalars(select(DimTeam).where(DimTeam.fpl_code.is_not(None))))
+        teams = _current_clubs(session, _current_season(session))
     if query.isdigit():
         for team in teams:
             if team.team_id == int(query):
