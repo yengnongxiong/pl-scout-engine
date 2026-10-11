@@ -45,6 +45,7 @@ from scout.transform.entity_resolution import (
     transfermarkt_records,
     understat_records,
 )
+from scout.transform.positions import understat_position_groups
 from scout.transform.validate import ValidationReport, enforce, validate_tables
 
 logger = logging.getLogger(__name__)
@@ -182,7 +183,12 @@ def build_warehouse(
         dims.season(current_season, is_current=True)
         team_ids = dims.teams_from_fpl(teams, config.team_aliases.aliases)
         fixture_ids = dims.matches_from_fpl(fixtures, team_ids)
-        player_ids = dims.players(mapping, players, tm_for_er, config.positions)
+        understat_groups = (
+            understat_position_groups(us_pm, config.positions.understat)
+            if us_pm is not None
+            else None
+        )
+        player_ids = dims.players(mapping, players, tm_for_er, config.positions, understat_groups)
         facts = FactLoader(session)
         facts.player_match_fpl(fpl_pm, player_ids, fixture_ids, team_ids)
         facts.player_status(players, player_ids, _contracts(mapping, tm_for_er))

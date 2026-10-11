@@ -209,3 +209,34 @@ def test_vaastav_matches_carry_kickoff_and_scores(tmp_path: Path) -> None:
         assert (match.home_score, match.away_score) == (1, 1)
     bounds = season_bounds(engine)
     assert "2025-26" in set(bounds["season_id"])
+
+
+def test_understat_slot_fills_a_missing_transfermarkt_position(
+    session: Session, staged: dict[str, pd.DataFrame]
+) -> None:
+    # Bo has no Transfermarkt record; FPL only says FWD. Understat's minutes-weighted
+    # formation slot is the better fallback before the coarse FPL type.
+    loader = DimensionLoader(session)
+    loader.season("2026-27", is_current=True)
+    mapping = pd.DataFrame(
+        [
+            {
+                "fpl_code": 500012,
+                "canonical_name": "Bo Fakeson",
+                "understat_id": "8802",
+                "transfermarkt_id": None,
+            },
+            {
+                "fpl_code": 500013,
+                "canonical_name": "Cy Benchley",
+                "understat_id": None,
+                "transfermarkt_id": None,
+            },
+        ]
+    )
+    ids = loader.players(mapping, staged["players"], None, CFG.positions, {8802: "W"})
+    bo = session.get(DimPlayer, ids[500012])
+    cy = session.get(DimPlayer, ids[500013])
+    assert bo is not None and cy is not None
+    assert bo.position_group == "W" and bo.detailed_position is None
+    assert cy.position_group == "CM"  # no Understat slot either: FPL MID fallback

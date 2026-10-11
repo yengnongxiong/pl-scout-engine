@@ -20,7 +20,7 @@ import pandas as pd
 from sqlalchemy import delete, insert, select
 from sqlalchemy.orm import Session
 
-from scout.config import PositionsConfig
+from scout.config import PositionGroup, PositionsConfig
 from scout.db.models import (
     DimMatch,
     DimPlayer,
@@ -136,12 +136,14 @@ class DimensionLoader:
         fpl_players: pd.DataFrame,
         tm_values: pd.DataFrame | None,
         positions: PositionsConfig,
+        understat_groups: Mapping[int, PositionGroup] | None = None,
     ) -> dict[int, int]:
         """Upsert resolved players; returns ``fpl_code → player_id``.
 
-        Position group comes from Transfermarkt's detailed position (PRD §8.5), falling
-        back to the coarse FPL position (GKP maps to the GK group, stretch S2). Date of
-        birth comes from FPL, which lists nearly every player, else from Transfermarkt.
+        Position group comes from Transfermarkt's detailed position (PRD §8.5), then from
+        the player's Understat formation slots (``understat_groups``, keyed by Understat
+        id), then from the coarse FPL position (GKP maps to the GK group, stretch S2). Date
+        of birth comes from FPL, which lists nearly every player, else from Transfermarkt.
         """
         fpl_pos = {
             int(r["fpl_code"]): str(r["fpl_position"])
@@ -160,6 +162,9 @@ class DimensionLoader:
             tm = tm_by_id.get(tm_id, {}) if tm_id else {}
             detailed = _opt_str(tm.get("tm_position"))
             group = positions.transfermarkt.get(detailed) if detailed else None
+            understat_id = _opt_int(rec.get("understat_id"))
+            if group is None and understat_id is not None and understat_groups:
+                group = understat_groups.get(understat_id)
             if group is None:
                 coarse = fpl_pos.get(code)
                 group = next(
@@ -171,7 +176,7 @@ class DimensionLoader:
                 row = DimPlayer(fpl_code=code, canonical_name=str(rec["canonical_name"]))
                 self.session.add(row)
             row.canonical_name = str(rec["canonical_name"])
-            row.understat_id = _opt_int(rec.get("understat_id"))
+            row.understat_id = understat_id
             row.tm_id = tm_id
             birth = next(
                 (b for b in (fpl_birth.get(code), tm.get("birth_date")) if isinstance(b, date)),

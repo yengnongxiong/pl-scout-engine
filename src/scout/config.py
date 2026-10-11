@@ -452,6 +452,7 @@ class PositionsConfig(_Strict):
 
     groups: list[PositionGroup]
     transfermarkt: dict[str, PositionGroup]
+    understat: dict[str, PositionGroup]
     fpl_element_type_fallback: dict[Literal["GKP", "DEF", "MID", "FWD"], PositionGroup]
 
 

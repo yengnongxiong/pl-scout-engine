@@ -17,7 +17,26 @@ transfermarkt:
   "Second Striker": ST
   "Centre-Forward": ST
 
-# Fallback when only the FPL element type is known (coarse; flagged in the UI).
+# Fallback when Transfermarkt has no position for the player: the formation slot Understat
+# records for every match, weighted by minutes ("Sub" appearances carry no slot).
+# Understat files wing-backs under DML/DMR, so those are fullbacks, not holding midfielders.
+understat:
+  GK: GK
+  DC: CB
+  DL: FB
+  DR: FB
+  DML: FB
+  DMR: FB
+  DMC: DM
+  MC: CM
+  ML: W
+  MR: W
+  AML: W
+  AMR: W
+  AMC: AM
+  FW: ST
+
+# Last resort when only the FPL element type is known (coarse: every DEF is a CB).
 fpl_element_type_fallback:
   GKP: GK
   DEF: CB
