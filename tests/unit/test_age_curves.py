@@ -3,7 +3,14 @@
 import pandas as pd
 import pytest
 
-from scout.ml.age_curves import AgeCurve, AgePoint, age_curve, delta_pairs, harmonic_mean
+from scout.ml.age_curves import (
+    AgeCurve,
+    AgePoint,
+    age_curve,
+    count_player_pairs,
+    delta_pairs,
+    harmonic_mean,
+)
 
 
 def _rows() -> pd.DataFrame:
@@ -42,6 +49,15 @@ def test_pairs_need_consecutive_seasons_minutes_age_and_rates() -> None:
     assert list(pairs["delta"]) == pytest.approx([0.10, -0.10])
     assert list(pairs["weight"]) == pytest.approx([1200, 1000])
     assert set(pairs["season_from"]) == {"2024-25"} and set(pairs["season_to"]) == {"2025-26"}
+
+
+def test_player_pairs_are_counted_once_across_stats() -> None:
+    # One row per stat and pair: two stats for two players are still two player pairs (the
+    # live evaluation said "1276 player pairs" for 319 players x 4 stats).
+    rows = _rows().assign(xa_p90=lambda f: f["xg_p90"])
+    pairs = delta_pairs(rows, ["xg", "xa"], min_minutes=900)
+    assert len(pairs) == 4
+    assert count_player_pairs(pairs) == 2
 
 
 def test_curve_is_a_weighted_mean_with_a_minimum_sample() -> None:

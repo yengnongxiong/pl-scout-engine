@@ -124,6 +124,11 @@ def delta_pairs(rows: pd.DataFrame, metrics: Sequence[str], *, min_minutes: floa
     return pd.DataFrame(out, columns=columns)
 
 
+def count_player_pairs(pairs: pd.DataFrame) -> int:
+    """Distinct player season-to-season pairs (``delta_pairs`` has one row per stat)."""
+    return len(pairs[["player_id", "season_from"]].drop_duplicates())
+
+
 def age_curve(
     pairs: pd.DataFrame,
     metric: str,
@@ -199,7 +204,7 @@ def build_curves(engine: Engine, config: AppConfig) -> AgeCurves:
         min_minutes=cfg.min_minutes,
         min_pairs=cfg.min_pairs,
         history_as_of=str(known.max()) if not known.empty else None,
-        pair_count=len(pairs),
+        pair_count=count_player_pairs(pairs),
     )
 
 
