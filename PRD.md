@@ -1,19 +1,55 @@
 # PRD — PL Scout Engine
 
-> Working title. A club-need-first, explainable recruitment engine for the Premier League.
+> A club-need-first, explainable recruitment engine for the Premier League.
 
 | | |
 |---|---|
 | Owner | Yengnong Xiong |
-| Status | Draft v1.2 |
+| Status | **Shipped** (product v1.0, October 2026) · PRD v1.3 |
 | Last updated | 2026-10-11 |
 | Build agent | Claude Code (see `CLAUDE.md`) |
 | Deployment | Local only (not publicly deployed) |
 
 **Changelog**
+- v1.3 (2026-10-11): Added "At a glance", a table of contents, results next to each success metric (§15), milestone status (§16) and §21 Outcomes and lessons learned. Requirements unchanged.
 - v1.2 (2026-10-11): Applied ADR-0002 — ESPN replaces FotMob for team possession, because `soccerdata` removed its FotMob reader at FotMob's request (§7.1, §10, §16).
 - v1.1 (2026-10-03): Applied ADR-0001 — React + TypeScript SPA replaces Streamlit (§10, §10.1, §12, §13, §14, §16, §18, §19).
 - v1.0 (2026-10-03): Initial draft.
+
+## At a glance
+
+| | |
+|---|---|
+| **Problem** | Real recruitment starts from a club need ("our striker doesn't get enough good chances"), but free tools start from a player and stop at raw stats. Nothing links diagnosis → shortlist → evidence → written report. |
+| **Users** | Technical directors, recruitment staff and scouts, head coaches, data analysts (§4). |
+| **Solution** | A local dashboard: pick a club → see where its squad trails a benchmark → get a ranked, explained shortlist of Premier League players → read a scouting report in which every number has been checked. |
+| **Principle** | **No number without a receipt.** Every figure shows its source and date; proxies, small samples and stale data are labelled. |
+| **Constraints** | Free data only, no paid AI APIs, runs locally (not deployed), built by an AI coding agent working to this PRD and `CLAUDE.md`. |
+| **Outcome** | All P0 and P1 stories and three of four P2 stories shipped. On live 2026-27 data: answers in under a quarter of a second, a value model 28% better than its baseline, 99% of minutes linked across the two main stats sources. See §15 and §21. |
+
+## Contents
+
+- [1. Summary](#1-summary)
+- [2. Problem](#2-problem)
+- [3. Goals and non-goals](#3-goals-and-non-goals)
+- [4. Personas and jobs to be done](#4-personas-and-jobs-to-be-done)
+- [5. User stories](#5-user-stories)
+- [6. Core user flow](#6-core-user-flow)
+- [7. Data sources and data reality](#7-data-sources-and-data-reality)
+- [8. Analytics methodology](#8-analytics-methodology)
+- [9. Scouting report generation ("AI" without paid tokens)](#9-scouting-report-generation-ai-without-paid-tokens)
+- [10. System architecture](#10-system-architecture)
+- [11. Data model (gold layer)](#11-data-model-gold-layer)
+- [12. API (FastAPI, read-only)](#12-api-fastapi-read-only)
+- [13. Dashboard (React + TypeScript SPA)](#13-dashboard-react--typescript-spa)
+- [14. Non-functional requirements](#14-non-functional-requirements)
+- [15. Success metrics](#15-success-metrics)
+- [16. Milestones and acceptance criteria](#16-milestones-and-acceptance-criteria)
+- [17. Risks and mitigations](#17-risks-and-mitigations)
+- [18. Portfolio mapping](#18-portfolio-mapping)
+- [19. Open questions](#19-open-questions)
+- [20. Glossary](#20-glossary)
+- [21. Outcomes and lessons learned](#21-outcomes-and-lessons-learned)
 
 ## 1. Summary
 
@@ -349,40 +385,42 @@ Design principles:
 
 ## 15. Success metrics
 
-| Type | Metric | Target |
-|---|---|---|
-| North star | Time from "type club name" to a defensible 3-player shortlist with evidence | < 2 minutes |
-| Trust | Displayed numbers with source + as-of attached | 100% (enforced by tests) |
-| Trust | Shown reports that are grounded (validated LLM output or template fallback) | 100% |
-| Data quality | PL minutes mapped across FPL ↔ Understat ↔ Transfermarkt | ≥ 98% |
-| Data quality | Validation failures on a successful build | 0 |
-| Model | Value model MAE (log scale) vs naive baseline on held-out season | Beat baseline; target ≥ 20% improvement |
-| Engineering | Test coverage on core packages; CI | ≥ 80%; green on main |
-| Performance | API p95 | < 500 ms |
+Results were measured on live 2026-27 data on 11 October 2026 (details in §21 and `docs/EVALUATION.md`).
+
+| Type | Metric | Target | Result |
+|---|---|---|---|
+| North star | Time from "type club name" to a defensible 3-player shortlist with evidence | < 2 minutes | ✅ Seconds: three clicks, and the answers arrive in 0.1 s (diagnosis) and 0.2 s (shortlist) |
+| Trust | Displayed numbers with source + as-of attached | 100% (enforced by tests) | ✅ 100%: receipts are asserted throughout the test suite |
+| Trust | Shown reports that are grounded (validated LLM output or template fallback) | 100% | ✅ 100%: a test proves an injected fake number is rejected |
+| Data quality | PL minutes mapped across FPL ↔ Understat ↔ Transfermarkt | ≥ 98% | ⚠️ Understat 99.1% ✅ · Transfermarkt 80.6% ❌: the free snapshot predates summer 2026 signings; running the live Transfermarkt API closes the gap |
+| Data quality | Validation failures on a successful build | 0 | ✅ 0 (6 tables validated) |
+| Model | Value model MAE (log scale) vs naive baseline on held-out season | Beat baseline; target ≥ 20% improvement | ✅ 28.2% better (0.393 vs 0.548); uncertainty band calibrated to its stated 80% |
+| Engineering | Test coverage on core packages; CI | ≥ 80%; green on main | ✅ 94% overall; ~460 Python and 56 web tests; CI green on every push |
+| Performance | API p95 | < 500 ms | ✅ 107 ms diagnosis, 218 ms shortlist (all 20 clubs, uncached); ~1 ms cached |
 
 ## 16. Milestones and acceptance criteria
 
-| # | Milestone | Acceptance criteria |
-|---|---|---|
-| M0 | Foundations: repo skeleton, `pyproject.toml`, uv, ruff/mypy/pytest, CI, config system, Typer CLI skeleton, `docs/PROGRESS.md`, ADR template, plus a `web/` scaffold (Vite + React + TypeScript, ESLint, Prettier, Vitest) so CI covers both stacks from day one | `uv run pytest` and CI green; `scout --help` works |
-| M1 | Ingestion (Tier 1): FPL, Understat, ESPN possession, Transfermarkt (scraper + snapshot + overrides), vaastav history, StatsBomb loader; raw snapshot store; rate limiter; retries | Each adapter has offline contract tests with fixtures; `scout ingest --source fpl` writes a timestamped snapshot when run locally |
-| M2 | Warehouse: SQLAlchemy models, Alembic migration, loaders, entity resolution, pandera validation, freshness table, `scout doctor` | End-to-end build from fixtures; mapping coverage report; a validation failure stops the build |
-| M3 | Feature layer: per-90, blending, shrinkage, possession adjustment, percentiles (SQL + pandas), KPI config | Hand-calculated unit tests for every formula; SQL percentiles match pandas |
-| M4 | Diagnosis engine | Deterministic ranked needs for fixture clubs; every need has evidence with source + as-of |
-| M5 | Recommendation engine + ML (fit score, upgrade gate, similarity, GMM roles, value model) | `scout train` writes models + `docs/EVALUATION.md`; value model compared to baseline; results reproducible |
-| M6 | Reports: fact sheet, templates, optional Ollama, grounding validator | Golden tests for template output; a test injecting a fake number proves the validator rejects it |
-| M7 | API | All endpoints tested with TestClient; OpenAPI docs render |
-| M8 | Dashboard (React + TypeScript) | All P0 stories demoable on real local data; client generated from OpenAPI; page tests in loading/empty/error/success states; `npm run lint`, `typecheck`, `test` and `build` pass in CI |
-| M9 | Evaluation & polish | README with screenshots, architecture diagram, methodology, limitations, and a "How it was made" section; fresh clone → documented steps → working dashboard |
+| # | Milestone | Acceptance criteria | Status |
+|---|---|---|---|
+| M0 | Foundations: repo skeleton, `pyproject.toml`, uv, ruff/mypy/pytest, CI, config system, Typer CLI skeleton, `docs/PROGRESS.md`, ADR template, plus a `web/` scaffold (Vite + React + TypeScript, ESLint, Prettier, Vitest) so CI covers both stacks from day one | `uv run pytest` and CI green; `scout --help` works | ✅ 2026-10-06 |
+| M1 | Ingestion (Tier 1): FPL, Understat, ESPN possession, Transfermarkt (scraper + snapshot + overrides), vaastav history, StatsBomb loader; raw snapshot store; rate limiter; retries | Each adapter has offline contract tests with fixtures; `scout ingest --source fpl` writes a timestamped snapshot when run locally | ✅ 2026-10-03 |
+| M2 | Warehouse: SQLAlchemy models, Alembic migration, loaders, entity resolution, pandera validation, freshness table, `scout doctor` | End-to-end build from fixtures; mapping coverage report; a validation failure stops the build | ✅ 2026-10-03 |
+| M3 | Feature layer: per-90, blending, shrinkage, possession adjustment, percentiles (SQL + pandas), KPI config | Hand-calculated unit tests for every formula; SQL percentiles match pandas | ✅ 2026-10-03 |
+| M4 | Diagnosis engine | Deterministic ranked needs for fixture clubs; every need has evidence with source + as-of | ✅ 2026-10-03 |
+| M5 | Recommendation engine + ML (fit score, upgrade gate, similarity, GMM roles, value model) | `scout train` writes models + `docs/EVALUATION.md`; value model compared to baseline; results reproducible | ✅ 2026-10-04 |
+| M6 | Reports: fact sheet, templates, optional Ollama, grounding validator | Golden tests for template output; a test injecting a fake number proves the validator rejects it | ✅ 2026-10-06 |
+| M7 | API | All endpoints tested with TestClient; OpenAPI docs render | ✅ 2026-10-06 |
+| M8 | Dashboard (React + TypeScript) | All P0 stories demoable on real local data; client generated from OpenAPI; page tests in loading/empty/error/success states; `npm run lint`, `typecheck`, `test` and `build` pass in CI | ✅ 2026-10-06 |
+| M9 | Evaluation & polish | README with screenshots, architecture diagram, methodology, limitations, and a "How it was made" section; fresh clone → documented steps → working dashboard | ✅ 2026-10-06 |
 
 **Stretch:**
-- S1: Event-data adapter (WhoScored → SPADL via `socceraction`/`kloppy`; progressive passes, xT).
-- S2: GK module.
-- S3: Postgres via docker-compose.
-- S4: Age curves.
-- S5: PDF export.
-- S6: Top-5-league candidate pool (Understat).
-- S7: Backtest page.
+- S1: Event-data adapter (WhoScored → SPADL via `socceraction`/`kloppy`; progressive passes, xT). ⏸ Not started (needs the owner's go-ahead).
+- S2: GK module. ✅
+- S3: Postgres via docker-compose. ✅
+- S4: Age curves. ✅
+- S5: PDF export. ✅
+- S6: Top-5-league candidate pool (Understat). ⏸ Not started (needs the owner's go-ahead).
+- S7: Backtest page. ✅
 
 ## 17. Risks and mitigations
 
@@ -429,3 +467,31 @@ Design principles:
 - **Percentile:** share of position-group peers the player ranks above.
 - **Shrinkage:** pulling small-sample rates toward the group average.
 - **Transfermarkt market value:** an estimate with its own update date; not a transfer fee.
+
+## 21. Outcomes and lessons learned
+
+### 21.1 What shipped
+
+- **Stories:** every P0 story (US-01 to US-08); every P1 story (US-09 to US-14; the season toggle offers blended and this-season-only, not last-season-only); P2 backtest, PDF/Markdown export and age curves (US-16 to US-18). Event data (US-15) waits on S1.
+- **Product:** six dashboard pages (club diagnosis, shortlist with a Moneyball view, player page with scouting report, compare, backtest, methodology and data), a CLI, and `uv run scout demo`, which goes from a fresh clone to a running dashboard in one command.
+- **Engineering:** about 15,000 lines of Python and 5,600 of TypeScript, about 7,300 lines of tests, CI on every push (Python, Postgres parity, web, API contract), two ADRs, and a build log of every task and decision.
+- **Timeline:** built between 3 and 11 October 2026 by an AI coding agent in time-boxed sessions, then verified end to end on live data.
+
+### 21.2 Results against targets
+
+Seven of eight success metrics were met on live data (§15). The miss is Transfermarkt coverage (80.6% vs 98%): the free snapshot ends in June 2026, so summer signings and promoted clubs have no estimate there. The product labels those values stale or "Not available" rather than guessing. Running the self-hosted Transfermarkt API is the fix.
+
+### 21.3 What live data taught us
+
+1. **Fixtures pass; reality differs.** Every test passed on synthetic data, yet the first live run surfaced 20 issues: FPL switched to full legal names ("Bruno Borges Fernandes"), a source repeated rows, past seasons lacked dates, and FotMob disappeared. *Lesson:* schedule a live-data dress rehearsal early, not at the end.
+2. **Sources disappear.** FotMob asked `soccerdata` to stop scraping it in April 2026. Because every source sits behind one adapter interface, replacing it with ESPN took one module and one migration (ADR-0002).
+3. **Honest metrics beat flattering ones.** In the backtest, the engine's top 3 needs matched the positions clubs then signed 49% of the time, against 73% for a naive "most-signed positions" baseline. Clubs sign for many reasons (injuries, sales, opportunity), so diagnosing needs is not the same as predicting transfers. The page stays labelled exploratory; a fairer test would compare against clubs' stated targets.
+4. **Uncertainty must be earned.** The raw value band claimed 80% coverage but covered 49%; conformal calibration fixed it. Show only the uncertainty you can stand behind.
+5. **An AI agent can build to a PRD.** A clear PRD, a working agreement (`CLAUDE.md`), milestone acceptance criteria and CI as a contract let an AI agent build the system. The human sets direction and checks the result against reality.
+
+### 21.4 What's next
+
+- Live Transfermarkt values through the self-hosted API, to close the coverage gap and replace stale estimates.
+- Keep departed players' history, to reduce survivorship bias in the value model and age curves.
+- Include squad players who haven't played yet (injured stars, new signings).
+- S1 (event data: progressive passes, expected threat) and S6 (top-5-league candidates), with the owner's go-ahead.
