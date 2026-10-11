@@ -21,8 +21,8 @@ from scout.db.models import (
 )
 from scout.db.session import make_engine, make_session_factory
 from scout.ingest.base import RawSnapshot, SnapshotStore
-from scout.ingest.fotmob import FotMobAdapter
-from scout.ingest.fotmob import snapshot_name as fotmob_name
+from scout.ingest.espn import EspnAdapter
+from scout.ingest.espn import snapshot_name as espn_name
 from scout.ingest.fpl import BOOTSTRAP, FIXTURES, FplAdapter, element_summary_name
 from scout.ingest.understat import KINDS, UnderstatAdapter
 from scout.ingest.understat import snapshot_name as us_name
@@ -65,12 +65,12 @@ def snaps(tmp_path: Path) -> dict[str, list[RawSnapshot]]:
     ]
     fm = [
         store.write(
-            "fotmob",
-            fotmob_name("2025-26"),
-            (FIX / f"fotmob/synthetic_{fotmob_name('2025-26')}").read_bytes(),
+            "espn",
+            espn_name("2025-26"),
+            (FIX / f"espn/synthetic_{espn_name('2025-26')}").read_bytes(),
         )
     ]
-    return {"fpl": fpl, "understat": us, "fotmob": fm}
+    return {"fpl": fpl, "understat": us, "espn": fm}
 
 
 def _count(session: Session, model: type[Base], **where: object) -> int:
@@ -86,7 +86,7 @@ def _build(session: Session, snaps: dict[str, list[RawSnapshot]]) -> FactLoader:
     fixtures, fpl_pm = fpl.parse_fixtures(snaps["fpl"]), fpl.parse(snaps["fpl"])
     us = UnderstatAdapter(["2025-26"])
     us_pm, us_tm = us.parse(snaps["understat"]), us.parse_team_match(snaps["understat"])
-    poss = FotMobAdapter(["2025-26"], 0.02).parse(snaps["fotmob"])
+    poss = EspnAdapter("", ["2025-26"], 0.02).parse(snaps["espn"])
 
     dims = DimensionLoader(session)
     dims.season("2026-27", is_current=True)
@@ -95,7 +95,7 @@ def _build(session: Session, snaps: dict[str, list[RawSnapshot]]) -> FactLoader:
     club_codes = {"Synthetic Rovers": 9001, "Fixture Town": 9002}
     game_ids = dims.matches_from_understat(us_tm, club_codes)
     names = {t.name: t.team_id for t in session.scalars(select(DimTeam))}
-    fotmob_ids = dims.matches_from_fotmob(poss, names)
+    espn_ids = dims.matches_from_espn(poss, names)
     mapping = pd.DataFrame(
         [
             {
@@ -128,7 +128,7 @@ def _build(session: Session, snaps: dict[str, list[RawSnapshot]]) -> FactLoader:
     facts.player_match_fpl(fpl_pm, player_ids, fixture_ids, team_ids)
     facts.player_match_understat(us_pm, understat_players, game_ids, understat_teams)
     facts.team_match_understat(us_tm, game_ids, understat_teams)
-    facts.team_possession_fotmob(poss, fotmob_ids, names)
+    facts.team_possession_espn(poss, espn_ids, names)
     values = pd.DataFrame(
         [
             {
@@ -168,7 +168,7 @@ def test_facts_load_per_source(session: Session, snaps: dict[str, list[RawSnapsh
     assert _count(session, FactPlayerMatch, source="understat") == 1
     assert facts.stats.skipped["fact_player_match:understat"] == 2
     assert _count(session, FactTeamMatch, source="understat") == 4
-    assert _count(session, FactTeamMatch, source="fotmob") == 4  # unknown club game skipped
+    assert _count(session, FactTeamMatch, source="espn") == 4  # unknown club game skipped
     assert _count(session, FactMarketValue) == 1
     assert facts.stats.skipped["fact_market_value:transfermarkt"] == 1
     assert _count(session, FactPlayerStatus) == 3

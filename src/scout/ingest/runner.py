@@ -19,7 +19,7 @@ import httpx
 from scout.config import AppConfig, Settings
 from scout.errors import ConfigError, ScoutError, SourceUnavailableError
 from scout.ingest.base import PoliteClient, SnapshotStore, SourceAdapter
-from scout.ingest.fotmob import FotMobAdapter
+from scout.ingest.espn import EspnAdapter
 from scout.ingest.fpl import BOOTSTRAP, FplAdapter, FplBootstrap, season_from_events
 from scout.ingest.history import VaastavHistoryAdapter, previous_seasons
 from scout.ingest.statsbomb import StatsBombAdapter
@@ -36,7 +36,7 @@ ALL_SOURCES = (
     "fpl",
     "vaastav",
     "understat",
-    "fotmob",
+    "espn",
     "transfermarkt",
     "transfermarkt_datasets",
     "statsbomb",
@@ -135,10 +135,8 @@ def build_adapter(
         return VaastavHistoryAdapter(_base_url(config, "vaastav"), seasons)
     if source == "understat":
         return UnderstatAdapter(recent, reader_factory=factories.get("understat"))
-    if source == "fotmob":
-        return FotMobAdapter(
-            recent, ingest.possession_sum_tolerance, reader_factory=factories.get("fotmob")
-        )
+    if source == "espn":
+        return EspnAdapter(_base_url(config, "espn"), recent, ingest.possession_sum_tolerance)
     if source == "transfermarkt":
         clubs = club_aliases(ctx.club_names, config.team_aliases.aliases)
         return TransfermarktAdapter(_base_url(config, "transfermarkt"), clubs)

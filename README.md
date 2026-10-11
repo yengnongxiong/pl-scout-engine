@@ -32,7 +32,7 @@ uv run scout demo
 Then open **http://localhost:5173** (API docs at http://127.0.0.1:8000/docs). `scout demo`:
 
 1. **Ingests** every source if there is no data yet: FPL, the FPL history archive, Understat,
-   FotMob, Transfermarkt and the transfermarkt-datasets export. It is polite on purpose (rate
+   ESPN (possession), Transfermarkt and the transfermarkt-datasets export. It is polite on purpose (rate
    limits from `config/settings.yaml`, caching, retries), so the first run takes a while. A
    source that fails is reported and skipped; only FPL is required.
 2. **Builds** the warehouse (validation failures stop the build) and the per-player features.
@@ -49,7 +49,7 @@ Optional extras:
   [`felipeall/transfermarkt-api`](https://github.com/felipeall/transfermarkt-api) on port 8001
   (`ingest.base_urls.transfermarkt`). Without it, values fall back to the transfermarkt-datasets
   export, labelled stale.
-- **Understat and FotMob** go through `soccerdata`, which downloads a small native TLS library
+- **Understat** goes through `soccerdata`, which downloads a small native TLS library
   from GitHub on first use.
 - **Postgres** instead of the default SQLite file: `docker compose up -d db`, then
   `export SCOUT_DATABASE_URL=postgresql+psycopg://scout:scout@localhost:5432/scout` before
@@ -85,7 +85,7 @@ flowchart LR
   subgraph S[Sources]
     FPL[FPL API]
     US[Understat]
-    FM[FotMob]
+    ESPN[ESPN possession]
     TM[Transfermarkt]
     HIST[FPL history + TM datasets]
   end
@@ -154,7 +154,7 @@ Methodology page.
 
 ```bash
 uv run scout --help
-uv run scout ingest --source all        # or fpl, vaastav, understat, fotmob, transfermarkt, ...
+uv run scout ingest --source all        # or fpl, vaastav, understat, espn, transfermarkt, ...
 uv run scout build                      # raw → validated → warehouse → features
 uv run scout train                      # models + docs/EVALUATION.md
 uv run scout doctor                     # freshness, coverage, validation, FPL schema

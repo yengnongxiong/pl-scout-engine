@@ -72,9 +72,9 @@ Current milestone: M0
 ```
 
 ## Environment (Claude Code cloud sessions)
-- Network may be the default **Trusted** level: PyPI, npm and GitHub reachable, most other sites blocked. The owner may allow `fantasy.premierleague.com`, `understat.com`, `www.fotmob.com` and Transfermarkt domains.
+- Network may be the default **Trusted** level: PyPI, npm and GitHub reachable, most other sites blocked. The owner may allow `fantasy.premierleague.com`, `understat.com`, `site.api.espn.com` and Transfermarkt domains.
 - Live requests are allowed only to verify adapters or refresh small trimmed fixtures:
-  - Per-session caps: FPL ≤ 50 requests; Understat and FotMob ≤ 20 each; Transfermarkt ≤ 10, spaced ≥ 3 s apart.
+  - Per-session caps: FPL ≤ 50 requests; Understat ≤ 20; ESPN ≤ 20; Transfermarkt ≤ 10, spaced ≥ 3 s apart.
   - If a host is blocked (`403 host_not_allowed`, anti-bot page), note it once in `docs/PROGRESS.md` and continue with fixtures. Never retry in a loop or try to work around the block.
 - Tests always use local fixtures. Full ingestion is for the owner's machine via `scout demo` / `scout ingest`.
 - Ollama isn't available in the sandbox. Everything must work with `REPORT_ENGINE=template`.
@@ -114,7 +114,7 @@ pl-scout-engine/
 ├── scripts/       bench_knn.py and other one-off utilities
 ├── src/scout/
 │   ├── config.py  errors.py  cli.py
-│   ├── ingest/    base.py (SourceAdapter, cache) · fpl.py · understat.py · fotmob.py · transfermarkt.py · history.py · statsbomb.py
+│   ├── ingest/    base.py (SourceAdapter, cache) · fpl.py · understat.py · espn.py · transfermarkt.py · history.py · statsbomb.py
 │   ├── transform/ clean.py · entity_resolution.py · validate.py
 │   ├── db/        models.py · session.py · load.py · migrations/ · sql/*.sql
 │   ├── features/  per90.py · blend.py · shrinkage.py · possession.py · percentiles.py

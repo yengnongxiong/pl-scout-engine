@@ -13,8 +13,8 @@ from scout.db.models import Base, DimMatch, DimPlayer, DimSeason, DimTeam
 from scout.db.queries import season_bounds
 from scout.db.session import make_engine, make_session_factory
 from scout.ingest.base import SnapshotStore
-from scout.ingest.fotmob import FotMobAdapter
-from scout.ingest.fotmob import snapshot_name as fotmob_name
+from scout.ingest.espn import EspnAdapter
+from scout.ingest.espn import snapshot_name as espn_name
 from scout.ingest.fpl import BOOTSTRAP, FIXTURES, FplAdapter, element_summary_name
 from scout.ingest.history import VaastavHistoryAdapter
 from scout.ingest.history import snapshot_names as vaastav_names
@@ -56,9 +56,9 @@ def staged(tmp_path: Path) -> dict[str, pd.DataFrame]:
         for k in KINDS
     ]
     fm_snap = store.write(
-        "fotmob",
-        fotmob_name("2025-26"),
-        (FIX / f"fotmob/synthetic_{fotmob_name('2025-26')}").read_bytes(),
+        "espn",
+        espn_name("2025-26"),
+        (FIX / f"espn/synthetic_{espn_name('2025-26')}").read_bytes(),
     )
     fpl = FplAdapter("https://fpl.test/")
     return {
@@ -66,7 +66,7 @@ def staged(tmp_path: Path) -> dict[str, pd.DataFrame]:
         "players": fpl.parse_players(fpl_snaps),
         "fixtures": fpl.parse_fixtures(fpl_snaps),
         "us_team_match": UnderstatAdapter(["2025-26"]).parse_team_match(us_snaps),
-        "possession": FotMobAdapter(["2025-26"], 0.02).parse([fm_snap]),
+        "possession": EspnAdapter("", ["2025-26"], 0.02).parse([fm_snap]),
     }
 
 
@@ -85,7 +85,7 @@ def _load(session: Session, staged: dict[str, pd.DataFrame]) -> dict[str, dict[o
         name: session.scalars(select(DimTeam.team_id).where(DimTeam.name == name)).one()
         for name in club_codes
     }
-    fm_ids = loader.matches_from_fotmob(staged["possession"], lookup)
+    fm_ids = loader.matches_from_espn(staged["possession"], lookup)
     mapping = pd.DataFrame(
         [
             {
@@ -124,7 +124,7 @@ def _load(session: Session, staged: dict[str, pd.DataFrame]) -> dict[str, dict[o
         "teams": dict(team_ids),
         "fixtures": dict(fixture_ids),
         "understat": dict(us_ids),
-        "fotmob": dict(fm_ids),
+        "espn": dict(fm_ids),
         "players": dict(player_ids),
     }
 
@@ -140,12 +140,9 @@ def test_dimensions_load_and_link_sources(
     seasons = {s.season_id: s.is_current for s in session.scalars(select(DimSeason))}
     assert seasons == {"2026-27": True, "2025-26": False}
     assert set(ids["understat"]) == {9101, 9102}
-    # FotMob: first two games link to understat matches; the unknown club is skipped.
-    assert set(ids["fotmob"]) == {
-        "2025-08-16 Synthetic Rovers-Fixture Town",
-        "2025-08-23 Fixture Town-Synthetic Rovers",
-    }
-    assert ids["fotmob"]["2025-08-16 Synthetic Rovers-Fixture Town"] == ids["understat"][9101]
+    # ESPN: the first two matches link to Understat's; the unknown club's is skipped.
+    assert set(ids["espn"]) == {990001, 990002}
+    assert ids["espn"][990001] == ids["understat"][9101]
 
 
 def test_players_get_position_groups(session: Session, staged: dict[str, pd.DataFrame]) -> None:

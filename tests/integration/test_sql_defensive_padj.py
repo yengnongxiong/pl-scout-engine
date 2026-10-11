@@ -34,7 +34,7 @@ def pandas_twin(engine: Engine) -> pd.DataFrame:
     facts = pd.read_sql_table("fact_player_match", engine)
     matches = pd.read_sql_table("dim_match", engine)
     teams = pd.read_sql_table("fact_team_match", engine)
-    poss = teams[(teams["source"] == "fotmob") & teams["possession"].notna()]
+    poss = teams[(teams["source"] == "espn") & teams["possession"].notna()]
     df = facts[facts["source"].isin(["fpl", "vaastav"])].merge(
         matches[["match_id", "season_id", "home_team_id", "away_team_id"]], on="match_id"
     )
@@ -81,5 +81,5 @@ def test_hand_calculated_adjustment(engine: Engine) -> None:
     assert alex["tackles_padj"] == pytest.approx(2 * 0.5 / 0.42)
     assert alex["unadjusted_matches"] == 0
     current = sql[sql["season_id"] == "2026-27"]
-    # No FotMob data for the current-season fixtures: raw values, flagged unadjusted.
+    # No ESPN data for the current-season fixtures: raw values, flagged unadjusted.
     assert (current["unadjusted_matches"] == current["matches"]).all()

@@ -27,7 +27,7 @@ from scout.db.models import DimTeam
 from scout.db.session import make_engine, make_session_factory
 from scout.errors import SourceUnavailableError
 from scout.ingest.base import RawSnapshot, SnapshotStore
-from scout.ingest.fotmob import FotMobAdapter
+from scout.ingest.espn import EspnAdapter
 from scout.ingest.fpl import FplAdapter
 from scout.ingest.history import VaastavHistoryAdapter
 from scout.ingest.transfermarkt import (
@@ -110,13 +110,13 @@ def build_warehouse(
         frames["understat_player_match"], frames["understat_team_match"] = us_pm, us_tm
         report.sources.append("understat")
 
-    fm_snaps = store.latest_all("fotmob")
+    espn_snaps = store.latest_all("espn")
     possession: pd.DataFrame | None = None
-    if fm_snaps:
+    if espn_snaps:
         tolerance = config.settings.ingest.possession_sum_tolerance
-        possession = FotMobAdapter(seasons_in(fm_snaps), tolerance).parse(fm_snaps)
-        frames["fotmob_possession"] = possession
-        report.sources.append("fotmob")
+        possession = EspnAdapter("", seasons_in(espn_snaps), tolerance).parse(espn_snaps)
+        frames["espn_possession"] = possession
+        report.sources.append("espn")
 
     tm_frames: list[pd.DataFrame] = []
     tm_snaps = store.latest_all("transfermarkt")
@@ -223,9 +223,9 @@ def build_warehouse(
                 for name, code in clubs.items()
                 if code is not None and code in team_by_code
             }
-            game_keys = dims.matches_from_fotmob(possession, name_to_team)
-            facts.team_possession_fotmob(possession, game_keys, name_to_team)
-            facts.snapshots(fm_snaps, "ok", len(possession))
+            event_ids = dims.matches_from_espn(possession, name_to_team)
+            facts.team_possession_espn(possession, event_ids, name_to_team)
+            facts.snapshots(espn_snaps, "ok", len(possession))
         tm_players = _source_ids(mapping, "transfermarkt_id", player_ids, str)
         values = [f for f in (tm_live, tm_history) if f is not None and not f.empty]
         overrides_file = overrides_dir / "market_value_overrides.csv"

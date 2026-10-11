@@ -239,7 +239,7 @@ team_kpis:
 style_features:
   possession:
     label: "Possession share"
-    source: fotmob
+    source: espn
     column: possession
     aggregate: match_mean
   ppda:

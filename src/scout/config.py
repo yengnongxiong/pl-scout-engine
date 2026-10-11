@@ -22,7 +22,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 PositionGroup = Literal["GK", "CB", "FB", "DM", "CM", "AM", "W", "ST"]
 Source = Literal[
-    "fpl", "understat", "fotmob", "transfermarkt", "transfermarkt_datasets", "vaastav", "statsbomb"
+    "fpl", "understat", "espn", "transfermarkt", "transfermarkt_datasets", "vaastav", "statsbomb"
 ]
 
 # Numeric fact_team_match columns a team KPI can be built from (PRD §11).

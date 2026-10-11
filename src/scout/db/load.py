@@ -330,20 +330,19 @@ class DimensionLoader:
             out[(season_id, fixture_id)] = row.match_id
         return out
 
-    def matches_from_fotmob(
+    def matches_from_espn(
         self, possession: pd.DataFrame, team_lookup: Mapping[str, int]
-    ) -> dict[str, int]:
-        """Attach FotMob game keys to existing matches; returns ``game → match_id``.
+    ) -> dict[int, int]:
+        """Attach ESPN event ids to existing matches; returns ``espn_event_id → match_id``.
 
-        FotMob game keys look like ``"2025-08-16 Home-Away"``; the home side is the team
-        whose ``"{team}-{opponent}"`` ends the key. Games that match no known fixture
-        are skipped (logged), never invented.
+        Each event's home row names the home club, so the match is found by season and
+        clubs. Events that match no known fixture are skipped (logged), never invented.
         """
-        out: dict[str, int] = {}
-        for rec in possession.to_dict(orient="records"):
-            game, team, opp = str(rec["game"]), str(rec["team_name"]), str(rec["opponent_name"])
-            if not game.endswith(f" {team}-{opp}") or game in out:
-                continue
+        out: dict[int, int] = {}
+        homes = possession[possession["is_home"].astype(bool)]
+        for rec in homes.to_dict(orient="records"):
+            event_id = int(rec["espn_event_id"])
+            team, opp = str(rec["team_name"]), str(rec["opponent_name"])
             home, away = team_lookup.get(team), team_lookup.get(opp)
             row = (
                 self._match(str(rec["season_id"]), home, away)
@@ -351,11 +350,14 @@ class DimensionLoader:
                 else None
             )
             if row is None:
-                logger.warning("fotmob game not matched to a fixture", extra={"game": game})
+                logger.warning(
+                    "espn event not matched to a fixture",
+                    extra={"event": event_id, "home": team, "away": opp},
+                )
                 continue
-            row.fotmob_game = game
+            row.espn_event_id = event_id
             self.session.flush()
-            out[game] = row.match_id
+            out[event_id] = row.match_id
         return out
 
 
@@ -527,16 +529,16 @@ class FactLoader:
             )
         self._replace(FactTeamMatch, "understat", rows)
 
-    def team_possession_fotmob(
-        self, frame: pd.DataFrame, match_ids: Mapping[str, int], team_ids: Mapping[str, int]
+    def team_possession_espn(
+        self, frame: pd.DataFrame, match_ids: Mapping[int, int], team_ids: Mapping[str, int]
     ) -> None:
-        """FotMob possession rows (share in [0, 1]; missing stays null)."""
+        """ESPN possession rows (share in [0, 1]; missing stays null)."""
         rows: list[dict[str, object]] = []
         for rec in frame.to_dict(orient="records"):
-            match = match_ids.get(str(rec["game"]))
+            match = match_ids.get(int(rec["espn_event_id"]))
             team = team_ids.get(str(rec["team_name"]))
             if match is None or team is None:
-                self._skip("fact_team_match:fotmob")
+                self._skip("fact_team_match:espn")
                 continue
             rows.append(
                 {
@@ -547,7 +549,7 @@ class FactLoader:
                     "fetched_at": rec["fetched_at"],
                 }
             )
-        self._replace(FactTeamMatch, "fotmob", rows)
+        self._replace(FactTeamMatch, "espn", rows)
 
     def market_values(self, frame: pd.DataFrame, player_ids: Mapping[str, int]) -> None:
         """Market values from one source (live, datasets snapshot or override)."""

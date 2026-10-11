@@ -5,12 +5,13 @@
 | | |
 |---|---|
 | Owner | Yengnong Xiong |
-| Status | Draft v1.1 |
-| Last updated | 2026-10-03 |
+| Status | Draft v1.2 |
+| Last updated | 2026-10-11 |
 | Build agent | Claude Code (see `CLAUDE.md`) |
 | Deployment | Local only (not publicly deployed) |
 
 **Changelog**
+- v1.2 (2026-10-11): Applied ADR-0002 — ESPN replaces FotMob for team possession, because `soccerdata` removed its FotMob reader at FotMob's request (§7.1, §10, §16).
 - v1.1 (2026-10-03): Applied ADR-0001 — React + TypeScript SPA replaces Streamlit (§10, §10.1, §12, §13, §14, §16, §18, §19).
 - v1.0 (2026-10-03): Initial draft.
 
@@ -104,7 +105,7 @@ The spirit is Moneyball: replace reputation and gut feel with evidence, and look
 | Fantasy Premier League official API (`fantasy.premierleague.com/api/`: `bootstrap-static/`, `element-summary/{id}/`, `fixtures/`) | Per-match minutes, starts, goals, assists, xG, xA, xG conceded on pitch, defensive fields (tackles, recoveries, clearances/blocks/interceptions, defensive contribution), cards, availability status/news, teams, fixtures | Public JSON, no auth | 1 (core) | Undocumented; fields can change, so validate schema each run and verify exact field names against a live payload. `id` is reassigned every season; `code` is stable. API only shows current state, so snapshot every run |
 | `vaastav/Fantasy-Premier-League` (GitHub) | Past seasons' per-gameweek FPL data | GitHub CSV | 1 (history) | Needed because `element-summary` history empties after a season ends |
 | Understat (via `soccerdata`, pinned) | Player match stats: xG, npxG, xA, shots, key passes, xGChain, xGBuildup; shot events with situation (open play, set piece…); team match stats: PPDA, deep completions | Scraped | 1 (core) | Cache aggressively; polite rate; adapter fails loudly on schema change |
-| FotMob (via `soccerdata`) | Team possession % per match (for possession adjustment) | Scraped | 1b | If unavailable, defensive stats are shown unadjusted and labelled |
+| ESPN public scoreboard JSON (`site.api.espn.com`, ADR-0002) | Team possession % per match (for possession adjustment and StyleFit) | Public JSON, no auth | 1b | Undocumented; validate the schema each run. If unavailable, defensive stats are shown unadjusted and labelled |
 | Transfermarkt | Estimated market value + TM's own "last updated" date, detailed position, date of birth, contract expiry | Local self-hosted scraper (e.g., `felipeall/transfermarkt-api`) or own polite scraper | 1 (core) | No official API; anti-bot pages can return HTTP 200/202 with no data, so validate parsed payloads. Personal, low-volume use only |
 | `dcaribou/transfermarkt-datasets` | Historical valuations, transfers, players | GitHub/Kaggle snapshot | 1 (history) | Updates paused; valuations end June 2026; no 2026/27 squads. Use for history/model training and as a clearly labelled stale fallback only |
 | Manual override CSVs | Corrections to values, positions, ID mappings | Committed files | 1 | Every override row has a reason + date |
@@ -233,7 +234,7 @@ flowchart LR
   subgraph S[Sources]
     FPL[FPL API]
     US[Understat]
-    FM[FotMob]
+    ESPN[ESPN possession]
     TM[Transfermarkt]
     SB[StatsBomb open data]
   end
@@ -364,7 +365,7 @@ Design principles:
 | # | Milestone | Acceptance criteria |
 |---|---|---|
 | M0 | Foundations: repo skeleton, `pyproject.toml`, uv, ruff/mypy/pytest, CI, config system, Typer CLI skeleton, `docs/PROGRESS.md`, ADR template, plus a `web/` scaffold (Vite + React + TypeScript, ESLint, Prettier, Vitest) so CI covers both stacks from day one | `uv run pytest` and CI green; `scout --help` works |
-| M1 | Ingestion (Tier 1): FPL, Understat, FotMob possession, Transfermarkt (scraper + snapshot + overrides), vaastav history, StatsBomb loader; raw snapshot store; rate limiter; retries | Each adapter has offline contract tests with fixtures; `scout ingest --source fpl` writes a timestamped snapshot when run locally |
+| M1 | Ingestion (Tier 1): FPL, Understat, ESPN possession, Transfermarkt (scraper + snapshot + overrides), vaastav history, StatsBomb loader; raw snapshot store; rate limiter; retries | Each adapter has offline contract tests with fixtures; `scout ingest --source fpl` writes a timestamped snapshot when run locally |
 | M2 | Warehouse: SQLAlchemy models, Alembic migration, loaders, entity resolution, pandera validation, freshness table, `scout doctor` | End-to-end build from fixtures; mapping coverage report; a validation failure stops the build |
 | M3 | Feature layer: per-90, blending, shrinkage, possession adjustment, percentiles (SQL + pandas), KPI config | Hand-calculated unit tests for every formula; SQL percentiles match pandas |
 | M4 | Diagnosis engine | Deterministic ranked needs for fixture clubs; every need has evidence with source + as-of |

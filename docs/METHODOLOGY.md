@@ -25,7 +25,7 @@ as-of date; missing data stays missing and is shown as "Not available", never as
 Sources (PRD §7.1): the official Fantasy Premier League API (minutes, starts, FPL xG/xA,
 tackles, recoveries, clearances/blocks/interceptions, availability), the vaastav FPL archive
 (past seasons), Understat via `soccerdata` (xG, npxG, xA, xGChain, xGBuildup, shots, key passes,
-PPDA, deep completions), FotMob via `soccerdata` (possession), Transfermarkt through a
+PPDA, deep completions), ESPN's public scoreboard JSON (possession, ADR-0002), Transfermarkt through a
 self-hosted `transfermarkt-api` (estimated market value, position, date of birth, contract) with
 the `transfermarkt-datasets` export as a labelled-stale fallback, and manual override CSVs that
 need a reason and a date. FBref advanced stats are not used (removed January 2026).
@@ -192,7 +192,7 @@ skipped and the reason recorded.
 ## 8. Known limitations
 
 - Player-level pressing and ball progression are proxies (see §3).
-- Possession adjustment depends on FotMob; matches without possession stay unadjusted.
+- Possession adjustment depends on ESPN's undocumented scoreboard JSON; matches without possession stay unadjusted.
 - Transfermarkt estimated market values are estimates; the datasets fallback stopped updating
   in mid-2026 and is labelled stale.
 - The value model is trained on past Premier League seasons of current players (survivorship

@@ -41,7 +41,7 @@ LIMITATIONS = [
     "carries need event data, which is not part of the MVP.",
     "Understat xA (xG of shots from a player's key passes) and FPL/Opta xA are defined "
     "differently; each KPI uses one source and says which.",
-    "Defensive volume KPIs are possession-adjusted only where FotMob possession exists; "
+    "Defensive volume KPIs are possession-adjusted only where ESPN possession exists; "
     "otherwise they are flagged 'unadjusted'.",
     "Early in the season rates lean on last season (blending) and are shrunk toward the "
     "position-group average; minutes and peer counts are always shown.",

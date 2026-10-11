@@ -90,7 +90,7 @@ export const RISK_KINDS: Record<string, string> = {
 export const SOURCES: Record<string, string> = {
   fpl: "FPL",
   understat: "Understat",
-  fotmob: "FotMob",
+  espn: "ESPN",
   transfermarkt: "Transfermarkt",
   transfermarkt_datasets: "Transfermarkt (datasets snapshot)",
   override: "Manual override",

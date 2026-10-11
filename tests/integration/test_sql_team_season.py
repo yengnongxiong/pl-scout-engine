@@ -79,11 +79,11 @@ def test_missing_values_count_in_neither_total_nor_matches(
     assert rovers["xg_total"] == pytest.approx(0.45)
     assert rovers["xga_total"] == pytest.approx(0.95)  # 0.95 + a real 0.00
     assert rovers["xga_matches"] == 2
-    # FotMob rows carry possession only, so no Understat KPI can come from them.
-    fotmob = team_season_totals(engine, "fotmob")
-    assert fotmob["xg_matches"].eq(0).all()
-    fotmob_rovers = fotmob[fotmob["team_id"] == rovers_id].iloc[0]
-    assert (fotmob_rovers["possession_total"], fotmob_rovers["possession_matches"]) == (
+    # ESPN rows carry possession only, so no Understat KPI can come from them.
+    espn = team_season_totals(engine, "espn")
+    assert espn["xg_matches"].eq(0).all()
+    espn_rovers = espn[espn["team_id"] == rovers_id].iloc[0]
+    assert (espn_rovers["possession_total"], espn_rovers["possession_matches"]) == (
         pytest.approx(0.58 + 0.39),
         2,
     )
@@ -104,6 +104,6 @@ def test_team_styles_from_fixture_warehouse(
     # Two clubs: every feature standardises to -1 / +1.
     assert styles[rovers].z == pytest.approx((-1.0, -1.0, 1.0))
     assert style_fit(styles[rovers].z, styles[town].z) == pytest.approx(0.0)
-    assert styles[rovers].sources == ("fotmob", "understat") and styles[rovers].as_of
+    assert styles[rovers].sources == ("espn", "understat") and styles[rovers].as_of
     # Current-season mode: no 2026-27 team games in the fixtures, so no style data.
     assert team_styles(engine, CONFIG, [rovers], current="2026-27", previous=None) == {}

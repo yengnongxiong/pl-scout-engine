@@ -25,9 +25,9 @@ def _row(team: int, source: str, **stats: tuple[float, int]) -> dict:
 def styles() -> dict:
     totals = pd.DataFrame(
         [
-            _row(1, "fotmob", possession=(1.8, 3)),
-            _row(2, "fotmob", possession=(1.5, 3)),
-            _row(3, "fotmob", possession=(1.2, 3)),
+            _row(1, "espn", possession=(1.8, 3)),
+            _row(2, "espn", possession=(1.5, 3)),
+            _row(3, "espn", possession=(1.2, 3)),
             _row(1, "understat", ppda=(24.0, 3), deep=(30.0, 3)),
             _row(2, "understat", ppda=(30.0, 3), deep=(15.0, 3)),
             _row(3, "understat", ppda=(36.0, 3)),
@@ -60,7 +60,7 @@ def test_standardised_across_league_clubs(styles: dict) -> None:
 
 
 def test_receipts(styles: dict) -> None:
-    assert styles[1].sources == ("fotmob", "understat")
+    assert styles[1].sources == ("espn", "understat")
     assert styles[1].as_of == "2026-09-21T08:00:00"
 
 
@@ -72,7 +72,7 @@ def test_style_fit_between_clubs(styles: dict) -> None:
 
 
 def test_single_club_cannot_be_standardised() -> None:
-    totals = pd.DataFrame([_row(1, "fotmob", possession=(1.8, 3))])
+    totals = pd.DataFrame([_row(1, "espn", possession=(1.8, 3))])
     out = style_vectors(
         totals, FEATURES, [1], current=CUR, previous=None, lam=0.5, prev_minutes_cap=2000
     )

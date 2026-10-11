@@ -113,15 +113,15 @@ def build_schemas(cfg: ValidationConfig) -> dict[str, pa.DataFrameSchema]:
             },
             unique=["understat_team_id", "understat_game_id"],
         ),
-        "fotmob_possession": pa.DataFrameSchema(
+        "espn_possession": pa.DataFrameSchema(
             {
-                "game": pa.Column(str, nullable=False),
+                "espn_event_id": pa.Column(int, nullable=False, coerce=True),
                 "team_name": pa.Column(str, nullable=False),
                 "possession_share": share,
                 "opp_possession_share": share,
                 **_provenance(),
             },
-            unique=["game", "team_name"],
+            unique=["espn_event_id", "team_name"],
         ),
         "tm_market_value": pa.DataFrameSchema(
             {

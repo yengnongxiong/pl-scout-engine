@@ -70,16 +70,16 @@ def test_possession_must_be_a_share() -> None:
     frame = pd.DataFrame(
         [
             {
-                "game": "g",
+                "espn_event_id": 1,
                 "team_name": "A",
                 "possession_share": 58.0,
                 "opp_possession_share": 0.42,
-                "source": "fotmob",
+                "source": "espn",
                 "fetched_at": NOW,
             }
         ]
     )
-    report = validate_tables({"fotmob_possession": frame}, CFG)
+    report = validate_tables({"espn_possession": frame}, CFG)
     assert [i.column for i in report.issues] == ["possession_share"]
 
 

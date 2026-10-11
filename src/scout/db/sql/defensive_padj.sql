@@ -21,7 +21,7 @@ WITH player_matches AS (
 possession AS (
     SELECT match_id, team_id, possession
     FROM fact_team_match
-    WHERE source = 'fotmob' AND possession IS NOT NULL AND possession > 0
+    WHERE source = 'espn' AND possession IS NOT NULL AND possession > 0
 ),
 adjusted AS (
     SELECT

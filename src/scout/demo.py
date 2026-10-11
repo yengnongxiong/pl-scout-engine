@@ -3,7 +3,7 @@
 Steps, each skipped when it has nothing to do:
 
 1. **Ingest** every source if there is no FPL snapshot yet (or ``--refresh``). A failing
-   optional source (Understat, FotMob, Transfermarkt, history) is reported and the demo
+   optional source (Understat, ESPN, Transfermarkt, history) is reported and the demo
    goes on with what it has; without FPL there is nothing to build, so it stops.
 2. **Build** the warehouse and materialise features (validation failures stop it, rule 12).
 3. **Train** the models, store their outputs and write ``docs/EVALUATION.md``.

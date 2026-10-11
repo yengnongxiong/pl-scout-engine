@@ -32,7 +32,7 @@ def test_doctor_after_build_reports_fresh_sources_and_coverage(tmp_path: Path) -
         "fpl",
         "vaastav",
         "understat",
-        "fotmob",
+        "espn",
         "transfermarkt",
     }
     assert not any(f.stale for f in report.freshness)

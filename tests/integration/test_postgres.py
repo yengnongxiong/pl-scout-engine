@@ -109,7 +109,7 @@ QUERIES = {
     "player_features_blended": lambda e: queries.player_features(e, "blended"),
     "player_features_current": lambda e: queries.player_features(e, "current"),
     "team_season_understat": lambda e: queries.team_season_totals(e, "understat"),
-    "team_season_fotmob": lambda e: queries.team_season_totals(e, "fotmob"),
+    "team_season_espn": lambda e: queries.team_season_totals(e, "espn"),
     "player_profiles": lambda e: queries.player_profiles(e),
     "market_values": lambda e: queries.latest_market_values(e),
     "market_value_history": lambda e: queries.market_value_history(e),

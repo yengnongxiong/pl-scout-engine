@@ -98,7 +98,7 @@ class DimMatch(Base):
     away_score: Mapped[int | None] = mapped_column(Integer)
     fpl_fixture_code: Mapped[int | None] = mapped_column(Integer, unique=True)
     understat_game_id: Mapped[int | None] = mapped_column(Integer, unique=True)
-    fotmob_game: Mapped[str | None] = mapped_column(String(200), unique=True)
+    espn_event_id: Mapped[int | None] = mapped_column(Integer, unique=True)
 
 
 class FactPlayerMatch(Base):

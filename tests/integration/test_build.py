@@ -21,7 +21,7 @@ from scout.db.models import (
 from scout.db.session import make_engine, make_session_factory
 from scout.errors import DataValidationError, SourceUnavailableError
 from scout.ingest.base import SnapshotStore
-from scout.ingest.fotmob import snapshot_name as fotmob_name
+from scout.ingest.espn import snapshot_name as espn_name
 from scout.ingest.fpl import BOOTSTRAP, FIXTURES, element_summary_name
 from scout.ingest.transfermarkt import club_players_name, club_search_name, market_value_name
 from scout.ingest.understat import KINDS
@@ -53,9 +53,9 @@ def _seed(data_dir: Path, *, corrupt_xg: bool = False) -> None:
             body = body.replace(b",0.95,0.10,", b",-0.95,0.10,")
         store.write("understat", us_name("2025-26", kind), body)
     store.write(
-        "fotmob",
-        fotmob_name("2025-26"),
-        (FIX / f"fotmob/synthetic_{fotmob_name('2025-26')}").read_bytes(),
+        "espn",
+        espn_name("2025-26"),
+        (FIX / f"espn/synthetic_{espn_name('2025-26')}").read_bytes(),
     )
     for name, fixture in (
         (club_search_name("Synthetic Rovers"), "club_search"),
@@ -86,7 +86,7 @@ def test_end_to_end_build_from_fixtures(tmp_path: Path) -> None:
     settings = _settings(tmp_path)
     _seed(settings.data_dir)
     report = build_warehouse(settings, CONFIG)
-    assert report.sources == ["fpl", "vaastav", "understat", "fotmob", "transfermarkt"]
+    assert report.sources == ["fpl", "vaastav", "understat", "espn", "transfermarkt"]
     assert report.validation.ok
     assert "understat: 100.0% of FPL minutes mapped" in report.coverage
     assert _count(settings, DimPlayer) == 3
@@ -96,7 +96,7 @@ def test_end_to_end_build_from_fixtures(tmp_path: Path) -> None:
     # Last season's vaastav rows attach to the same 2025-26 match Understat created.
     assert _count(settings, FactPlayerMatch, source="vaastav") == 2
     assert _count(settings, FactTeamMatch, source="understat") == 4
-    assert _count(settings, FactTeamMatch, source="fotmob") == 4
+    assert _count(settings, FactTeamMatch, source="espn") == 4
     assert _count(settings, FactMarketValue, source="transfermarkt") == 2
     assert report.review_count == _count(settings, EntityMapReview)
 
