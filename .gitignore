@@ -16,6 +16,7 @@ build/
 
 # Data (never commit scraped data; overrides are committed)
 data/*
+!data/README.md
 !data/overrides/
 !data/overrides/**
 
