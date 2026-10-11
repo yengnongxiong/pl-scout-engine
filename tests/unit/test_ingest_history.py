@@ -88,6 +88,32 @@ def test_unknown_element_fails(adapter: VaastavHistoryAdapter, tmp_path: Path) -
         adapter.parse(_snapshots(tmp_path, payloads))
 
 
+def test_exact_duplicate_rows_are_dropped(adapter: VaastavHistoryAdapter, tmp_path: Path) -> None:
+    # The live 2025-26 archive repeats some player-fixture rows verbatim; a copy adds no
+    # information, so it is dropped rather than failing the build.
+    payloads = _payloads()
+    gw_name = snapshot_names("2025-26")[0]
+    lines = payloads[gw_name].decode().splitlines()
+    payloads[gw_name] = ("\n".join([*lines, lines[1], lines[1]]) + "\n").encode()
+    pm = adapter.parse(_snapshots(tmp_path, payloads))
+    assert len(pm) == 3
+    assert not pm.duplicated(["fpl_code", "season_id", "fpl_fixture_id"]).any()
+
+
+def test_conflicting_duplicate_rows_are_kept_for_validation(
+    adapter: VaastavHistoryAdapter, tmp_path: Path
+) -> None:
+    # Two different rows for one player-fixture are ambiguous: both reach validation,
+    # whose uniqueness check stops the build (CLAUDE.md rule 12).
+    payloads = _payloads()
+    gw_name = snapshot_names("2025-26")[0]
+    lines = payloads[gw_name].decode().splitlines()
+    conflicting = lines[1].replace(",90,", ",45,", 1)
+    payloads[gw_name] = ("\n".join([*lines, conflicting]) + "\n").encode()
+    pm = adapter.parse(_snapshots(tmp_path, payloads))
+    assert len(pm) == 4
+
+
 def test_missing_season_snapshot_fails(adapter: VaastavHistoryAdapter, tmp_path: Path) -> None:
     payloads = _payloads()
     del payloads[snapshot_names("2023-24")[2]]

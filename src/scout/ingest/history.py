@@ -151,6 +151,15 @@ class VaastavHistoryAdapter(SourceAdapter):
         self, season: str, gw: RawSnapshot, players: RawSnapshot, teams: RawSnapshot
     ) -> pd.DataFrame:
         gw_df = _read_csv(gw, REQUIRED_GW)
+        # The archive sometimes repeats a player-fixture row verbatim (2025-26 does). An
+        # exact copy carries no information, so it is dropped; rows that differ for the same
+        # player and fixture are kept and fail validation's uniqueness check instead.
+        copies = int(gw_df.duplicated().sum())
+        if copies:
+            gw_df = gw_df.drop_duplicates()
+            logger.warning(
+                "vaastav exact duplicate rows dropped", extra={"season": season, "rows": copies}
+            )
         players_df = _read_csv(players, REQUIRED_PLAYERS)
         teams_df = _read_csv(teams, REQUIRED_TEAMS)
         player_codes = dict(zip(players_df["id"], players_df["code"], strict=True))
