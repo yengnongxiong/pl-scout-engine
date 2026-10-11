@@ -19,6 +19,9 @@ from scout.dsa.trie import Trie
 from scout.transform.clean import normalise_person_name
 
 MatchKind = Literal["exact", "prefix", "fuzzy"]
+# Results are ranked by kind first: a fuzzy WRatio can exceed a word-prefix score (90 for
+# "Wan-Bissaka" vs 80 for "Bukayo Saka" when typing "Saka"), but fuzzy only fills gaps.
+KIND_ORDER: dict[MatchKind, int] = {"exact": 0, "prefix": 1, "fuzzy": 2}
 EXACT_SCORE = 100.0
 PREFIX_SCORE = 90.0  # a prefix of the start of a name or alias
 WORD_PREFIX_SCORE = 80.0  # a prefix of a later word ("city" in "manchester city")
@@ -84,7 +87,7 @@ class SearchIndex:
                 _, eid, spelling = self._keys[idx]
                 if eid not in best:
                     offer(SearchHit(eid, self._labels[eid], spelling, "fuzzy", float(score)))
-        ranked = sorted(best.values(), key=lambda h: (-h.score, h.label, h.id))
+        ranked = sorted(best.values(), key=lambda h: (KIND_ORDER[h.kind], -h.score, h.label, h.id))
         return ranked[:limit]
 
 

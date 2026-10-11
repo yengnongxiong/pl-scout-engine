@@ -39,3 +39,12 @@ def test_typos_get_fuzzy_suggestions() -> None:
 def test_limit_and_ordering_are_stable() -> None:
     hits = CLUBS.search("ma", limit=1, fuzzy_cutoff=101)
     assert [h.id for h in hits] == [1]  # same score: alphabetical label wins
+
+
+def test_prefix_matches_rank_above_fuzzy_suggestions() -> None:
+    # Live data: "Saka" scored Aaron Wan-Bissaka 90 by fuzzy WRatio, above Bukayo Saka's
+    # word-prefix 80, so the player typed came second. Fuzzy only fills the gaps.
+    index = SearchIndex([(1, "Aaron Wan-Bissaka", []), (2, "Bukayo Saka", [])])
+    hits = index.search("Saka", limit=5, fuzzy_cutoff=75)
+    assert [h.label for h in hits] == ["Bukayo Saka", "Aaron Wan-Bissaka"]
+    assert [h.kind for h in hits] == ["prefix", "fuzzy"]
