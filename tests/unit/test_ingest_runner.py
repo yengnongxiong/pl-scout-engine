@@ -82,6 +82,26 @@ def test_fpl_then_dependent_sources(tmp_path: Path) -> None:
     assert (tmp_path / "raw" / "fpl").is_dir()
 
 
+def test_unexpected_error_in_one_source_does_not_stop_the_others(tmp_path: Path) -> None:
+    # A third-party library can fail in ways that are not ScoutErrors (soccerdata 1.9
+    # removed a reader the adapter called). That source fails; the others still run.
+    def broken_reader(season: str) -> Any:
+        raise AttributeError("module 'soccerdata' has no attribute 'Reader'")
+
+    results = run_ingest(
+        ["fpl", "understat", "vaastav"],
+        Settings(data_dir=tmp_path),
+        _config(),
+        transport=httpx.MockTransport(_handler),
+        reader_factories={"understat": broken_reader},
+    )
+    by_source = {r.source: r for r in results}
+    assert by_source["fpl"].ok and by_source["vaastav"].ok
+    assert not by_source["understat"].ok
+    error = by_source["understat"].error
+    assert error is not None and "AttributeError" in error and "Reader" in error
+
+
 def test_dependent_source_needs_fpl_snapshot(tmp_path: Path) -> None:
     [result] = run_ingest(["vaastav"], Settings(data_dir=tmp_path), _config())
     assert not result.ok

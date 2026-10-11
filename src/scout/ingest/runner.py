@@ -180,5 +180,11 @@ def run_ingest(
         except ScoutError as exc:
             result.error = exc.message
             logger.error("ingest failed", extra={"source": source, "error": exc.message})
+        except Exception as exc:
+            # One broken source must not stop the rest. Third-party scrapers fail in their own
+            # ways (a removed reader, a changed page): report the source as failed, log the
+            # traceback and go on.
+            result.error = f"unexpected {type(exc).__name__}: {exc}"
+            logger.exception("ingest failed", extra={"source": source, "error": result.error})
         results.append(result)
     return results
