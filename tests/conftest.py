@@ -4,15 +4,35 @@ from __future__ import annotations
 
 import socket
 from collections.abc import Iterator
+from pathlib import Path
 from typing import Any
 
 import pytest
+
+from scout.config import get_config, get_settings
 
 _LOCAL_HOSTS = {"127.0.0.1", "::1", "localhost", "testserver"}
 
 
 class NetworkBlockedError(RuntimeError):
     """Raised when a test tries to reach the network."""
+
+
+@pytest.fixture(autouse=True)
+def _isolate_data_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
+    """Point default settings at an empty temp data dir and warehouse.
+
+    Without this, a test using default settings reads the owner's real ``data/`` (for
+    example ``last_build.json`` after ``scout demo``) and its result depends on local state.
+    """
+    data_dir = tmp_path / "default-data"
+    monkeypatch.setenv("SCOUT_DATA_DIR", str(data_dir))
+    monkeypatch.setenv("SCOUT_DATABASE_URL", f"sqlite:///{data_dir / 'warehouse' / 'scout.db'}")
+    get_settings.cache_clear()
+    get_config.cache_clear()
+    yield
+    get_settings.cache_clear()
+    get_config.cache_clear()
 
 
 @pytest.fixture(autouse=True)
