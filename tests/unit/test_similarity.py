@@ -40,6 +40,18 @@ def test_vectors_are_standardised_unit_and_complete(square: pd.DataFrame) -> Non
     assert all(sum(x * x for x in v) == pytest.approx(1.0) for v in vecs.vectors)
 
 
+def test_results_can_be_limited_to_current_players(square: pd.DataFrame) -> None:
+    # Only players who have a page this season may be offered as neighbours; the scaling
+    # still uses the whole group, so a neighbour's cosine does not change.
+    vecs = group_vectors(square, "X", {"a": 1.0, "b": 1.0})
+    only = vecs.only({3, 5, 999})
+    assert only.player_ids == (3, 5) and only.kpis == vecs.kpis
+    assert only.vectors == (vecs.vectors[1], vecs.vectors[3])
+    for method in ("brute", "kdtree"):
+        hits = similar_players(only, 3, 3, method=method)
+        assert [h.player_id for h in hits] == [5]
+
+
 def test_hand_checked_ranking_and_ties(square: pd.DataFrame) -> None:
     vecs = group_vectors(square, "X", {"a": 1.0, "b": 1.0})
     for method in ("brute", "kdtree"):

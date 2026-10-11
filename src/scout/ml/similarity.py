@@ -19,7 +19,7 @@ config for larger pools. Complexity: brute force O(n d + n log k) per query.
 from __future__ import annotations
 
 import math
-from collections.abc import Mapping
+from collections.abc import Collection, Mapping
 from dataclasses import dataclass
 from typing import Literal
 
@@ -27,7 +27,7 @@ import pandas as pd
 from sqlalchemy import Engine
 
 from scout.config import AppConfig
-from scout.db.queries import player_features
+from scout.db.queries import player_features, player_profiles
 from scout.dsa.heap_topk import top_k
 from scout.dsa.kdtree import KDTree
 from scout.errors import NotFoundError
@@ -48,6 +48,15 @@ class GroupVectors:
     kpis: tuple[str, ...]
     player_ids: tuple[int, ...]
     vectors: tuple[tuple[float, ...], ...]
+
+    def only(self, player_ids: Collection[int]) -> GroupVectors:
+        """The same vectors (standardised over the whole group) for ``player_ids`` only."""
+        keep = [i for i, pid in enumerate(self.player_ids) if pid in player_ids]
+        return GroupVectors(
+            self.kpis,
+            tuple(self.player_ids[i] for i in keep),
+            tuple(self.vectors[i] for i in keep),
+        )
 
 
 def group_vectors(features: pd.DataFrame, group: str, weights: Mapping[str, float]) -> GroupVectors:
@@ -134,6 +143,9 @@ def find_similar(
 ) -> list[SimilarPlayer]:
     """Similar players to ``player_id`` within their position group, from the warehouse.
 
+    Neighbours are this season's players (those with a player page); players known only
+    from past seasons still shape the group's scaling but are not offered.
+
     Raises:
         NotFoundError: If the player has no features or no complete KPI profile.
     """
@@ -149,4 +161,10 @@ def find_similar(
         for kpi, w in cfg.weights.items()
     }
     vectors = group_vectors(features, group, weights)
-    return similar_players(vectors, player_id, k, method=config.settings.ml.similarity_method)
+    current = {int(p) for p in player_profiles(engine)["player_id"]}
+    return similar_players(
+        vectors.only(current | {player_id}),
+        player_id,
+        k,
+        method=config.settings.ml.similarity_method,
+    )
