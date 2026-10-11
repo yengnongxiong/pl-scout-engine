@@ -93,7 +93,7 @@ def test_players_carry_birth_date_and_known_name(
     players = adapter.parse_players(snapshots).set_index("fpl_code")
     assert players.loc[500011, "birth_date"] == date(1998, 3, 14)
     assert pd.isna(players.loc[500011, "known_name"])  # "" is missing, not a name
-    assert players.loc[500012, "known_name"] == "Bobby Fakeson"
+    assert players.loc[500012, "known_name"] == "Bo Fakeson"
     assert pd.isna(players.loc[500012, "birth_date"])  # field absent: missing, never guessed
     assert pd.isna(players.loc[500013, "known_name"])
 

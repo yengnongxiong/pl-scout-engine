@@ -403,7 +403,9 @@ def fpl_anchors(players: pd.DataFrame, player_match: pd.DataFrame) -> list[Ancho
         code = int(rec["fpl_code"])
         full = f"{rec['first_name']} {rec['second_name']}"
         known = rec.get("known_name")
-        spellings = [full, known if isinstance(known, str) and known else None, rec["web_name"]]
+        # The first name is the display name: the one FPL says the player is known by
+        # ("Matheus Cunha"), else the full name ("Matheus Santos Carneiro da Cunha").
+        spellings = [known if isinstance(known, str) and known else None, full, rec["web_name"]]
         names = tuple(dict.fromkeys(str(n) for n in spellings if n is not None))
         birth = rec.get("birth_date")
         anchors.append(

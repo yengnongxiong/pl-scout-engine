@@ -194,9 +194,12 @@ def test_fpl_anchors_use_known_name_and_birth_date() -> None:
     )
     matches = pd.DataFrame([{"fpl_code": 7, "minutes": 90}])
     bruno, alex = fpl_anchors(players, matches)
-    assert bruno.names == ("Bruno Borges Fernandes", "Bruno Fernandes", "B.Fernandes")
+    assert bruno.names == ("Bruno Fernandes", "Bruno Borges Fernandes", "B.Fernandes")
     assert bruno.birth_date == date(1994, 9, 8) and bruno.minutes == 90.0
     assert alex.names == ("Alex Testman", "Testman") and alex.birth_date is None
+    # The display (canonical) name is the one the player is known by.
+    frame = resolve([bruno, alex], [], CFG).mapping_frame([bruno, alex]).set_index("fpl_code")
+    assert frame.loc[7, "canonical_name"] == "Bruno Fernandes"
 
 
 def test_ambiguous_candidates_go_to_review() -> None:
