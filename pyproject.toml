@@ -1,6 +1,6 @@
 [project]
 name = "pl-scout-engine"
-version = "0.1.0"
+version = "1.0.0"
 description = "Local, explainable Premier League recruitment engine (no number without a receipt)."
 readme = "README.md"
 requires-python = ">=3.12,<3.13"

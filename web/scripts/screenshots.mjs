@@ -35,7 +35,7 @@ async function synthetic(page) {
   const routes = [
     [
       /\/api\/health$/,
-      { status: "ok", version: "0.1.0", warehouse_version: "synthetic test data" },
+      { status: "ok", version: "1.0.0", warehouse_version: "synthetic test data" },
     ],
     [/\/api\/teams$/, data.teams],
     [/\/api\/teams\/search/, (url) => data.teamSearch(url.searchParams.get("q") ?? "")],
