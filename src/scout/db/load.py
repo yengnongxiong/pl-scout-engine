@@ -635,6 +635,7 @@ class FactLoader:
                         else None
                     ),
                     score=item.score,
+                    reason=item.reason or None,
                     created_at=now,
                 )
             )

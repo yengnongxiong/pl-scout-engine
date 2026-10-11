@@ -175,6 +175,7 @@ def test_facts_load_per_source(session: Session, snaps: dict[str, list[RawSnapsh
     assert _count(session, SourceSnapshot, source="fpl") == 4
     review = session.scalars(select(EntityMapReview)).one()
     assert review.best_candidate is not None
+    assert review.reason == "test"  # why it needs a human, for player_overrides.csv
 
 
 def test_nulls_are_kept_null(session: Session, snaps: dict[str, list[RawSnapshot]]) -> None:

@@ -220,6 +220,7 @@ class EntityMapReview(Base):
     team: Mapped[str | None] = mapped_column(String(100))
     best_candidate: Mapped[int | None] = mapped_column(ForeignKey("dim_player.player_id"))
     score: Mapped[float | None] = mapped_column(Float)
+    reason: Mapped[str | None] = mapped_column(String(200))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
