@@ -1,10 +1,10 @@
 # Progress
-Status: COMPLETE               <!-- IN_PROGRESS or COMPLETE -->
-Active session: none
+Status: IN_PROGRESS            <!-- IN_PROGRESS or COMPLETE -->
+Active session: 20261011T2043Z-5a46 started 2026-10-11T20:43:38Z
 Current milestone: none (M0-M9 and stretch S7, S2, S4, S5, S3 done; S1 and S6 need the owner's go-ahead)
 
 ## Plan for this session
-- (none: the project is complete; the live-data audit of 2026-10-11 is done. Open items for the owner are under Questions.)
+- Owner-requested presentation pass (owner present): GitHub description and topics, MIT license, real-data README screenshots, plain-English folder guides, PRD at-a-glance + outcomes (section numbers unchanged), audience-layered README.
 
 ## Task queue (current milestone)
 - [x] M0-01 Apply ADR-0001 edits to PRD, bump to v1.1 + changelog — PRD diff matches ADR list
