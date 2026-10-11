@@ -68,7 +68,7 @@ def ingest(
     ] = None,
 ) -> None:
     """Fetch raw snapshots from live sources and validate them (owner's machine)."""
-    from scout.ingest.runner import ALL_SOURCES, run_ingest
+    from scout.ingest.runner import run_ingest
 
     try:
         results = run_ingest(
@@ -85,7 +85,11 @@ def ingest(
             f"requests={r.requests}{extra}"
         )
     if not all(r.ok for r in results):
-        typer.echo(f"Some sources failed. Valid sources: {', '.join(ALL_SOURCES)}", err=True)
+        typer.echo(
+            "Some sources failed; `scout build` uses the ones that succeeded (only FPL is "
+            "required).",
+            err=True,
+        )
         raise typer.Exit(code=1)
 
 

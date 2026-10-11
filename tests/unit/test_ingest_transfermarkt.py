@@ -8,7 +8,7 @@ import pytest
 
 from scout.config import PROJECT_ROOT, load_config
 from scout.dsa.token_bucket import TokenBucket
-from scout.errors import DataValidationError
+from scout.errors import DataValidationError, SourceUnavailableError
 from scout.ingest.base import PoliteClient, RawSnapshot, SnapshotStore
 from scout.ingest.transfermarkt import (
     TmSearchResult,
@@ -181,3 +181,25 @@ def test_fetch_resolves_club_by_search_and_skips_unmatched(tmp_path: Path) -> No
     assert "/clubs/99009/players" not in requested  # U21 side never fetched
     assert len(snaps) == 5  # 2 searches + 1 squad + 2 market values
     assert len(adapter.parse(snaps)) == 2
+
+
+def test_unreachable_api_says_how_to_fix_it(tmp_path: Path) -> None:
+    # Live values need the owner's self-hosted transfermarkt-api; when it isn't running the
+    # failure should say so instead of only "giving up after 4 attempts".
+    def refuse(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("connection refused", request=request)
+
+    cfg = load_config(PROJECT_ROOT / "config").settings.ingest
+    cfg = cfg.model_copy(update={"max_retries": 0})
+    adapter = TransfermarktAdapter(BASE, CLUBS)
+    with (
+        PoliteClient(
+            "transfermarkt",
+            cfg,
+            transport=httpx.MockTransport(refuse),
+            bucket=TokenBucket(1e9, 1e9),
+        ) as client,
+        pytest.raises(SourceUnavailableError, match="self-hosted transfermarkt-api") as caught,
+    ):
+        adapter.fetch(client, SnapshotStore(tmp_path))
+    assert BASE in caught.value.message and "stale" in caught.value.message

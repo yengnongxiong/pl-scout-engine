@@ -27,7 +27,7 @@ import pandas as pd
 from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
 from unidecode import unidecode
 
-from scout.errors import DataValidationError
+from scout.errors import DataValidationError, SourceUnavailableError
 from scout.ingest.base import PoliteClient, RawSnapshot, SnapshotStore, SourceAdapter
 
 logger = logging.getLogger(__name__)
@@ -221,7 +221,18 @@ class TransfermarktAdapter(SourceAdapter):
         snapshots: list[RawSnapshot] = []
         self.unmatched_clubs = []
         for club, aliases in self.clubs.items():
-            body = client.get(f"{self.base_url}clubs/search/{club}")
+            try:
+                body = client.get(f"{self.base_url}clubs/search/{club}")
+            except SourceUnavailableError as exc:
+                if snapshots:
+                    raise
+                # Nothing answered yet: most likely the self-hosted API isn't running.
+                raise SourceUnavailableError(
+                    f"{exc.message}. Is the self-hosted transfermarkt-api running at "
+                    f"{self.base_url}? See the README's optional extras; without it, values "
+                    "fall back to the stale transfermarkt-datasets export.",
+                    details=exc.details,
+                ) from exc
             search_snap = store.write(SOURCE, club_search_name(club), body)
             snapshots.append(search_snap)
             search = _validate(TmClubSearch, search_snap.read_json(), search_snap.name)
