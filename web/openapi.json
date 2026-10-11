@@ -2256,8 +2256,16 @@
             "type": "array"
           },
           "severity": {
-            "title": "Severity",
-            "type": "number"
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null when no KPI of the group could be compared (too few minutes).",
+            "title": "Severity"
           },
           "team_needs": {
             "description": "KPI ids of team needs this group shares.",

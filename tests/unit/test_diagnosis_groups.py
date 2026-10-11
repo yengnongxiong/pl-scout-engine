@@ -54,8 +54,17 @@ def test_gap_and_severity_hand_calculation(scores: pd.DataFrame) -> None:
     assert gaps["def_activity_padj_p90"].is_proxy
 
 
-def test_groups_without_data_have_zero_severity_and_sorted_last(scores: pd.DataFrame) -> None:
+def test_groups_without_data_have_no_severity_and_sort_last(scores: pd.DataFrame) -> None:
+    # Missing is not zero (CLAUDE.md rule 2): a group where no KPI can be compared (early
+    # season in "this season only" mode, say) has no severity, not "no shortfall".
     groups = assess_groups(1, [2, 3], scores, CATALOGUE)
     assert groups[0].position_group == "CB"
-    assert all(g.severity == 0 for g in groups[1:])
+    assert all(g.severity is None for g in groups[1:])
     assert [g.position_group for g in groups[1:]] == sorted(g.position_group for g in groups[1:])
+
+
+def test_compared_group_without_shortfall_has_zero_severity(scores: pd.DataFrame) -> None:
+    # Club 3 beats club 2 on defensive activity (90 vs 70) and matches it on CBI (50): a
+    # compared group with no shortfall is a real 0.
+    cb = next(g for g in assess_groups(3, [2], scores, CATALOGUE) if g.position_group == "CB")
+    assert cb.severity == 0.0

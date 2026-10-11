@@ -10,17 +10,21 @@ const SHADES = ["bg-white", "bg-amber-50", "bg-amber-100", "bg-amber-200", "bg-a
 
 /**
  * Every position group with its need severity, worst first. Shade follows severity, but the
- * number and rank are printed too, so colour is never the only signal.
+ * number and rank are printed too, so colour is never the only signal. A group that could
+ * not be compared (too few minutes) has no severity and reads "Not available", unshaded.
  */
 export function HeatStrip({ needs, linkFor }: { needs: Need[]; linkFor: (need: Need) => string }) {
-  const max = Math.max(...needs.map((n) => n.severity), 0);
+  const max = Math.max(...needs.map((n) => n.severity ?? 0), 0);
   return (
     <ol
       className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7"
       aria-label="Need severity by position group"
     >
       {needs.map((need) => {
-        const level = max > 0 ? Math.round((need.severity / max) * (SHADES.length - 1)) : 0;
+        const level =
+          max > 0 && need.severity !== null
+            ? Math.round((need.severity / max) * (SHADES.length - 1))
+            : 0;
         return (
           <li key={need.need_id}>
             <Link

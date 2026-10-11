@@ -227,7 +227,9 @@ class NeedOut(_Out):
     rank: int
     need_id: str
     position_group: str
-    severity: float
+    severity: float | None = Field(
+        description="Null when no KPI of the group could be compared (too few minutes)."
+    )
     gaps: list[KpiGapOut]
     evidence: list[EvidenceOut]
     weak_links: list[WeakLinkOut]

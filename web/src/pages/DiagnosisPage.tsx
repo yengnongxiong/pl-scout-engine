@@ -88,7 +88,8 @@ function shortlistLink(d: Diagnosis, need: Need, params: URLSearchParams): strin
 function DiagnosisView({ diagnosis: d }: { diagnosis: Diagnosis }) {
   const { seasonMode, benchmark, custom } = useAnalysisParams();
   const carry = analysisQuery(seasonMode, benchmark, custom);
-  const ranked = d.needs.filter((n) => n.severity > 0);
+  const ranked = d.needs.filter((n) => n.severity !== null && n.severity > 0);
+  const compared = d.needs.some((n) => n.severity !== null);
   const top = ranked.slice(0, TOP_NEEDS);
   const weakLinks = d.needs.flatMap((n) =>
     n.weak_links.map((w) => ({ ...w, group: n.position_group })),
@@ -108,14 +109,20 @@ function DiagnosisView({ diagnosis: d }: { diagnosis: Diagnosis }) {
         <HeatStrip needs={d.needs} linkFor={(n) => shortlistLink(d, n, carry)} />
         <p className="mt-2 text-xs text-slate-600">
           Severity = Σ KPI weight × percentile points the club trails the benchmark by (0 = no
-          shortfall). Click a group for its shortlist.
+          shortfall; Not available = too few minutes to compare). Click a group for its shortlist.
         </p>
       </Card>
       <section aria-labelledby="top-needs" className="space-y-4">
         <h2 id="top-needs" className="text-lg font-semibold text-slate-900">
           Top needs
         </h2>
-        {top.length === 0 ? (
+        {!compared ? (
+          <EmptyState title="Not enough minutes this season to compare yet">
+            No position group could be compared: players need more minutes this season before they
+            are ranked. Switch to “This season + last (blended)”, which fills small samples with
+            last season.
+          </EmptyState>
+        ) : top.length === 0 ? (
           <EmptyState title="No shortfalls against this benchmark">
             {d.team_name} match or beat the benchmark on every weighted KPI.
           </EmptyState>

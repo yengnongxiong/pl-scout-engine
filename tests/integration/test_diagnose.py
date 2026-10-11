@@ -86,8 +86,11 @@ def test_diagnosis_ranks_every_group_with_receipts(built: Settings) -> None:
     assert result.benchmark == "top6"
     assert result.benchmark_team_ids == [town.team_id]  # last season's table minus Rovers
     assert [n.rank for n in result.needs] == list(range(1, len(config.kpis.position_groups) + 1))
+    # Known severities first, worst first; groups that could not be compared come last.
     severities = [n.severity for n in result.needs]
-    assert severities == sorted(severities, reverse=True)
+    known = [s for s in severities if s is not None]
+    assert severities[: len(known)] == sorted(known, reverse=True)
+    assert all(s is None for s in severities[len(known) :])
     cb = next(n for n in result.needs if n.position_group == "CB")
     assert cb.evidence, "CB need must carry evidence"
     assert all(e.source and e.as_of for e in cb.evidence)

@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { delay, http, HttpResponse } from "msw";
 import { describe, expect, it } from "vitest";
 
-import { diagnosisNoShortfall } from "../test/data.synthetic";
+import { diagnosisNoShortfall, diagnosisNotComparable } from "../test/data.synthetic";
 import { apiPath, errorBody } from "../test/handlers.synthetic";
 import { present, renderWithProviders } from "../test/render";
 import { server } from "../test/server";
@@ -115,6 +115,19 @@ describe("DiagnosisPage", () => {
     expect(await screen.findByText("No shortfalls against this benchmark")).toBeInTheDocument();
     expect(screen.getByText(/No regular starter rates below/)).toBeInTheDocument();
     expect(screen.getByText(/No depth, age or contract risk/)).toBeInTheDocument();
+  });
+
+  it("says when nothing can be compared yet instead of claiming no shortfall", async () => {
+    server.use(
+      http.get(apiPath("/teams/:id/diagnosis"), () => HttpResponse.json(diagnosisNotComparable)),
+    );
+    renderWithProviders(<DiagnosisPage />, { route: "/?team=1&mode=current" });
+    expect(
+      await screen.findByText("Not enough minutes this season to compare yet"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("No shortfalls against this benchmark")).not.toBeInTheDocument();
+    const strip = screen.getByRole("list", { name: "Need severity by position group" });
+    expect(within(strip).getAllByText(/severity Not available/).length).toBeGreaterThan(0);
   });
 
   it("tells the user to build the warehouse when there is no data", async () => {

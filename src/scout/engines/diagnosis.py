@@ -52,10 +52,15 @@ class KpiGap:
 
 @dataclass
 class GroupAssessment:
-    """Need severity for one position group of the club."""
+    """Need severity for one position group of the club.
+
+    ``severity`` is ``None`` when no KPI of the group could be compared (no ranked players
+    on one side, e.g. early in the season in this-season-only mode): unknown, not "no
+    shortfall" (CLAUDE.md rule 2).
+    """
 
     position_group: str
-    severity: float
+    severity: float | None
     gaps: list[KpiGap] = field(default_factory=list)
 
 
@@ -98,7 +103,7 @@ def assess_groups(
     }  # fmt: skip
     out: list[GroupAssessment] = []
     for group, cfg in catalogue.position_groups.items():
-        assessment = GroupAssessment(position_group=group, severity=0.0)
+        assessment = GroupAssessment(position_group=group, severity=None)
         for kpi_id, weight in cfg.weights.items():
             club = lookup.get((club_id, group, kpi_id))
             bench_values = [
@@ -110,10 +115,11 @@ def assess_groups(
             assessment.gaps.append(
                 KpiGap(kpi_id, kpi.label, weight, club, bench, gap, kpi.is_proxy)
             )
-            if gap is not None and gap > 0:
-                assessment.severity += weight * gap
+            if gap is not None:
+                shortfall = weight * gap if gap > 0 else 0.0
+                assessment.severity = (assessment.severity or 0.0) + shortfall
         out.append(assessment)
-    return sorted(out, key=lambda a: (-a.severity, a.position_group))
+    return sorted(out, key=lambda a: (a.severity is None, -(a.severity or 0.0), a.position_group))
 
 
 @dataclass(frozen=True)
@@ -314,7 +320,7 @@ class Need:
     rank: int
     need_id: str
     position_group: str
-    severity: float
+    severity: float | None
     gaps: list[KpiGap]
     evidence: list[Evidence]
     weak_links: list[WeakLink]

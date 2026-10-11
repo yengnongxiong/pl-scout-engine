@@ -216,6 +216,18 @@ export const diagnosisNoShortfall: Schemas["DiagnosisResponse"] = {
   team_needs: [],
 };
 
+/** Early season, this-season-only mode: nobody has enough minutes to be compared yet. */
+export const diagnosisNotComparable: Schemas["DiagnosisResponse"] = {
+  ...diagnosis,
+  season_mode: "current",
+  needs: diagnosis.needs.map((n) => ({
+    ...n,
+    severity: null,
+    gaps: n.gaps.map((g) => ({ ...g, club_score: null, benchmark_score: null, gap: null })),
+    weak_links: [],
+  })),
+};
+
 const fit = (total: number, needFill: number): Schemas["FitOut"] => ({
   total,
   components: {

@@ -177,7 +177,8 @@ def diagnose(
         f"{result.season_mode} mode"
     )
     for need in result.needs[:top]:
-        typer.echo(f"{need.rank}. {need.position_group}  severity {need.severity:.1f}")
+        severity = "Not available" if need.severity is None else f"{need.severity:.1f}"
+        typer.echo(f"{need.rank}. {need.position_group}  severity {severity}")
         gaps = sorted(
             (g for g in need.gaps if g.gap is not None), key=lambda g: g.gap or 0.0, reverse=True
         )

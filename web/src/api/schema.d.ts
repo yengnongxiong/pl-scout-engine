@@ -1188,8 +1188,11 @@ export interface components {
       rank: number;
       /** Risks */
       risks: components["schemas"]["RiskOut"][];
-      /** Severity */
-      severity: number;
+      /**
+       * Severity
+       * @description Null when no KPI of the group could be compared (too few minutes).
+       */
+      severity: number | null;
       /**
        * Team Needs
        * @description KPI ids of team needs this group shares.

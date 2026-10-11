@@ -261,7 +261,9 @@ def run_backtest(engine: Engine, config: AppConfig, *, top_n: int | None = None)
             continue
         assessed = assess_groups(team, bench, scores, config.kpis)
         predicted = [
-            PredictedNeed(a.position_group, a.severity) for a in assessed if a.severity > 0
+            PredictedNeed(a.position_group, a.severity)
+            for a in assessed
+            if a.severity is not None and a.severity > 0
         ][:n]
         signed = arrivals.get(team, [])
         actual = {a.position_group for a in signed if a.position_group is not None}
