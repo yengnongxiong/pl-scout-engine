@@ -102,7 +102,24 @@ Current milestone: none (M0-M9 and stretch S7, S2, S4, S5, S3 done; S1 and S6 ne
 - [x] S5 PDF/Markdown export (US-17): `reports/export.py` (Markdown with headings + receipts footer; A4 PDF via fpdf2 core font, € spelled "EUR"), `GET /players/{id}/report/export?format=pdf|markdown` (attachment), `scout report --pdf/--markdown`, Download PDF/Markdown buttons on the player page via the typed client (blob)
 - [x] S3 Postgres via docker-compose: `docker-compose.yml` (postgres:16, localhost only), `postgres` extra (psycopg 3), `tests/integration/test_postgres.py` builds the fixture warehouse on SQLite and Postgres and compares every analytical query, diagnosis, shortlist, backtest, API responses and an Alembic round trip; CI `postgres` job with a service container. Found and fixed: receipt timestamps differed by backend (now ISO 8601 UTC strings from the query layer, never "NaT"); grounding date regex missed dates inside ISO timestamps; the API cache key now follows build/train marker files so Postgres warehouses invalidate too
 
+### Live-data audit (owner request, 2026-10-11, on the owner's machine)
+The first run against live data (every earlier session used synthetic fixtures in a sandbox) found these, each fixed test-first and pushed:
+- [x] vaastav 2025-26 repeats 10 player-fixture rows verbatim → validation stopped every real `scout build` / `scout demo`; exact copies are dropped, conflicting ones still fail
+- [x] `test_health` read the owner's `data/` → pytest failed after any local build; an autouse fixture isolates default settings
+- [x] An unexpected (non-Scout) error in one source aborted the whole `scout ingest` / `scout demo` → each source now fails on its own
+- [x] Past-season matches had no kickoff or score → no value-model labels on real data ("not trained") and no 2023-24/2024-25 tables; vaastav fills them
+- [x] FPL now lists full legal names → Understat linked 88.6% and Transfermarkt 58.8% of minutes; FPL `known_name` + `birth_date`, token rules and date-of-birth matching → 99.1% / 80.6%
+- [x] Unmatched Transfermarkt players fell back to FPL types (every DEF a CB) → Understat formation slots in between (DML/DMR are wing-backs)
+- [x] `soccerdata` 1.9 removed FotMob at FotMob's request → ESPN scoreboard JSON for possession (ADR-0002, migration 0005, PRD v1.2)
+- [x] Display names are FPL's `known_name` ("Matheus Cunha", not the legal name)
+- [x] SQLite batch migrations failed on warehouses with data (foreign keys) → migrations run with foreign keys off and `foreign_key_check`
+- [x] Model-run receipts lost their UTC offset on SQLite (shown 5 h off, next day)
+- [x] Similar players offered players with no current-season page (dead links)
+- [x] Relegated clubs counted as current (club picker, StyleFit scaling, backtest counts)
+- [x] Live Transfermarkt failure now says the self-hosted API is not running
+
 ## Done
+- Live-data audit (2026-10-11): first end-to-end run on real data; 13 fixes listed above, CI green on every push.
 - S3 (2026-10-06): Postgres option with CI parity tests. All stretch goals in the agreed order (S7, S2, S4, S5, S3) are done.
 - S5 (2026-10-06): report export to PDF and Markdown.
 - S4 (2026-10-06): age curves and next-season projections.
@@ -125,11 +142,16 @@ Current milestone: none (M0-M9 and stretch S7, S2, S4, S5, S3 done; S1 and S6 ne
 - (none) PyPI files and npm both install through the agent proxy as of 2026-10-06 (remove `pypi.org`, `files.pythonhosted.org` and `registry.npmjs.org` from `NO_PROXY`/`no_proxy`/`npm_config_noproxy` first), so all checks run locally and Preflight is only needed when that stops working.
 
 ## Questions for Yengnong (non-blocking; default chosen)
-- Understat and FotMob go through soccerdata 1.9, which downloads a native TLS library from GitHub releases on first use; that download fails in the cloud sandbox, so their live schemas are still unverified. Please run `uv run scout ingest --source understat` once on your machine and tell a session if it fails. Default: the adapters keep their fixture-based contract tests.
-- `ingest.base_urls.transfermarkt_datasets` defaults to the dataset's public R2 export URL. I couldn't verify it from the sandbox; please confirm or correct it in `config/settings.yaml`. Default: use it as is; a failed fetch just means no stale fallback.
-- Please run the self-hosted `felipeall/transfermarkt-api` on :8001 (or change `ingest.base_urls.transfermarkt`) before `scout ingest --source transfermarkt`.
+- ~~Understat live schema~~: verified on the owner's machine 2026-10-11 (both seasons ingest and parse). FotMob is gone from `soccerdata` (ADR-0002).
+- ~~transfermarkt-datasets URL~~: verified 2026-10-11 (players + valuations download and parse; valuations end 2026-06-12, the players table is older still).
+- Please run the self-hosted `felipeall/transfermarkt-api` on :8001 (or change `ingest.base_urls.transfermarkt`) before `scout ingest --source transfermarkt`. Without it 19% of FPL minutes (summer arrivals, promoted clubs) have no Transfermarkt estimated market value. Default: the stale datasets fallback.
+- Players still unlinked to Understat after the matching fix (e.g. "Mathis Cherki" / Rayan Cherki, "Valentino" / Tino Livramento, "Yeremi" / Yéremy Pino) can be added to `data/overrides/player_overrides.csv` if you confirm they are the same people. Default: left in review rather than guessed.
 
 ## Decisions log (minor)
+- 2026-10-11: Entity resolution: FPL's `known_name` is the display name and an extra anchor name; `birth_date` comes from FPL first (651 of 667 players), Transfermarkt second. Token rules (config scores 95 / 90) only fire within a club block and never from a one-token FPL web name (a shared surname is not evidence); a date-of-birth match confirms a name scoring ≥ 60 within the club, or links across clubs when exactly one FPL player with that birthday clears `accept_score`.
+- 2026-10-11: Position group precedence: Transfermarkt detailed position, then the Understat formation slot with the most minutes (both seasons; "Sub" ignored), then the coarse FPL type.
+- 2026-10-11: A club is current when it has a fixture in the current season (FPL loads the whole fixture list), not merely an FPL team code (codes persist for relegated clubs in the history archive).
+- 2026-10-11: Similar players are restricted to this season's players (the pool that has player pages, search and shortlists); past-only players still shape each group's standardisation.
 - 2026-10-06: Postgres (S3): psycopg 3 (LGPL-3.0, binary wheel) as the `postgres` optional extra; SQLite stays the default. Receipt timestamp columns (`fetched_at`, `as_of`, `status_as_of`) are normalised in `db/queries.run_sql` to ISO 8601 UTC strings so receipts and API output are identical across backends. The parity test drops and recreates the public schema of the database in `SCOUT_TEST_POSTGRES_URL`, so it must point at a disposable database.
 - 2026-10-06: Report export (S5) reformats the already-grounded report text and appends the fact sheet's receipts and a fixed provenance footer; it adds no numbers. PDFs use fpdf2 (LGPL-3.0, pure Python, local use) with its built-in Helvetica, so characters outside Latin-1 are spelled out ("€38.0m" → "EUR 38.0m") instead of bundling a font.
 - 2026-10-06: Age curves (S4) use FPL-history stats that exist in every past season (xG, xA, goals, assists per 90; defensive stats start in 2025-26 so they cannot form pairs yet), completed past seasons only (the current season is partial), integer age at the end of the first season, harmonic-mean minutes weights, and at least 15 pairs per age (config). The curves are computed on request from the warehouse (cheap, LRU-cached) rather than stored, and `scout train` adds them to EVALUATION.md. Projections are clamped at 0 and are "Not available" when the player's age has too few pairs.
