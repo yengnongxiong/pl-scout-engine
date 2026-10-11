@@ -42,6 +42,38 @@ def test_downgrade_base_drops_everything(tmp_path: Path) -> None:
     engine.dispose()
 
 
+def test_upgrade_keeps_rows_that_reference_rebuilt_tables(tmp_path: Path) -> None:
+    # SQLite batch migrations rebuild a table (copy, drop, rename). With foreign keys on,
+    # dropping dim_match failed while fact tables referenced it: an empty database (the
+    # test above) never showed it, the owner's warehouse did (migration 0005).
+    url = f"sqlite:///{tmp_path / 'scout.db'}"
+    cfg = _alembic(url)
+    command.upgrade(cfg, "0004")
+    engine = make_engine(url)
+    with engine.begin() as conn:
+        conn.exec_driver_sql("INSERT INTO dim_season (season_id, is_current) VALUES ('2026-27', 1)")
+        conn.exec_driver_sql("INSERT INTO dim_team (team_id, name) VALUES (1, 'A'), (2, 'B')")
+        conn.exec_driver_sql(
+            "INSERT INTO dim_match (match_id, season_id, home_team_id, away_team_id, "
+            "fotmob_game) VALUES (7, '2026-27', 1, 2, 'g')"
+        )
+        conn.exec_driver_sql(
+            "INSERT INTO fact_team_match (match_id, team_id, possession, source, fetched_at) "
+            "VALUES (7, 1, 0.5, 'understat', '2026-09-01')"
+        )
+    engine.dispose()
+    command.upgrade(cfg, "head")
+    engine = make_engine(url)
+    with engine.connect() as conn:
+        assert conn.exec_driver_sql("SELECT match_id, espn_event_id FROM dim_match").all() == [
+            (7, None)
+        ]
+        assert conn.exec_driver_sql("SELECT count(*) FROM fact_team_match").scalar() == 1
+        assert conn.exec_driver_sql("PRAGMA foreign_key_check").all() == []
+        assert conn.exec_driver_sql("PRAGMA foreign_keys").scalar() == 1
+    engine.dispose()
+
+
 def test_foreign_keys_enforced_and_round_trip() -> None:
     engine = make_engine("sqlite:///:memory:")
     Base.metadata.create_all(engine)

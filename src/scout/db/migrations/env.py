@@ -40,9 +40,27 @@ def run_migrations_online() -> None:
         _run(connection)
         return
     engine = make_engine(_url())
-    with engine.begin() as conn:
-        _run(conn)
-    engine.dispose()
+    try:
+        with engine.connect() as conn:
+            if conn.dialect.name != "sqlite":
+                with conn.begin():
+                    _run(conn)
+                return
+            # Batch migrations rebuild a SQLite table (copy, drop, rename), and SQLite will not
+            # drop a table other tables reference while foreign keys are on. They are switched
+            # off for the migration (the pragma is ignored inside a transaction), every
+            # reference is checked before committing, and they are switched back on.
+            conn.exec_driver_sql("PRAGMA foreign_keys=OFF")
+            conn.commit()
+            with conn.begin():
+                _run(conn)
+                broken = conn.exec_driver_sql("PRAGMA foreign_key_check").all()
+                if broken:
+                    raise RuntimeError(f"migration left broken foreign keys: {broken[:5]}")
+            conn.exec_driver_sql("PRAGMA foreign_keys=ON")
+            conn.commit()
+    finally:
+        engine.dispose()
 
 
 if context.is_offline_mode():
