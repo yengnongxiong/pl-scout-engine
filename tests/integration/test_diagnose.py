@@ -130,6 +130,9 @@ def test_cli_diagnose(built: Settings, monkeypatch: pytest.MonkeyPatch) -> None:
     assert "Synthetic Rovers vs top6" in ok.output
     assert "1. " in ok.output and "evidence rows" in ok.output
     assert "Team-level needs" in ok.output and "understat as of" in ok.output
+    every = CliRunner().invoke(cli.app, ["diagnose", "Synthetic Rovers", "--top", "8"])
+    # Weak links name the player and the KPI, as the dashboard does.
+    assert "weak link: Alex Testman (" in every.output and "player 1 " not in every.output
     bad = CliRunner().invoke(cli.app, ["diagnose", "Nowhere United"])
     assert bad.exit_code == 1
     wrong = CliRunner().invoke(cli.app, ["diagnose", "Synthetic Rovers", "--benchmark", "top9"])

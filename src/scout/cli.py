@@ -138,7 +138,10 @@ def diagnose(
     top: Annotated[int, typer.Option(help="Number of needs to show.")] = 3,
 ) -> None:
     """Diagnose a club's biggest needs against a benchmark (PRD §8.8)."""
-    from scout.db.session import make_engine
+    from sqlalchemy import select
+
+    from scout.db.models import DimPlayer
+    from scout.db.session import make_engine, make_session_factory
     from scout.engines.diagnosis import diagnose as run_diagnosis
     from scout.engines.diagnosis import find_team
 
@@ -156,6 +159,14 @@ def diagnose(
             benchmark=BENCHMARKS[benchmark] if benchmark else None,
             season_mode=mode,
         )
+        linked = {link.player_id for need in result.needs for link in need.weak_links}
+        with make_session_factory(engine)() as session:
+            rows = session.execute(
+                select(DimPlayer.player_id, DimPlayer.canonical_name).where(
+                    DimPlayer.player_id.in_(linked)
+                )
+            ).all()
+        names = {int(pid): str(name) for pid, name in rows}
     except ScoutError as exc:
         typer.echo(f"Diagnosis failed: {exc.message}", err=True)
         raise typer.Exit(code=1) from exc
@@ -176,8 +187,11 @@ def diagnose(
                 f"   {gap.label}{proxy}: club {gap.club_score:.0f} vs benchmark "
                 f"{gap.benchmark_score:.0f} (gap {gap.gap:+.0f})"
             )
+        labels = {g.kpi: g.label for g in need.gaps}
         for link in need.weak_links:
-            typer.echo(f"   weak link: player {link.player_id} {link.kpi} p{link.percentile:.0f}")
+            who = names.get(link.player_id, f"player {link.player_id}")
+            kpi = labels.get(link.kpi, link.kpi)
+            typer.echo(f"   weak link: {who} ({kpi}, p{link.percentile:.0f})")
         for risk in need.risks:
             typer.echo(f"   risk ({risk.kind}): {risk.detail}")
         for team_need in need.team_needs:
