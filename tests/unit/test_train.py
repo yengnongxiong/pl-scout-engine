@@ -131,5 +131,12 @@ def test_store_outputs_replaces_roles_and_value_scores() -> None:
         assert stored.git_sha == "abc1234" and stored.season_mode == "blended"
         value = session.scalars(select(PlayerValueScore)).one()
         assert (value.value_label, value.tm_last_updated) == ("Undervalued", date(2026, 9, 1))
+    # SQLite hands timestamps back without a time zone; receipts must still say UTC, or the
+    # browser reads them as local time (a 19:56 UTC run showed as 00:56 the next day).
+    from scout.reports.facts import _implied_value, _role
+
+    role, implied = _role(engine, 0, "blended"), _implied_value(engine, 0, "2026-27")
+    assert role is not None and role.trained_at == "2026-10-04T02:00:00+00:00"
+    assert implied is not None and implied.trained_at == "2026-10-04T02:00:00+00:00"
     assert store_outputs(engine, _result()) == {"player_role": 0, "player_value_score": 0}
     engine.dispose()

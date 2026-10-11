@@ -27,7 +27,12 @@ from sqlalchemy import Engine, select
 
 from scout.config import AppConfig, ReportBands
 from scout.db.models import DimTeam, PlayerRole, PlayerValueScore
-from scout.db.queries import latest_market_values, player_features, player_profiles
+from scout.db.queries import (
+    latest_market_values,
+    player_features,
+    player_profiles,
+    utc_datetime,
+)
 from scout.db.session import make_session_factory
 from scout.engines.benchmark import Benchmark
 from scout.engines.diagnosis import group_weights, season_context
@@ -454,7 +459,8 @@ def _role(engine: Engine, player_id: int, season_mode: str) -> RoleFact | None:
         ).first()
     if row is None:
         return None
-    return RoleFact(label=row.label, trained_at=row.trained_at.isoformat(), git_sha=row.git_sha)
+    trained_at = utc_datetime(row.trained_at).isoformat()
+    return RoleFact(label=row.label, trained_at=trained_at, git_sha=row.git_sha)
 
 
 def _implied_value(engine: Engine, player_id: int, season_id: str) -> ImpliedValueFact | None:
@@ -471,7 +477,7 @@ def _implied_value(engine: Engine, player_id: int, season_id: str) -> ImpliedVal
         band_low_eur=row.band_low_eur,
         band_high_eur=row.band_high_eur,
         label=row.value_label,
-        trained_at=row.trained_at.isoformat(),
+        trained_at=utc_datetime(row.trained_at).isoformat(),
         git_sha=row.git_sha,
         caveat=VALUE_CAVEAT,
     )

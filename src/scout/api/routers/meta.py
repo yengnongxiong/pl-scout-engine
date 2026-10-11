@@ -25,6 +25,7 @@ from scout.api.schemas import (
 from scout.api.shared import age_curves
 from scout.db.doctor import run_doctor
 from scout.db.models import PlayerRole, PlayerValueScore
+from scout.db.queries import utc_datetime
 from scout.db.session import make_session_factory
 from scout.engines.backtest import run_backtest
 from scout.errors import ConfigError, InvalidRequestError
@@ -93,7 +94,8 @@ def _model_runs(state: ApiState) -> list[ModelRunOut]:
             trained_at, git_sha, rows = session.execute(
                 select(func.max(model.trained_at), func.max(model.git_sha), func.count(model.id))
             ).one()
-            runs.append(ModelRunOut(name=name, trained_at=trained_at, git_sha=git_sha, rows=rows))
+            when = None if trained_at is None else utc_datetime(trained_at)
+            runs.append(ModelRunOut(name=name, trained_at=when, git_sha=git_sha, rows=rows))
     return runs
 
 

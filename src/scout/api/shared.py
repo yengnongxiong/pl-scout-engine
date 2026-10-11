@@ -7,6 +7,7 @@ from sqlalchemy import select
 from scout.api.deps import ApiState
 from scout.config import AppConfig
 from scout.db.models import DimPlayer, PlayerValueScore
+from scout.db.queries import utc_datetime
 from scout.db.session import make_session_factory
 from scout.ml.age_curves import AgeCurves, build_curves
 from scout.ml.value_model import CAVEAT
@@ -51,7 +52,7 @@ def implied_values(state: ApiState) -> dict[int, ImpliedValueFact]:
                 band_low_eur=r.band_low_eur,
                 band_high_eur=r.band_high_eur,
                 label=r.value_label,
-                trained_at=r.trained_at.isoformat(),
+                trained_at=utc_datetime(r.trained_at).isoformat(),
                 git_sha=r.git_sha,
                 caveat=CAVEAT,
             )

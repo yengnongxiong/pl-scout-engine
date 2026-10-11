@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from importlib import resources
 
 import pandas as pd
@@ -33,6 +33,15 @@ def iso_timestamp(value: object) -> str | None:
         return None
     stamp = stamp.tz_localize("UTC") if stamp.tzinfo is None else stamp.tz_convert("UTC")
     return stamp.isoformat()
+
+
+def utc_datetime(value: datetime) -> datetime:
+    """A stored timestamp as an aware UTC datetime.
+
+    Timestamps are stored in UTC; SQLite has no time-zone type and returns them naive, so
+    serialising one as is would let a browser read it as local time.
+    """
+    return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
 
 
 def run_sql(engine: Engine, name: str, params: dict[str, object] | None = None) -> pd.DataFrame:
