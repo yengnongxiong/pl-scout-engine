@@ -1,0 +1,96 @@
+{
+  "season": "2025-26",
+  "calendar": ["2025-08-16T07:00Z", "2025-08-23T07:00Z", "2025-08-30T07:00Z"],
+  "days": {
+    "20250816": {
+      "events": [
+        {
+          "id": "990001",
+          "date": "2025-08-16T14:00Z",
+          "status": {"type": {"name": "STATUS_FULL_TIME", "completed": true}},
+          "competitions": [
+            {
+              "competitors": [
+                {
+                  "homeAway": "home",
+                  "team": {"id": "1", "displayName": "Synthetic Rovers"},
+                  "statistics": [
+                    {"name": "foulsCommitted", "displayValue": "11"},
+                    {"name": "possessionPct", "displayValue": "58.0"}
+                  ]
+                },
+                {
+                  "homeAway": "away",
+                  "team": {"id": "2", "displayName": "Fixture Town"},
+                  "statistics": [{"name": "possessionPct", "displayValue": "42.0"}]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "20250823": {
+      "events": [
+        {
+          "id": "990002",
+          "date": "2025-08-23T14:00Z",
+          "status": {"type": {"name": "STATUS_FULL_TIME", "completed": true}},
+          "competitions": [
+            {
+              "competitors": [
+                {
+                  "homeAway": "home",
+                  "team": {"id": "2", "displayName": "Fixture Town"},
+                  "statistics": [{"name": "possessionPct", "displayValue": "61.0"}]
+                },
+                {
+                  "homeAway": "away",
+                  "team": {"id": "1", "displayName": "Synthetic Rovers"},
+                  "statistics": [{"name": "possessionPct", "displayValue": "39.0"}]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "20250830": {
+      "events": [
+        {
+          "id": "990003",
+          "date": "2025-08-30T14:00Z",
+          "status": {"type": {"name": "STATUS_FULL_TIME", "completed": true}},
+          "competitions": [
+            {
+              "competitors": [
+                {
+                  "homeAway": "home",
+                  "team": {"id": "1", "displayName": "Synthetic Rovers"},
+                  "statistics": []
+                },
+                {
+                  "homeAway": "away",
+                  "team": {"id": "3", "displayName": "Old Opponents"}
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "990004",
+          "date": "2025-08-30T16:30Z",
+          "status": {"type": {"name": "STATUS_POSTPONED", "completed": false}},
+          "competitions": [
+            {
+              "competitors": [
+                {"homeAway": "home", "team": {"id": "2", "displayName": "Fixture Town"}},
+                {"homeAway": "away", "team": {"id": "3", "displayName": "Old Opponents"}}
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
