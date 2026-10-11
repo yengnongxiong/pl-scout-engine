@@ -42,13 +42,21 @@ The rule behind every screen is **"no number without a receipt"**:
 
 *All screenshots come from a local run on live 2026-27 data.*
 
-| 1. Ranked candidates for a need, with the FitScore breakdown open | 2. The Moneyball view: market estimate vs what the stats imply |
-|---|---|
-| ![Shortlist of strikers for Man Utd with Erling Haaland's FitScore breakdown](docs/screenshots/shortlist.png) | ![Scatter plot of Transfermarkt estimated market value against stats-implied value](docs/screenshots/moneyball.png) Players **above the diagonal** look under-priced by the market. |
+**1. Ranked candidates for a need.** Open any player's FitScore to see exactly why they rank where they do.
 
-| 3. A player page: percentiles against position peers, value, age curve | 4. An auto-written scouting report, ready to copy or download as PDF |
-|---|---|
-| ![Player page for Erling Haaland](docs/screenshots/player.png) | ![Scouting report for Erling Haaland against Man Utd's striker need](docs/screenshots/report.png) |
+![Shortlist of strikers for Man Utd with Erling Haaland's FitScore breakdown](docs/screenshots/shortlist.png)
+
+**2. The Moneyball view.** The market's estimate (Transfermarkt) against what the player's stats imply. Players **above the diagonal** look under-priced.
+
+![Scatter plot of Transfermarkt estimated market value against stats-implied value](docs/screenshots/moneyball.png)
+
+**3. A player page.** Percentiles against players in the same position, value, age curve, similar players.
+
+![Player page for Erling Haaland](docs/screenshots/player.png)
+
+**4. An auto-written scouting report**, fact-checked, ready to copy or download as a PDF.
+
+<img src="docs/screenshots/report.png" alt="Scouting report for Erling Haaland against Man Utd's striker need" width="560">
 
 <details>
 <summary><b>More screens:</b> compare, backtest, methodology and data freshness</summary>
