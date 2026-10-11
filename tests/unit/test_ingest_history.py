@@ -57,6 +57,7 @@ def test_parse_maps_ids_to_stable_codes(adapter: VaastavHistoryAdapter, tmp_path
     assert bool(bo["was_home"]) is False
     assert bo["xg"] == pytest.approx(0.55)
     assert bo["tackles"] == 0  # a real recorded zero stays zero
+    assert (bo["home_score"], bo["away_score"]) == (1, 1)
     assert set(pm["source"]) == {"vaastav"}
 
 
@@ -65,7 +66,7 @@ def test_columns_absent_in_older_seasons_are_null_not_zero(
 ) -> None:
     pm = adapter.parse(_snapshots(tmp_path, _payloads()))
     old = pm[pm["season_id"] == "2023-24"].iloc[0]
-    for column in ("tackles", "cbi", "recoveries", "def_contribution"):
+    for column in ("tackles", "cbi", "recoveries", "def_contribution", "home_score"):
         assert old[column] is None or old[column] != old[column]  # None or NaN
     assert old["xg"] == pytest.approx(0.04)
 

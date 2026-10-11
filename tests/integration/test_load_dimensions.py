@@ -10,11 +10,14 @@ from sqlalchemy.orm import Session
 from scout.config import PROJECT_ROOT, load_config
 from scout.db.load import DimensionLoader
 from scout.db.models import Base, DimMatch, DimPlayer, DimSeason, DimTeam
+from scout.db.queries import season_bounds
 from scout.db.session import make_engine, make_session_factory
 from scout.ingest.base import SnapshotStore
 from scout.ingest.fotmob import FotMobAdapter
 from scout.ingest.fotmob import snapshot_name as fotmob_name
 from scout.ingest.fpl import BOOTSTRAP, FIXTURES, FplAdapter, element_summary_name
+from scout.ingest.history import VaastavHistoryAdapter
+from scout.ingest.history import snapshot_names as vaastav_names
 from scout.ingest.understat import KINDS, UnderstatAdapter
 from scout.ingest.understat import snapshot_name as us_name
 
@@ -164,3 +167,29 @@ def test_reload_is_idempotent(session: Session, staged: dict[str, pd.DataFrame])
     second = _load(session, staged)
     assert [_count(session, m) for m in (DimTeam, DimMatch, DimPlayer, DimSeason)] == counts
     assert first == second
+
+
+def test_vaastav_matches_carry_kickoff_and_scores(tmp_path: Path) -> None:
+    # Past-season matches exist only through vaastav rows; without their kickoff the season
+    # has no end date (so no value-model label), and without scores no league table.
+    engine = make_engine(f"sqlite:///{tmp_path / 'w.db'}")
+    Base.metadata.create_all(engine)
+    store = SnapshotStore(tmp_path / "raw", clock=lambda: datetime(2026, 9, 1, tzinfo=UTC))
+    snaps = [
+        store.write("vaastav", name, (FIX / f"vaastav/synthetic_{name}").read_bytes())
+        for season in ("2025-26", "2023-24")
+        for name in vaastav_names(season)
+    ]
+    history = VaastavHistoryAdapter("https://archive.test/", ["2025-26", "2023-24"]).parse(snaps)
+    with make_session_factory(engine)() as session:
+        loader = DimensionLoader(session)
+        loader.season("2026-27", is_current=True)
+        ids = loader.matches_from_vaastav(history)
+        session.commit()
+        match = session.get(DimMatch, ids[("2025-26", 301)])
+        assert match is not None
+        assert match.kickoff is not None
+        assert match.kickoff.replace(tzinfo=UTC) == datetime(2025, 8, 16, 14, tzinfo=UTC)
+        assert (match.home_score, match.away_score) == (1, 1)
+    bounds = season_bounds(engine)
+    assert "2025-26" in set(bounds["season_id"])

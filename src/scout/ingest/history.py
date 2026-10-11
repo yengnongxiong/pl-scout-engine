@@ -54,6 +54,8 @@ OPTIONAL_GW = {
     "goals_conceded": "goals_conceded",
     "penalties_saved": "penalties_saved",
 }
+# Final score of the fixture (the same on every row of it); match-level, not player stats.
+OPTIONAL_SCORES = {"team_h_score": "home_score", "team_a_score": "away_score"}
 REQUIRED_PLAYERS = frozenset({"id", "code"})
 REQUIRED_TEAMS = frozenset({"id", "code", "name"})
 
@@ -208,6 +210,9 @@ class VaastavHistoryAdapter(SourceAdapter):
                     continue
                 value = _optional(rec.get(column))
                 row[target] = None if value is None else float(str(value))
+            for column, target in OPTIONAL_SCORES.items():
+                value = _optional(rec.get(column))
+                row[target] = None if value is None else int(float(str(value)))
             rows.append(row)
         logger.info("vaastav season parsed", extra={"season": season, "rows": len(rows)})
         return pd.DataFrame(rows)

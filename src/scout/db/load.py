@@ -272,9 +272,13 @@ class DimensionLoader:
 
         vaastav rows give each player's opponent and ``was_home``. A fixture's home club
         is the opponent of its away players and vice versa, which avoids relying on the
-        end-of-season club in ``players_raw`` (wrong for mid-season movers).
+        end-of-season club in ``players_raw`` (wrong for mid-season movers). Every row of a
+        fixture also carries its kickoff, gameweek and final score; they fill whatever the
+        match doesn't have yet, so past seasons get end dates (value-model labels) and a
+        league table even without another source.
         """
         sides: dict[tuple[str, int], dict[str, tuple[int, str]]] = {}
+        details: dict[tuple[str, int], dict[Hashable, Any]] = {}
         for rec in frame.to_dict(orient="records"):
             key = (str(rec["season_id"]), int(rec["fpl_fixture_id"]))
             side = "away" if bool(rec["was_home"]) else "home"  # the opponent's side
@@ -282,6 +286,7 @@ class DimensionLoader:
                 int(rec["opponent_fpl_code"]),
                 str(rec["opponent_name"]),
             )
+            details.setdefault(key, rec)
         out: dict[tuple[str, int], int] = {}
         for (season_id, fixture_id), teams in sides.items():
             if "home" not in teams or "away" not in teams:
@@ -300,7 +305,16 @@ class DimensionLoader:
             if row is None:
                 row = DimMatch(season_id=season_id, home_team_id=home, away_team_id=away)
                 self.session.add(row)
-                self.session.flush()
+            detail = details[(season_id, fixture_id)]
+            kickoff = detail.get("kickoff")
+            if row.kickoff is None and isinstance(kickoff, datetime) and pd.notna(kickoff):
+                row.kickoff = kickoff
+            if row.gameweek is None:
+                row.gameweek = _opt_int(detail.get("gameweek"))
+            if row.home_score is None and row.away_score is None:
+                row.home_score = _opt_int(detail.get("home_score"))
+                row.away_score = _opt_int(detail.get("away_score"))
+            self.session.flush()
             out[(season_id, fixture_id)] = row.match_id
         return out
 
