@@ -12,9 +12,13 @@ completed season, so the model never sees the future it is scored on. It is comp
 a **baseline**: the median log value of the training rows in the same position group and
 age bucket. Reported: MAE on the log scale and median absolute % error, for both.
 
-Two quantile models (lower / upper, config) give an uncertainty band. A player whose
-Transfermarkt value sits below the band is **Undervalued** by the stats, above it
-**Premium**, inside it **Fair**. Caveat shown wherever this is displayed: the model learns
+Two quantile models (lower / upper, config) give an uncertainty band, **calibrated** on
+the held-out season (split-conformal quantile regression, Romano et al. 2019): raw quantile
+trees are often overconfident, so the band is widened (or narrowed) by the amount that
+makes it cover the nominal share of that season, and the same amount is applied when
+scoring. Raw and calibrated coverage are both reported. A player whose Transfermarkt value
+sits below the band is **Undervalued** by the stats, above it **Premium**, inside it
+**Fair**. Caveat shown wherever this is displayed: the model learns
 the market's own biases; it is a stats-implied value, not a fee prediction.
 
 Missing features (e.g. FPL expected goals before 2022-23) are passed as NaN and handled by
@@ -160,6 +164,8 @@ class ValueModel:
     n_test: int
     metrics: dict[str, dict[str, float]]
     band_coverage: float
+    band_adjustment: float
+    calibrated_coverage: float
     point: Any = field(repr=False)
     low: Any = field(repr=False)
     high: Any = field(repr=False)
@@ -178,10 +184,13 @@ class ValueModel:
         return [names[j] for j in self.eval_columns]
 
     def predict(self, frame: pd.DataFrame) -> pd.DataFrame:
-        """Stats-implied value and band (euros), quantiles kept in order per row."""
+        """Stats-implied value and calibrated band (euros), kept in order per row."""
         x = feature_matrix(frame, self.per90_stats, self.groups)[:, list(self.columns)]
+        lows, highs = _ordered(self.low.predict(x), self.high.predict(x))
         stacked = np.sort(
-            np.column_stack([self.low.predict(x), self.point.predict(x), self.high.predict(x)]),
+            np.column_stack(
+                [lows - self.band_adjustment, self.point.predict(x), highs + self.band_adjustment]
+            ),
             axis=1,
         )
         return pd.DataFrame(
@@ -223,6 +232,32 @@ def _fit_all(
         model.fit(x[:, list(columns)], y)
     point, low, high = models
     return columns, point, low, high
+
+
+def _ordered(
+    lows: npt.NDArray[np.float64], highs: npt.NDArray[np.float64]
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """Separately fitted quantile models can cross; keep each row's low below its high."""
+    return np.minimum(lows, highs), np.maximum(lows, highs)
+
+
+def conformal_adjustment(
+    y: npt.NDArray[np.float64],
+    lows: npt.NDArray[np.float64],
+    highs: npt.NDArray[np.float64],
+    coverage: float,
+) -> float:
+    """How far to widen a quantile band so it covers ``coverage`` of a calibration set.
+
+    Split-conformal quantile regression (Romano, Patterson and Candès, 2019): each row
+    scores ``max(low - y, y - high)``, positive outside the band; the adjustment is the
+    ``ceil((n + 1) * coverage)``-th smallest score, so ``[low - adj, high + adj]`` covers at
+    least ``coverage`` of the rows. Negative when the raw band is wider than it needs to
+    be. Past the sample size, the largest score is the most the data can justify.
+    """
+    scores = np.sort(np.maximum(lows - y, y - highs))
+    rank = min(math.ceil((len(scores) + 1) * coverage), len(scores))
+    return float(scores[rank - 1])
 
 
 def band_label(value_eur: float, low_eur: float, high_eur: float) -> BandLabel:
@@ -275,10 +310,11 @@ def train_value_model(
     baseline = Baseline.fit(train, cfg.age_bucket_edges)
     model_m = error_metrics(y_test, point.predict(x_test))
     base_m = error_metrics(y_test, baseline.predict(test))
-    lows, highs = low.predict(x_test), high.predict(x_test)
-    coverage = float(
-        np.mean((y_test >= np.minimum(lows, highs)) & (y_test <= np.maximum(lows, highs)))
-    )
+    lows, highs = _ordered(low.predict(x_test), high.predict(x_test))
+    coverage = float(np.mean((y_test >= lows) & (y_test <= highs)))
+    low_q, high_q = cfg.quantiles
+    adjustment = conformal_adjustment(y_test, lows, highs, high_q - low_q)
+    calibrated = float(np.mean((y_test >= lows - adjustment) & (y_test <= highs + adjustment)))
     metrics = {
         "model": model_m,
         "baseline": base_m,
@@ -304,6 +340,8 @@ def train_value_model(
         n_test=len(test),
         metrics=metrics,
         band_coverage=coverage,
+        band_adjustment=adjustment,
+        calibrated_coverage=calibrated,
         point=point,
         low=low,
         high=high,
@@ -326,5 +364,7 @@ def metadata(model: ValueModel, extra: Mapping[str, object] | None = None) -> di
         "n_test": model.n_test,
         "metrics": model.metrics,
         "band_coverage": model.band_coverage,
+        "band_adjustment_log": model.band_adjustment,
+        "calibrated_band_coverage": model.calibrated_coverage,
         **(extra or {}),
     }

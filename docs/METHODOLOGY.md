@@ -158,8 +158,10 @@ bounded min-heap (`dsa/heap_topk.py`).
   value at season end) from age, age², position group, minutes share, blended per-90 output and
   club points per game. Time-based split (train on earlier seasons, test on the latest), compared
   with a baseline (median by position group × age bucket) on MAE (log scale) and median absolute
-  % error. 10th/90th-percentile quantile models give the band: a Transfermarkt value below it is
-  **Undervalued**, above it **Premium**, inside it **Fair**. It is a stats-implied value, not a fee
+  % error. 10th/90th-percentile quantile models give the band, calibrated by split-conformal
+  quantile regression on the held-out season (the raw quantile trees are overconfident; the band
+  is widened until it covers 80% of that season, and the same widening is used for scoring). A
+  Transfermarkt value below the band is **Undervalued**, above it **Premium**, inside it **Fair**. It is a stats-implied value, not a fee
   prediction: the model learns the market's own biases.
 
 - **Age curves** (delta method): for players with ≥ 900 minutes in two consecutive past seasons,

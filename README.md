@@ -127,7 +127,7 @@ Methodology page.
 - **FitScore** = 0.40 NeedFill + 0.25 RoleQuality + 0.15 Reliability + 0.10 StyleFit + 0.10
   AgeProfile, with an **upgrade gate** against the incumbent.
 - **ML**: Gaussian-mixture role archetypes (k by BIC), cosine similarity, and a gradient-boosted
-  **stats-implied value** with a quantile band, evaluated on a held-out season against a
+  **stats-implied value** with a conformally calibrated band, evaluated on a held-out season against a
   baseline (see [`docs/EVALUATION.md`](docs/EVALUATION.md) after `scout train`). It is not a fee
   prediction.
 - **Reports**: a fact sheet, Jinja2 templates with seeded phrase banks, an optional local LLM

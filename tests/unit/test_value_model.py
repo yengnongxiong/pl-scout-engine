@@ -13,6 +13,7 @@ from scout.ml.value_model import (
     Baseline,
     age_bucket,
     band_label,
+    conformal_adjustment,
     error_metrics,
     feature_matrix,
     feature_names,
@@ -104,12 +105,29 @@ def test_model_beats_baseline_on_held_out_season() -> None:
     assert model.metrics["model"]["mae_log"] < model.metrics["baseline"]["mae_log"]
     assert model.metrics["improvement"]["mae_log_pct"] > 20
     assert 0.5 < model.band_coverage <= 1.0  # q10-q90 band covers most held-out values
+    # Conformal calibration widens (or narrows) the band so that it covers the nominal share
+    # of the held-out season, whatever the raw quantile models managed.
+    assert model.calibrated_coverage >= 0.8
+    assert math.isfinite(model.band_adjustment)
     # Stats nobody has a value for are left out rather than filled in.
     assert "assists_p90" not in model.features and "def_contribution_p90" not in model.features
     assert {"xg_p90", "team_ppg", "position_group"} <= set(model.features)
     meta = metadata(model, {"git_sha": "abc"})
     assert meta["test_season"] == "2024-25" and meta["git_sha"] == "abc"
     assert meta["eval_features"] == model.eval_features
+
+
+def test_conformal_adjustment_hand_calculated() -> None:
+    # Scores max(low - y, y - high) on a raw band [1, 3] for y = 1..4: 0, -1, 0, 1.
+    y = np.array([1.0, 2.0, 3.0, 4.0])
+    lows, highs = np.full(4, 1.0), np.full(4, 3.0)
+    # The ceil((n + 1) * coverage)-th smallest score: 3rd (0) for 50%, 4th (1) for 80%.
+    assert conformal_adjustment(y, lows, highs, 0.5) == 0.0
+    assert conformal_adjustment(y, lows, highs, 0.8) == 1.0
+    # Past the sample (5th of 4), the largest score is the most the data can justify.
+    assert conformal_adjustment(y, lows, highs, 0.95) == 1.0
+    # A band that is too wide narrows: every score is -1 → adjustment -1.
+    assert conformal_adjustment(np.full(3, 2.0), np.zeros(3), np.full(3, 3.0), 0.5) == -1.0
 
 
 def test_predictions_are_ordered_and_reproducible() -> None:

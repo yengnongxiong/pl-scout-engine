@@ -7,6 +7,7 @@ that was not trained shows "Not available" and the reason instead of numbers.
 
 from __future__ import annotations
 
+import math
 from collections import Counter
 
 from scout.ml.roles import RoleModel
@@ -51,8 +52,12 @@ def _value_section(result: TrainResult) -> list[str]:
         "",
         "Improvement in MAE (log scale) over the baseline: "
         f"{model.metrics['improvement']['mae_log_pct']:.1f}%.",
-        f"Uncertainty band (quantiles {low_q:g}-{high_q:g}): it covers "
-        f"{_pct(model.band_coverage)} of held-out values (nominal {_pct(high_q - low_q)}).",
+        f"Uncertainty band (quantiles {low_q:g}-{high_q:g}, nominal {_pct(high_q - low_q)}): "
+        f"the raw quantile models cover {_pct(model.band_coverage)} of held-out values. "
+        "Split-conformal calibration on the held-out season moves each edge by "
+        f"{model.band_adjustment:+.3f} on the log scale (x{math.exp(model.band_adjustment):.2f}), "
+        f"so the band covers {_pct(model.calibrated_coverage)} of that season by construction; "
+        "a season unlike it can still be covered less often.",
         "",
         f"Features, evaluation fit: {', '.join(model.eval_features)}.",
         f"Features, scoring fit (all seasons): {', '.join(model.features)}.",
