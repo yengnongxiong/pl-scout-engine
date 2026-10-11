@@ -1,5 +1,5 @@
 import json
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 import httpx
@@ -83,6 +83,19 @@ def test_players_carry_status_and_null_news(
     # Empty news is missing data, not an empty string (CLAUDE.md rule 2).
     assert pd.isna(players.loc[500011, "news"])
     assert pd.isna(players.loc[500011, "chance_of_playing"])
+
+
+def test_players_carry_birth_date_and_known_name(
+    adapter: FplAdapter, snapshots: list[RawSnapshot]
+) -> None:
+    # FPL lists most players' date of birth and, for some, the name they are known by
+    # ("Bruno Fernandes" for "Bruno Borges Fernandes"). Both are optional in the payload.
+    players = adapter.parse_players(snapshots).set_index("fpl_code")
+    assert players.loc[500011, "birth_date"] == date(1998, 3, 14)
+    assert pd.isna(players.loc[500011, "known_name"])  # "" is missing, not a name
+    assert players.loc[500012, "known_name"] == "Bobby Fakeson"
+    assert pd.isna(players.loc[500012, "birth_date"])  # field absent: missing, never guessed
+    assert pd.isna(players.loc[500013, "known_name"])
 
 
 def test_fixtures_keep_unplayed_scores_null(

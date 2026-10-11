@@ -140,11 +140,15 @@ class DimensionLoader:
         """Upsert resolved players; returns ``fpl_code → player_id``.
 
         Position group comes from Transfermarkt's detailed position (PRD §8.5), falling
-        back to the coarse FPL position (GKP maps to the GK group, stretch S2).
+        back to the coarse FPL position (GKP maps to the GK group, stretch S2). Date of
+        birth comes from FPL, which lists nearly every player, else from Transfermarkt.
         """
         fpl_pos = {
             int(r["fpl_code"]): str(r["fpl_position"])
             for r in fpl_players.to_dict(orient="records")
+        }
+        fpl_birth = {
+            int(r["fpl_code"]): r.get("birth_date") for r in fpl_players.to_dict(orient="records")
         }
         tm_by_id: dict[str, dict[Hashable, Any]] = {}
         if tm_values is not None:
@@ -169,8 +173,11 @@ class DimensionLoader:
             row.canonical_name = str(rec["canonical_name"])
             row.understat_id = _opt_int(rec.get("understat_id"))
             row.tm_id = tm_id
-            birth = tm.get("birth_date")
-            if isinstance(birth, date):
+            birth = next(
+                (b for b in (fpl_birth.get(code), tm.get("birth_date")) if isinstance(b, date)),
+                None,
+            )
+            if birth is not None:
                 row.birth_date = birth
             row.detailed_position = detailed
             row.position_group = group

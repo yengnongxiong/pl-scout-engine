@@ -72,7 +72,9 @@
    "status": "a",
    "news": "",
    "chance_of_playing_next_round": null,
-   "minutes": 180
+   "minutes": 180,
+   "known_name": "",
+   "birth_date": "1998-03-14"
   },
   {
    "id": 12,
@@ -86,7 +88,8 @@
    "status": "d",
    "news": "Knock - 75% chance of playing",
    "chance_of_playing_next_round": 75,
-   "minutes": 95
+   "minutes": 95,
+   "known_name": "Bobby Fakeson"
   },
   {
    "id": 13,

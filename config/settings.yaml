@@ -93,6 +93,17 @@ entity_resolution:
   accept_score: 88
   # Best candidate must beat the runner-up by this much, or the record goes to review.
   min_margin: 4
+  # Name forms that edit distance underrates. FPL lists full legal names ("Bruno Borges
+  # Fernandes") where other sources use the common one ("Bruno Fernandes"):
+  # - every token of the shorter name is in the longer one, its surname exactly and a first
+  #   name possibly as a 3+ letter prefix ("Dan" / "Daniel"), or a single name is one of
+  #   the other's tokens ("Alisson" / "Alisson Becker");
+  token_match_score: 95
+  # - two-token names with the same surname and first initial ("Matty" / "Matthew Cash").
+  initial_match_score: 90
+  # An exact date of birth (Transfermarkt vs FPL) confirms a match with name similarity
+  # at least this high, within the club; across clubs it still needs accept_score.
+  dob_confirm_score: 60
   # Coverage target: share of minutes mapped across sources (PRD §15).
   target_minutes_coverage: 0.98
 

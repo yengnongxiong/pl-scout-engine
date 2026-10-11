@@ -161,6 +161,22 @@ def test_players_get_position_groups(session: Session, staged: dict[str, pd.Data
     assert cy.position_group == "CM" and cy.birth_date is None
 
 
+def test_birth_date_comes_from_fpl_before_transfermarkt(
+    session: Session, staged: dict[str, pd.DataFrame]
+) -> None:
+    players = staged["players"].copy()
+    players["birth_date"] = players["fpl_code"].map({500012: date(2001, 5, 2)})
+    players["birth_date"] = (
+        players["birth_date"].astype(object).where(players["birth_date"].notna(), None)
+    )
+    ids = _load(session, {**staged, "players": players})
+    bo = session.get(DimPlayer, ids["players"][500012])
+    alex = session.get(DimPlayer, ids["players"][500011])
+    assert bo is not None and alex is not None
+    assert bo.birth_date == date(2001, 5, 2)  # FPL only: no Transfermarkt record needed
+    assert alex.birth_date == date(1998, 3, 14)  # no FPL date: Transfermarkt's
+
+
 def test_reload_is_idempotent(session: Session, staged: dict[str, pd.DataFrame]) -> None:
     first = _load(session, staged)
     counts = [_count(session, m) for m in (DimTeam, DimMatch, DimPlayer, DimSeason)]

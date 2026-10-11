@@ -133,6 +133,9 @@ class EntityResolutionConfig(_Strict):
 
     accept_score: float = Field(ge=0.0, le=100.0)
     min_margin: float = Field(ge=0.0, le=100.0)
+    token_match_score: float = Field(ge=0.0, le=100.0)
+    initial_match_score: float = Field(ge=0.0, le=100.0)
+    dob_confirm_score: float = Field(ge=0.0, le=100.0)
     target_minutes_coverage: float = Field(ge=0.0, le=1.0)
 
 

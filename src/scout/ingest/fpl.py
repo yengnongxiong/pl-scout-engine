@@ -13,11 +13,11 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Sequence
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any
 
 import pandas as pd
-from pydantic import BaseModel, ConfigDict, ValidationError
+from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
 
 from scout.errors import DataValidationError
 from scout.ingest.base import PoliteClient, RawSnapshot, SnapshotStore, SourceAdapter
@@ -76,6 +76,16 @@ class FplElement(_Model):
     news: str
     chance_of_playing_next_round: int | None
     minutes: int
+    # Optional: not in every season's payload. ``known_name`` is the common name for some
+    # players ("Bruno Fernandes" for "Bruno Borges Fernandes").
+    known_name: str | None = None
+    birth_date: date | None = None
+
+    @field_validator("known_name", "birth_date", mode="before")
+    @classmethod
+    def _empty_is_missing(cls, value: object) -> object:
+        """FPL sends ``""`` for an unknown value; that is missing, not a value."""
+        return None if value == "" else value
 
 
 class FplBootstrap(_Model):
@@ -240,6 +250,8 @@ class FplAdapter(SourceAdapter):
                     "first_name": e.first_name,
                     "second_name": e.second_name,
                     "web_name": e.web_name,
+                    "known_name": e.known_name,
+                    "birth_date": e.birth_date,
                     "team_fpl_code": team_codes[e.team],
                     "fpl_position": positions[e.element_type],
                     "fpl_status": e.status,

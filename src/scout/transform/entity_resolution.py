@@ -8,10 +8,17 @@ are matched to them in four steps:
    small and stops two different "Danny Wards" from merging.
 2. **Score names.** Names are normalised (accents, case, punctuation) and compared with
    the hand-written Levenshtein similarity, both as written and with tokens sorted, so
-   "Son Heung-min" matches "Heung-Min Son".
+   "Son Heung-min" matches "Heung-Min Son". Each FPL player is known by their full name,
+   FPL's ``known_name`` and ``web_name``. Token rules cover what edit distance
+   underrates: FPL's full legal names ("Bruno Borges Fernandes" vs "Bruno Fernandes"),
+   short first names ("Dan" / "Daniel") and nicknames with the same initial ("Matty" /
+   "Matthew Cash").
 3. **Decide.** Accept the best candidate only if it clears ``accept_score`` and beats the
    runner-up by ``min_margin``; a date-of-birth mismatch (when both are known) vetoes it.
-   Manual overrides in ``data/overrides/player_overrides.csv`` win outright.
+   An exact date of birth (FPL vs Transfermarkt) confirms a weaker name match within the
+   club, and finds a player the source still lists at a previous club when exactly one
+   FPL player with that birthday clears ``accept_score``. Manual overrides in
+   ``data/overrides/player_overrides.csv`` win outright.
 4. **Merge.** Accepted links are unioned with union-find; if two records from one source
    claim the same FPL player, the higher score wins and the other goes to review.
 
@@ -27,6 +34,7 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
+from typing import Literal
 
 import pandas as pd
 
@@ -140,15 +148,66 @@ def map_clubs(
     return out
 
 
-def name_score(anchor_names: Sequence[str], candidate: str) -> float:
-    """Best similarity (0-100) between ``candidate`` and any of the anchor's names."""
+MIN_PREFIX_LETTERS = 3  # "Dan" may stand for "Daniel"; "Jo" is too short to say
+
+
+def _same_token(a: str, b: str) -> bool:
+    """Equal tokens, or one a prefix of the other with at least three letters."""
+    if a == b:
+        return True
+    return min(len(a), len(b)) >= MIN_PREFIX_LETTERS and (a.startswith(b) or b.startswith(a))
+
+
+def token_match(anchor: str, candidate: str) -> Literal["tokens", "initial"] | None:
+    """How an FPL name and a source's name agree token by token (normalised, any order).
+
+    Returns:
+        ``"tokens"`` when the shorter name's last token (its surname) is in the longer name
+        and every other token matches a different token of it, exactly or as a prefix
+        ("Bruno Fernandes" in "Bruno Borges Fernandes", "Dan Ballard" / "Daniel Ballard");
+        a one-token candidate must be one of the anchor's tokens ("Alisson" / "Alisson
+        Becker"). A one-token anchor name (an FPL web name, usually a surname) never
+        matches by tokens: a shared surname alone is not evidence. ``"initial"`` for
+        two-token names with the same surname and first initial ("Matty Cash" / "Matthew
+        Cash"). ``None`` otherwise.
+    """
+    ta, tb = normalise_person_name(anchor).split(), normalise_person_name(candidate).split()
+    if len(ta) < 2 or not tb:
+        return None
+    short, long_ = (ta, tb) if len(ta) <= len(tb) else (tb, ta)
+    if short[-1] in long_:
+        remaining = list(long_)
+        remaining.remove(short[-1])
+        matched = True
+        for token in short[:-1]:
+            hit = next((t for t in remaining if _same_token(token, t)), None)
+            if hit is None:
+                matched = False
+                break
+            remaining.remove(hit)
+        if matched:
+            return "tokens"
+    if len(ta) == len(tb) == 2 and ta[1] == tb[1] and ta[0][0] == tb[0][0]:
+        return "initial"
+    return None
+
+
+def name_score(anchor_names: Sequence[str], candidate: str, cfg: EntityResolutionConfig) -> float:
+    """Best score (0-100) between ``candidate`` and any of the anchor's names.
+
+    The score is the edit-distance similarity (as written and with sorted tokens), raised
+    to ``token_match_score`` / ``initial_match_score`` when a token rule holds.
+    """
     cand_norm, cand_sorted = normalise_person_name(candidate), sorted_tokens(candidate)
+    rule_scores = {"tokens": cfg.token_match_score, "initial": cfg.initial_match_score}
     best = 0.0
     for name in anchor_names:
+        rule = token_match(name, candidate)
         best = max(
             best,
             similarity(normalise_person_name(name), cand_norm),
             similarity(sorted_tokens(name), cand_sorted),
+            rule_scores[rule] if rule is not None else 0.0,
         )
     return best
 
@@ -186,9 +245,14 @@ def _decide(
             "no FPL players at this club",
         )
     scored = sorted(
-        ((name_score(a.names, record.name), a) for a in candidates),
+        ((name_score(a.names, record.name, cfg), a) for a in candidates),
         key=lambda pair: (-pair[0], pair[1].fpl_code),
     )
+    if record.birth_date is not None:
+        same_day = [(sc, a) for sc, a in scored if a.birth_date == record.birth_date]
+        if len(same_day) == 1 and same_day[0][0] >= cfg.dob_confirm_score:
+            score, anchor = same_day[0]
+            return Link(record.source, record.source_id, anchor.fpl_code, round(score, 1), "dob")
     best_score, best = scored[0]
     runner_up = scored[1][0] if len(scored) > 1 else 0.0
     review = ReviewItem(
@@ -224,8 +288,11 @@ def resolve(
     """Match every source record to an FPL anchor or send it to review."""
     known = {a.fpl_code for a in anchors}
     anchors_by_team: dict[int, list[AnchorPlayer]] = {}
+    anchors_by_birth: dict[date, list[AnchorPlayer]] = {}
     for anchor in anchors:
         anchors_by_team.setdefault(anchor.team_code, []).append(anchor)
+        if anchor.birth_date is not None:
+            anchors_by_birth.setdefault(anchor.birth_date, []).append(anchor)
 
     result = Resolution()
     accepted: dict[tuple[str, int], Link] = {}  # (source, fpl_code) → winning link
@@ -241,6 +308,8 @@ def resolve(
             outcome = Link(record.source, record.source_id, forced, 100.0, "override")
         else:
             outcome = _decide(record, anchors_by_team, cfg)
+            if isinstance(outcome, ReviewItem):
+                outcome = _by_birth_date(record, anchors_by_birth, cfg) or outcome
         if isinstance(outcome, ReviewItem):
             result.review.append(outcome)
             continue
@@ -263,6 +332,29 @@ def resolve(
         extra={"links": len(result.links), "review": len(result.review)},
     )
     return result
+
+
+def _by_birth_date(
+    record: SourceRecord,
+    anchors_by_birth: Mapping[date, Sequence[AnchorPlayer]],
+    cfg: EntityResolutionConfig,
+) -> Link | None:
+    """Link a record listed at another club (e.g. a stale snapshot after a transfer).
+
+    Only when exactly one FPL player born on the record's date of birth clears
+    ``accept_score`` on name; anything less certain stays in review.
+    """
+    if record.birth_date is None:
+        return None
+    hits = [
+        (score, a)
+        for a in anchors_by_birth.get(record.birth_date, ())
+        if (score := name_score(a.names, record.name, cfg)) >= cfg.accept_score
+    ]
+    if len(hits) != 1:
+        return None
+    score, anchor = hits[0]
+    return Link(record.source, record.source_id, anchor.fpl_code, round(score, 1), "dob_any_club")
 
 
 def _beats(challenger: Link, incumbent: Link) -> bool:
@@ -310,8 +402,19 @@ def fpl_anchors(players: pd.DataFrame, player_match: pd.DataFrame) -> list[Ancho
     for rec in players.to_dict(orient="records"):
         code = int(rec["fpl_code"])
         full = f"{rec['first_name']} {rec['second_name']}"
-        names = tuple(dict.fromkeys([full, str(rec["web_name"])]))
-        anchors.append(AnchorPlayer(code, names, int(rec["team_fpl_code"]), minutes.get(code, 0.0)))
+        known = rec.get("known_name")
+        spellings = [full, known if isinstance(known, str) and known else None, rec["web_name"]]
+        names = tuple(dict.fromkeys(str(n) for n in spellings if n is not None))
+        birth = rec.get("birth_date")
+        anchors.append(
+            AnchorPlayer(
+                code,
+                names,
+                int(rec["team_fpl_code"]),
+                minutes.get(code, 0.0),
+                birth if isinstance(birth, date) else None,
+            )
+        )
     return anchors
 
 

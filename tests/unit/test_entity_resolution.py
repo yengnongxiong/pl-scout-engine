@@ -51,10 +51,51 @@ def links_by_id(links: list[Link]) -> dict[str, int]:
 
 
 def test_name_score_handles_order_accents_and_web_names() -> None:
-    assert name_score(("Son Heung-min", "Son"), "Heung-Min Son") == 100.0
-    assert name_score(("Martin Odegaard",), "Martin Ødegaard") == 100.0
-    assert name_score(("Bo Fakeson", "Fakeson"), "Fakeson") == 100.0
-    assert name_score(("Dan Ward",), "Daniel Ward") < CFG.accept_score
+    assert name_score(("Son Heung-min", "Son"), "Heung-Min Son", CFG) == 100.0
+    assert name_score(("Martin Odegaard",), "Martin Ødegaard", CFG) == 100.0
+    assert name_score(("Bo Fakeson", "Fakeson"), "Fakeson", CFG) == 100.0
+
+
+@pytest.mark.parametrize(
+    ("anchor", "candidate"),
+    [
+        # FPL lists full legal names; other sources use the common one (live 2026-27 data).
+        ("Bruno Borges Fernandes", "Bruno Fernandes"),
+        ("Rúben dos Santos Gato Alves Dias", "Rúben Dias"),
+        ("David Raya Martín", "David Raya"),
+        ("Jaden Philogene", "Jaden Philogene-Bidace"),
+        # Short first names: one token is a prefix of the other.
+        ("Daniel Ballard", "Dan Ballard"),
+        ("Josh King", "Joshua King"),
+        ("Nicolás González Iglesias", "Nico González"),
+        # Same surname and first initial: nicknames and transliterations.
+        ("Matty Cash", "Matthew Cash"),
+        ("Đorđe Petrović", "Djordje Petrovic"),
+        # A single name that is one of the anchor's name tokens.
+        ("Alisson Becker", "Alisson"),
+    ],
+)
+def test_name_score_matches_common_name_forms(anchor: str, candidate: str) -> None:
+    assert name_score((anchor,), candidate, CFG) >= CFG.accept_score
+
+
+@pytest.mark.parametrize(
+    ("anchor", "candidate"),
+    [
+        ("Dan Ward", "Dave Wardle"),  # a surname prefix is a different surname
+        ("Jordan Ayew", "André Ayew"),  # same surname, different first name
+        ("Ben White", "Ben Davies"),  # same first name only
+        ("Gabriel dos Santos Magalhães", "Gabriel Martinelli"),  # two Arsenal Gabriels
+    ],
+)
+def test_name_score_rejects_different_people(anchor: str, candidate: str) -> None:
+    assert name_score((anchor,), candidate, CFG) < CFG.accept_score
+
+
+def test_surname_alone_is_not_a_token_match() -> None:
+    # FPL web names are often just a surname; another player with that surname at the
+    # same club (one who left, say) must not inherit the link.
+    assert name_score(("Rayan Cherki", "Cherki"), "Mathis Cherki", CFG) < CFG.accept_score
 
 
 def test_map_clubs_uses_aliases() -> None:
@@ -71,7 +112,7 @@ def test_resolve_accepts_confident_matches_and_reviews_the_rest() -> None:
     records = [
         rec("understat", "1", "Alex Testman", ROVERS),
         rec("understat", "2", "Fakeson", TOWN),
-        rec("understat", "3", "Daniel Ward", ROVERS),  # below threshold
+        rec("understat", "3", "Dave Wardle", ROVERS),  # below threshold
         rec("transfermarkt", "t1", "Heung-Min Son", TOWN),
         rec("transfermarkt", "t2", "Cy Benchley", ROVERS, dob=date(1999, 1, 1)),  # DOB veto
         rec("transfermarkt", "t3", "Nobody Known"),  # no club block
@@ -88,6 +129,74 @@ def test_resolve_accepts_confident_matches_and_reviews_the_rest() -> None:
     assert reasons["t3"] == "no FPL players at this club"
     ward = next(r for r in result.review if r.source_id == "3")
     assert ward.best_candidate == 500020  # best guess is shown, not applied
+
+
+def test_short_first_name_links_within_the_club() -> None:
+    result = resolve(ANCHORS, [rec("understat", "3", "Daniel Ward", ROVERS)], CFG)
+    assert links_by_id(result.links) == {"understat:3": 500020}
+
+
+def test_matching_date_of_birth_confirms_a_weaker_name_match() -> None:
+    # Cy Benchley's FPL date of birth is 2000-01-01; Transfermarkt spells the name longer.
+    record = rec("transfermarkt", "t5", "Cyril Benchly", ROVERS, dob=date(2000, 1, 1))
+    assert name_score(("Cy Benchley", "Benchley"), record.name, CFG) < CFG.accept_score
+    result = resolve(ANCHORS, [record], CFG)
+    assert links_by_id(result.links) == {"transfermarkt:t5": 500013}
+    assert result.links[0].method == "dob"
+
+
+def test_matching_date_of_birth_alone_is_not_enough() -> None:
+    record = rec("transfermarkt", "t6", "Zed Unrelated", ROVERS, dob=date(2000, 1, 1))
+    result = resolve(ANCHORS, [record], CFG)
+    assert not result.links
+    assert "below" in result.review[0].reason
+
+
+def test_date_of_birth_links_a_player_listed_at_his_old_club() -> None:
+    # The stale Transfermarkt snapshot still lists a summer signing at his previous club;
+    # an exact date of birth plus a confident name finds him anywhere in the league.
+    record = rec("transfermarkt", "t7", "Cy Benchley", TOWN, dob=date(2000, 1, 1))
+    result = resolve(ANCHORS, [record], CFG)
+    assert links_by_id(result.links) == {"transfermarkt:t7": 500013}
+    assert result.links[0].method == "dob_any_club"
+
+
+def test_date_of_birth_search_needs_a_unique_confident_match() -> None:
+    twin = AnchorPlayer(500031, ("Cy Benchly", "Benchly"), TOWN, 10.0, date(2000, 1, 1))
+    record = rec("transfermarkt", "t8", "Cy Benchley", 4242, dob=date(2000, 1, 1))
+    result = resolve([*ANCHORS, twin], [record], CFG)
+    assert not result.links
+    assert result.review[0].source_id == "t8"
+
+
+def test_fpl_anchors_use_known_name_and_birth_date() -> None:
+    players = pd.DataFrame(
+        [
+            {
+                "fpl_code": 7,
+                "first_name": "Bruno",
+                "second_name": "Borges Fernandes",
+                "web_name": "B.Fernandes",
+                "known_name": "Bruno Fernandes",
+                "birth_date": date(1994, 9, 8),
+                "team_fpl_code": ROVERS,
+            },
+            {
+                "fpl_code": 8,
+                "first_name": "Alex",
+                "second_name": "Testman",
+                "web_name": "Testman",
+                "known_name": None,
+                "birth_date": None,
+                "team_fpl_code": ROVERS,
+            },
+        ]
+    )
+    matches = pd.DataFrame([{"fpl_code": 7, "minutes": 90}])
+    bruno, alex = fpl_anchors(players, matches)
+    assert bruno.names == ("Bruno Borges Fernandes", "Bruno Fernandes", "B.Fernandes")
+    assert bruno.birth_date == date(1994, 9, 8) and bruno.minutes == 90.0
+    assert alex.names == ("Alex Testman", "Testman") and alex.birth_date is None
 
 
 def test_ambiguous_candidates_go_to_review() -> None:
