@@ -142,8 +142,9 @@ def test_fetch_requests_each_match_day_up_to_today(tmp_path: Path) -> None:
 
 def test_fetch_rejects_the_wrong_season(tmp_path: Path) -> None:
     adapter = EspnAdapter(BASE, [SEASON], TOLERANCE, today=lambda: date(2026, 6, 1))
-    with _client(_handler([], season_year=2024)) as client, pytest.raises(
-        DataValidationError, match="season 2024"
+    with (
+        _client(_handler([], season_year=2024)) as client,
+        pytest.raises(DataValidationError, match="season 2024"),
     ):
         adapter.fetch(client, SnapshotStore(tmp_path))
 
